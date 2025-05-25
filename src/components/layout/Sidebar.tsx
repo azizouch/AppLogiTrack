@@ -1,58 +1,74 @@
-
-import React from 'react';
-import { 
-  Package, 
-  Truck, 
-  Users, 
-  Bell, 
-  Settings, 
-  Building2, 
+import { useState } from 'react';
+import {
+  Package,
+  Truck,
+  Users,
+  Bell,
+  Settings,
+  Building2,
   UsersRound,
   FileText,
-  BarChart3
+  Home,
+  ChevronDown,
+  ChevronUp,
+  Moon,
+  ChevronLeft,
+  CheckCircle,
+  XCircle,
+  Ban,
+  CreditCard,
+  RotateCcw,
+  UserCheck,
+  UserPlus
 } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
 import {
   Sidebar,
   SidebarContent,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarMenu,
-  SidebarMenuButton,
   SidebarMenuItem,
   SidebarHeader,
   SidebarFooter,
 } from '@/components/ui/sidebar';
 import { useLocation, Link } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
 
 export function AppSidebar() {
-  const { state } = useAuth();
   const location = useLocation();
+  const [expandedItems, setExpandedItems] = useState<string[]>(['Colis']); // Start with Colis expanded
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(false);
 
   const navigationItems = [
     {
-      title: 'Dashboard',
+      title: 'Accueil',
       url: '/',
-      icon: BarChart3,
+      icon: Home,
       roles: ['admin', 'gestionnaire', 'livreur']
     },
     {
       title: 'Colis',
       icon: Package,
       roles: ['admin', 'gestionnaire', 'livreur'],
+      hasDropdown: true,
       items: [
-        { title: 'Tous les colis', url: '/colis' },
-        { title: 'Colis livrés', url: '/colis/livres' },
-        { title: 'Colis refusés', url: '/colis/refuses', roles: ['admin', 'gestionnaire'] },
-        { title: 'Colis annulés', url: '/colis/annules', roles: ['admin', 'gestionnaire'] },
+        { title: 'Liste Colis', url: '/colis', icon: Package },
+        { title: 'Colis Livrés', url: '/colis/livres', icon: CheckCircle },
+        { title: 'Colis Refusés', url: '/colis/refuses', icon: XCircle, roles: ['admin', 'gestionnaire'] },
+        { title: 'Colis Annulés', url: '/colis/annules', icon: Ban, roles: ['admin', 'gestionnaire'] },
       ]
     },
     {
-      title: 'Bons de livraison',
-      url: '/bons',
+      title: 'Bons',
       icon: FileText,
-      roles: ['admin', 'gestionnaire']
+      roles: ['admin', 'gestionnaire'],
+      hasDropdown: true,
+      items: [
+        { title: 'Distribution', url: '/bons/distribution', icon: FileText },
+        { title: 'Paiement', url: '/bons/paiement', icon: CreditCard },
+        { title: 'Retour', url: '/bons/retour', icon: RotateCcw },
+      ]
     },
     {
       title: 'Clients',
@@ -78,128 +94,193 @@ export function AppSidebar() {
       icon: Bell,
       roles: ['admin', 'gestionnaire', 'livreur']
     },
-  ];
-
-  const adminItems = [
     {
       title: 'Utilisateurs',
-      url: '/utilisateurs',
       icon: UsersRound,
-      roles: ['admin']
+      roles: ['admin'],
+      hasDropdown: true,
+      items: [
+        { title: 'Gestion', url: '/utilisateurs', icon: UserCheck },
+        { title: 'Suivi', url: '/utilisateurs/suivi', icon: UserPlus },
+      ]
     },
     {
       title: 'Paramètres',
-      url: '/parametres',
       icon: Settings,
-      roles: ['admin']
+      roles: ['admin'],
+      hasDropdown: true,
+      items: [
+        { title: 'Général', url: '/parametres', icon: Settings },
+        { title: 'Statuts', url: '/parametres/statuts', icon: Package },
+      ]
     },
   ];
 
-  const hasAccess = (itemRoles?: string[]) => {
-    if (!itemRoles) return true;
-    return itemRoles.includes(state.user?.role || '');
+  const hasAccess = (_itemRoles?: string[]) => {
+    // Since we removed auth, show all items (admin access)
+    return true;
   };
 
   const isActive = (url: string) => {
     if (url === '/') {
       return location.pathname === '/';
     }
-    return location.pathname.startsWith(url);
+    // For exact matching of sub-routes
+    return location.pathname === url;
+  };
+
+  const isParentActive = (items: any[]) => {
+    return items.some(item => location.pathname === item.url);
+  };
+
+  const toggleExpanded = (itemTitle: string) => {
+    setExpandedItems(prev =>
+      prev.includes(itemTitle)
+        ? prev.filter(item => item !== itemTitle)
+        : [...prev, itemTitle]
+    );
+  };
+
+  const isExpanded = (itemTitle: string) => {
+    return expandedItems.includes(itemTitle);
+  };
+
+  const toggleCollapse = () => {
+    setIsCollapsed(!isCollapsed);
+  };
+
+  const toggleDarkMode = () => {
+    setIsDarkMode(!isDarkMode);
+    // Apply dark mode to document
+    if (!isDarkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
   };
 
   return (
-    <Sidebar>
-      <SidebarHeader className="border-b p-4">
-        <div className="flex items-center space-x-2">
-          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-            <span className="text-white font-bold text-sm">LT</span>
-          </div>
-          <div>
-            <h2 className="font-bold text-lg text-blue-600">LogiTrack</h2>
-            <p className="text-xs text-gray-500">Gestion des livraisons</p>
-          </div>
+    <Sidebar className={`${isCollapsed ? 'w-16' : 'w-64'} bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 transition-all duration-300`}>
+      {/* Header */}
+      <SidebarHeader className="p-4 border-b border-gray-100 dark:border-gray-700">
+        <div className="flex items-center justify-between">
+          {!isCollapsed && (
+            <h1 className="text-xl font-bold text-gray-900 dark:text-white">LogiTrack</h1>
+          )}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 hover:bg-gray-100 dark:hover:bg-gray-800"
+            onClick={toggleCollapse}
+          >
+            <ChevronLeft className={`h-4 w-4 transition-transform duration-300 ${isCollapsed ? 'rotate-180' : ''}`} />
+          </Button>
         </div>
       </SidebarHeader>
 
-      <SidebarContent>
+      {/* Navigation */}
+      <SidebarContent className="p-4">
         <SidebarGroup>
-          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="space-y-1">
               {navigationItems.map((item) => {
                 if (!hasAccess(item.roles)) return null;
 
-                if (item.items) {
-                  return (
-                    <SidebarMenuItem key={item.title}>
-                      <div className="px-2 py-1">
-                        <div className="flex items-center space-x-2 text-sm font-medium text-gray-700 mb-2">
-                          <item.icon className="h-4 w-4" />
-                          <span>{item.title}</span>
-                        </div>
-                        <div className="ml-6 space-y-1">
-                          {item.items.map((subItem) => {
-                            if (subItem.roles && !hasAccess(subItem.roles)) return null;
-                            return (
-                              <SidebarMenuButton
-                                key={subItem.url}
-                                asChild
-                                isActive={isActive(subItem.url)}
-                                className="text-sm"
-                              >
-                                <Link to={subItem.url}>
-                                  {subItem.title}
-                                </Link>
-                              </SidebarMenuButton>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    </SidebarMenuItem>
-                  );
-                }
+                const isItemActive = item.url ? isActive(item.url) : false;
+                const hasActiveChild = item.items ? isParentActive(item.items) : false;
+                const expanded = isExpanded(item.title);
 
                 return (
                   <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild isActive={isActive(item.url!)}>
-                      <Link to={item.url!}>
-                        <item.icon />
-                        <span>{item.title}</span>
+                    {item.url ? (
+                      // Single menu item
+                      <Link to={item.url}>
+                        <div
+                          className={`w-full flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors cursor-pointer ${
+                            isCollapsed ? 'justify-center' : 'justify-start space-x-3'
+                          } ${
+                            isItemActive
+                              ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm'
+                              : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                          }`}
+                        >
+                          <item.icon className="h-5 w-5 flex-shrink-0" />
+                          {!isCollapsed && <span>{item.title}</span>}
+                        </div>
                       </Link>
-                    </SidebarMenuButton>
+                    ) : (
+                      // Menu item with dropdown
+                      <div className="space-y-1">
+                        <Button
+                          variant="ghost"
+                          onClick={() => !isCollapsed && toggleExpanded(item.title)}
+                          className={`w-full px-3 py-2.5 text-sm font-medium rounded-lg transition-colors ${
+                            isCollapsed ? 'justify-center' : 'justify-between'
+                          } ${
+                            hasActiveChild
+                              ? 'bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300'
+                              : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                          }`}
+                        >
+                          <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'space-x-3'}`}>
+                            <item.icon className="h-5 w-5 flex-shrink-0" />
+                            {!isCollapsed && <span>{item.title}</span>}
+                          </div>
+                          {!isCollapsed && item.hasDropdown && (
+                            expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
+                          )}
+                        </Button>
+
+                        {/* Dropdown items */}
+                        {!isCollapsed && expanded && item.items && (
+                          <div className="ml-8 space-y-1 mt-2">
+                            {item.items.map((subItem) => {
+                              if (subItem.roles && !hasAccess(subItem.roles)) return null;
+                              const isSubItemActive = isActive(subItem.url);
+
+                              return (
+                                <Link key={subItem.url} to={subItem.url}>
+                                  <div
+                                    className={`w-full flex items-center space-x-3 px-3 py-2.5 text-sm rounded-lg transition-colors cursor-pointer ${
+                                      isSubItemActive
+                                        ? 'bg-blue-100 dark:bg-blue-900 text-blue-900 dark:text-blue-100 font-medium border-l-2 border-blue-500'
+                                        : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-200'
+                                    }`}
+                                  >
+                                    <subItem.icon className="h-4 w-4" />
+                                    <span>{subItem.title}</span>
+                                  </div>
+                                </Link>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </SidebarMenuItem>
                 );
               })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-
-        {state.user?.role === 'admin' && (
-          <SidebarGroup>
-            <SidebarGroupLabel>Administration</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {adminItems.map((item) => (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild isActive={isActive(item.url)}>
-                      <Link to={item.url}>
-                        <item.icon />
-                        <span>{item.title}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
       </SidebarContent>
 
-      <SidebarFooter className="border-t p-4">
-        <div className="text-xs text-gray-500">
-          <p>Connecté en tant que:</p>
-          <p className="font-medium text-gray-700">{state.user?.nom}</p>
-          <p className="capitalize">{state.user?.role}</p>
+      {/* Footer */}
+      <SidebarFooter className="p-4 border-t border-gray-100 dark:border-gray-700">
+        <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
+          {!isCollapsed && (
+            <div className="flex items-center justify-center w-10 h-10 bg-gray-800 dark:bg-gray-600 text-white rounded-full">
+              <span className="text-sm font-medium">N</span>
+            </div>
+          )}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 hover:bg-gray-100 dark:hover:bg-gray-800"
+            onClick={toggleDarkMode}
+          >
+            <Moon className={`h-4 w-4 transition-colors ${isDarkMode ? 'text-yellow-500' : 'text-gray-600 dark:text-gray-400'}`} />
+          </Button>
         </div>
       </SidebarFooter>
     </Sidebar>
