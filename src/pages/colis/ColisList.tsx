@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Search, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,55 +20,35 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Colis } from '@/types';
-
-// Mock data based on the screenshot
-const mockColis: Colis[] = [
-  {
-    id: 'COL-2025-632425255',
-    client_id: '1',
-    entreprise_id: '1',
-    livreur_id: null,
-    statut: 'En cours',
-    date_creation: '24/05/2025',
-    client: { id: '1', nom: 'farid', created_at: '' },
-    entreprise: { id: '1', nom: 'Café Central', created_at: '' },
-  },
-  {
-    id: 'COL-2025-4869',
-    client_id: '2',
-    entreprise_id: '2',
-    livreur_id: '1',
-    statut: 'En cours',
-    date_creation: '17/05/2025',
-    client: { id: '2', nom: 'Rida Boutarge', created_at: '' },
-    entreprise: { id: '2', nom: 'Électro Plus', created_at: '' },
-  },
-  {
-    id: 'COL-2025-8317',
-    client_id: '3',
-    entreprise_id: '1',
-    livreur_id: '2',
-    statut: 'En cours',
-    date_creation: '17/05/2025',
-    client: { id: '3', nom: 'Thomas Martin', created_at: '' },
-    entreprise: { id: '1', nom: 'Café Central', created_at: '' },
-  },
-  {
-    id: 'COL-2025-8681',
-    client_id: '4',
-    entreprise_id: '3',
-    livreur_id: '3',
-    statut: 'Livré',
-    date_creation: '09/05/2025',
-    client: { id: '4', nom: 'Rida', created_at: '' },
-    entreprise: { id: '3', nom: 'Boutique', created_at: '' },
-  },
-];
+import { api } from '@/lib/supabase';
 
 export function ColisList() {
+  const [colis, setColis] = useState<Colis[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [delivererFilter, setDelivererFilter] = useState('all');
+
+  useEffect(() => {
+    const fetchColis = async () => {
+      try {
+        setLoading(true);
+        const { data, error } = await api.getColis();
+
+        if (error) {
+          console.error('Error fetching colis:', error);
+        } else if (data) {
+          setColis(data);
+        }
+      } catch (error) {
+        console.error('Error fetching colis:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchColis();
+  }, []);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -84,19 +64,25 @@ export function ColisList() {
   };
 
   const getLivreurInfo = (colis: Colis) => {
-    if (!colis.livreur_id) {
+    if (!colis.livreur_id || !colis.livreur) {
       return 'Non assigné';
     }
-    
-    // Mock livreur data
-    const livreurs: Record<string, string> = {
-      '1': 'Martin Dupont (LIV-200)',
-      '2': 'fr eg (LIV-916)',
-      '3': 'Sophie Laurente',
-    };
-    
-    return livreurs[colis.livreur_id] || 'Inconnu';
+
+    return `${colis.livreur.prenom || ''} ${colis.livreur.nom}`.trim();
   };
+
+  // Filter colis based on search and filters
+  const filteredColis = colis.filter((item) => {
+    const matchesSearch = searchTerm === '' ||
+      item.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.client?.nom.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.entreprise?.nom.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesStatus = statusFilter === 'all' || item.statut === statusFilter;
+    const matchesDeliverer = delivererFilter === 'all' || item.livreur_id === delivererFilter;
+
+    return matchesSearch && matchesStatus && matchesDeliverer;
+  });
 
   return (
     <div className="space-y-6">
@@ -114,7 +100,7 @@ export function ColisList() {
           <Filter className="h-4 w-4 text-gray-500" />
           <span className="font-medium text-gray-700">Filtres</span>
         </div>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
@@ -125,7 +111,7 @@ export function ColisList() {
               className="pl-10"
             />
           </div>
-          
+
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger>
               <SelectValue placeholder="Tous les statuts" />
@@ -137,7 +123,7 @@ export function ColisList() {
               <SelectItem value="Retourné">Retourné</SelectItem>
             </SelectContent>
           </Select>
-          
+
           <Select value={delivererFilter} onValueChange={setDelivererFilter}>
             <SelectTrigger>
               <SelectValue placeholder="Tous les livreurs" />
@@ -149,7 +135,7 @@ export function ColisList() {
               <SelectItem value="3">Sophie Laurente</SelectItem>
             </SelectContent>
           </Select>
-          
+
           <Select>
             <SelectTrigger>
               <SelectValue placeholder="Plus récent" />
@@ -168,10 +154,12 @@ export function ColisList() {
         <div className="p-4 border-b">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold">Liste des Colis</h2>
-            <span className="text-sm text-gray-500">Total: {mockColis.length} colis trouvés</span>
+            <span className="text-sm text-gray-500">
+              Total: {loading ? '...' : filteredColis.length} colis trouvés
+            </span>
           </div>
         </div>
-        
+
         <Table>
           <TableHeader>
             <TableRow>
@@ -185,23 +173,46 @@ export function ColisList() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {mockColis.map((colis) => (
-              <TableRow key={colis.id}>
-                <TableCell className="font-mono text-sm">{colis.id}</TableCell>
-                <TableCell>{colis.client?.nom}</TableCell>
-                <TableCell>{colis.entreprise?.nom}</TableCell>
-                <TableCell>{getStatusBadge(colis.statut)}</TableCell>
-                <TableCell>{colis.date_creation}</TableCell>
-                <TableCell className="text-sm text-gray-600">
-                  {getLivreurInfo(colis)}
-                </TableCell>
-                <TableCell>
-                  <Button variant="outline" size="sm">
-                    Voir
-                  </Button>
+            {loading ? (
+              // Loading skeleton
+              Array.from({ length: 5 }).map((_, index) => (
+                <TableRow key={index}>
+                  <TableCell><div className="h-4 bg-gray-200 rounded animate-pulse"></div></TableCell>
+                  <TableCell><div className="h-4 bg-gray-200 rounded animate-pulse"></div></TableCell>
+                  <TableCell><div className="h-4 bg-gray-200 rounded animate-pulse"></div></TableCell>
+                  <TableCell><div className="h-6 bg-gray-200 rounded animate-pulse w-16"></div></TableCell>
+                  <TableCell><div className="h-4 bg-gray-200 rounded animate-pulse"></div></TableCell>
+                  <TableCell><div className="h-4 bg-gray-200 rounded animate-pulse"></div></TableCell>
+                  <TableCell><div className="h-8 bg-gray-200 rounded animate-pulse w-16"></div></TableCell>
+                </TableRow>
+              ))
+            ) : filteredColis.length > 0 ? (
+              filteredColis.map((colis) => (
+                <TableRow key={colis.id}>
+                  <TableCell className="font-mono text-sm">{colis.id}</TableCell>
+                  <TableCell>{colis.client?.nom}</TableCell>
+                  <TableCell>{colis.entreprise?.nom}</TableCell>
+                  <TableCell>{getStatusBadge(colis.statut)}</TableCell>
+                  <TableCell>
+                    {new Date(colis.date_creation).toLocaleDateString('fr-FR')}
+                  </TableCell>
+                  <TableCell className="text-sm text-gray-600">
+                    {getLivreurInfo(colis)}
+                  </TableCell>
+                  <TableCell>
+                    <Button variant="outline" size="sm">
+                      Voir
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center py-8 text-gray-500">
+                  Aucun colis trouvé
                 </TableCell>
               </TableRow>
-            ))}
+            )}
           </TableBody>
         </Table>
       </div>

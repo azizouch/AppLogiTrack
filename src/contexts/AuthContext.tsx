@@ -1,6 +1,7 @@
 
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
 import { User } from '@/types';
+import { auth, api } from '@/lib/supabase';
 
 interface AuthState {
   user: User | null;
@@ -56,55 +57,126 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
 const AuthContext = createContext<{
   state: AuthState;
   login: (email: string, password: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
 } | null>(null);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [state, dispatch] = useReducer(authReducer, initialState);
 
-  // Mock login function - will be replaced with Supabase integration
+  // Supabase login function
   const login = async (email: string, password: string) => {
     dispatch({ type: 'LOGIN_START' });
-    
+
     try {
-      // Mock authentication
-      const mockUser: User = {
-        id: '1',
-        nom: 'Dupont',
-        prenom: 'Jean',
-        email: email,
-        role: 'gestionnaire',
-        mot_de_passe: '',
-        statut: 'actif',
-        date_creation: new Date().toISOString(),
-      };
-      
-      localStorage.setItem('user', JSON.stringify(mockUser));
-      dispatch({ type: 'LOGIN_SUCCESS', payload: mockUser });
+      console.log('Attempting login with:', email);
+
+      // Authenticate with Supabase
+      const { data: authData, error: authError } = await auth.signIn(email, password);
+
+      console.log('Auth response:', { authData, authError });
+
+      if (authError) {
+        console.error('Authentication error:', authError);
+        throw authError;
+      }
+
+      if (authData.user) {
+        console.log('User authenticated, fetching profile...');
+
+        // Get user profile from our users table
+        const { data: userData, error: userError } = await api.getUserByEmail(email);
+
+        console.log('User profile response:', { userData, userError });
+
+        if (userError) {
+          console.error('User profile error:', userError);
+          // If user profile doesn't exist, create a basic one for now
+          const basicUser = {
+            id: authData.user.id,
+            nom: 'Test',
+            prenom: 'User',
+            email: email,
+            role: 'gestionnaire' as const,
+            mot_de_passe: '',
+            statut: 'actif',
+            date_creation: new Date().toISOString(),
+          };
+          dispatch({ type: 'LOGIN_SUCCESS', payload: basicUser });
+          return;
+        }
+
+        if (userData) {
+          dispatch({ type: 'LOGIN_SUCCESS', payload: userData });
+        } else {
+          // Create a basic user profile if none exists
+          const basicUser = {
+            id: authData.user.id,
+            nom: 'Test',
+            prenom: 'User',
+            email: email,
+            role: 'gestionnaire' as const,
+            mot_de_passe: '',
+            statut: 'actif',
+            date_creation: new Date().toISOString(),
+          };
+          dispatch({ type: 'LOGIN_SUCCESS', payload: basicUser });
+        }
+      }
     } catch (error) {
+      console.error('Login error:', error);
       dispatch({ type: 'LOGIN_FAILURE' });
       throw error;
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem('user');
+  const logout = async () => {
+    await auth.signOut();
     dispatch({ type: 'LOGOUT' });
   };
 
   useEffect(() => {
-    const savedUser = localStorage.getItem('user');
-    if (savedUser) {
+    // Check for existing Supabase session
+    const checkSession = async () => {
       try {
-        const user = JSON.parse(savedUser);
-        dispatch({ type: 'LOGIN_SUCCESS', payload: user });
+        const { user: authUser, error } = await auth.getCurrentUser();
+
+        if (error) {
+          dispatch({ type: 'SET_LOADING', payload: false });
+          return;
+        }
+
+        if (authUser) {
+          // Get user profile from our users table
+          const { data: userData, error: userError } = await api.getUserByEmail(authUser.email!);
+
+          if (userError || !userData) {
+            dispatch({ type: 'LOGIN_FAILURE' });
+          } else {
+            dispatch({ type: 'LOGIN_SUCCESS', payload: userData });
+          }
+        } else {
+          dispatch({ type: 'SET_LOADING', payload: false });
+        }
       } catch (error) {
-        localStorage.removeItem('user');
         dispatch({ type: 'LOGIN_FAILURE' });
       }
-    } else {
-      dispatch({ type: 'SET_LOADING', payload: false });
-    }
+    };
+
+    checkSession();
+
+    // Listen for auth state changes
+    const { data: { subscription } } = auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_OUT' || !session) {
+        dispatch({ type: 'LOGOUT' });
+      } else if (event === 'SIGNED_IN' && session.user) {
+        const { data: userData, error } = await api.getUserByEmail(session.user.email!);
+        if (userData && !error) {
+          dispatch({ type: 'LOGIN_SUCCESS', payload: userData });
+        }
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   return (
