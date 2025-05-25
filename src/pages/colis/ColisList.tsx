@@ -67,8 +67,8 @@ const mockColis: Colis[] = [
 
 export function ColisList() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
-  const [delivererFilter, setDelivererFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [delivererFilter, setDelivererFilter] = useState('all');
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -131,7 +131,7 @@ export function ColisList() {
               <SelectValue placeholder="Tous les statuts" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Tous les statuts</SelectItem>
+              <SelectItem value="all">Tous les statuts</SelectItem>
               <SelectItem value="En cours">En cours</SelectItem>
               <SelectItem value="Livré">Livré</SelectItem>
               <SelectItem value="Retourné">Retourné</SelectItem>
@@ -143,7 +143,7 @@ export function ColisList() {
               <SelectValue placeholder="Tous les livreurs" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Tous les livreurs</SelectItem>
+              <SelectItem value="all">Tous les livreurs</SelectItem>
               <SelectItem value="1">Martin Dupont</SelectItem>
               <SelectItem value="2">fr eg</SelectItem>
               <SelectItem value="3">Sophie Laurente</SelectItem>

@@ -1,15 +1,15 @@
 
 import React from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
 import { 
   Package, 
-  Users, 
   Truck, 
+  Users, 
   Bell, 
   Settings, 
-  User,
+  Building2, 
+  UsersRound,
   FileText,
-  Calendar
+  BarChart3
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import {
@@ -21,162 +21,187 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  useSidebar,
+  SidebarHeader,
+  SidebarFooter,
 } from '@/components/ui/sidebar';
-
-const navigationItems = [
-  {
-    title: 'Accueil',
-    url: '/',
-    icon: Calendar,
-    roles: ['admin', 'gestionnaire', 'livreur'],
-  },
-  {
-    title: 'Colis',
-    icon: Package,
-    roles: ['admin', 'gestionnaire', 'livreur'],
-    subItems: [
-      { title: 'Liste Colis', url: '/colis', roles: ['admin', 'gestionnaire', 'livreur'] },
-      { title: 'Colis Livrés', url: '/colis/livres', roles: ['admin', 'gestionnaire', 'livreur'] },
-      { title: 'Colis Refusés', url: '/colis/refuses', roles: ['admin', 'gestionnaire'] },
-      { title: 'Colis Annulés', url: '/colis/annules', roles: ['admin', 'gestionnaire'] },
-    ],
-  },
-  {
-    title: 'Bons',
-    url: '/bons',
-    icon: FileText,
-    roles: ['admin', 'gestionnaire'],
-  },
-  {
-    title: 'Clients',
-    url: '/clients',
-    icon: Users,
-    roles: ['admin', 'gestionnaire'],
-  },
-  {
-    title: 'Entreprises',
-    url: '/entreprises',
-    icon: Package,
-    roles: ['admin', 'gestionnaire'],
-  },
-  {
-    title: 'Livreurs',
-    url: '/livreurs',
-    icon: Truck,
-    roles: ['admin', 'gestionnaire'],
-  },
-  {
-    title: 'Notifications',
-    url: '/notifications',
-    icon: Bell,
-    roles: ['admin', 'gestionnaire', 'livreur'],
-  },
-  {
-    title: 'Utilisateurs',
-    url: '/utilisateurs',
-    icon: User,
-    roles: ['admin'],
-  },
-  {
-    title: 'Paramètres',
-    url: '/parametres',
-    icon: Settings,
-    roles: ['admin'],
-  },
-];
+import { useLocation, Link } from 'react-router-dom';
 
 export function AppSidebar() {
   const { state } = useAuth();
-  const { collapsed } = useSidebar();
   const location = useLocation();
 
-  const filteredNavigation = navigationItems.filter(item => 
-    item.roles.includes(state.user?.role || '')
-  );
+  const navigationItems = [
+    {
+      title: 'Dashboard',
+      url: '/',
+      icon: BarChart3,
+      roles: ['admin', 'gestionnaire', 'livreur']
+    },
+    {
+      title: 'Colis',
+      icon: Package,
+      roles: ['admin', 'gestionnaire', 'livreur'],
+      items: [
+        { title: 'Tous les colis', url: '/colis' },
+        { title: 'Colis livrés', url: '/colis/livres' },
+        { title: 'Colis refusés', url: '/colis/refuses', roles: ['admin', 'gestionnaire'] },
+        { title: 'Colis annulés', url: '/colis/annules', roles: ['admin', 'gestionnaire'] },
+      ]
+    },
+    {
+      title: 'Bons de livraison',
+      url: '/bons',
+      icon: FileText,
+      roles: ['admin', 'gestionnaire']
+    },
+    {
+      title: 'Clients',
+      url: '/clients',
+      icon: Users,
+      roles: ['admin', 'gestionnaire']
+    },
+    {
+      title: 'Entreprises',
+      url: '/entreprises',
+      icon: Building2,
+      roles: ['admin', 'gestionnaire']
+    },
+    {
+      title: 'Livreurs',
+      url: '/livreurs',
+      icon: Truck,
+      roles: ['admin', 'gestionnaire']
+    },
+    {
+      title: 'Notifications',
+      url: '/notifications',
+      icon: Bell,
+      roles: ['admin', 'gestionnaire', 'livreur']
+    },
+  ];
 
-  const isActive = (path: string) => location.pathname === path;
-  const isParentActive = (item: any) => {
-    if (item.url && isActive(item.url)) return true;
-    if (item.subItems) {
-      return item.subItems.some((subItem: any) => isActive(subItem.url));
+  const adminItems = [
+    {
+      title: 'Utilisateurs',
+      url: '/utilisateurs',
+      icon: UsersRound,
+      roles: ['admin']
+    },
+    {
+      title: 'Paramètres',
+      url: '/parametres',
+      icon: Settings,
+      roles: ['admin']
+    },
+  ];
+
+  const hasAccess = (itemRoles?: string[]) => {
+    if (!itemRoles) return true;
+    return itemRoles.includes(state.user?.role || '');
+  };
+
+  const isActive = (url: string) => {
+    if (url === '/') {
+      return location.pathname === '/';
     }
-    return false;
+    return location.pathname.startsWith(url);
   };
 
   return (
-    <Sidebar className={collapsed ? "w-14" : "w-64"} collapsible>
-      <div className="p-4 border-b">
-        <h1 className={`font-bold text-xl text-blue-600 ${collapsed ? 'hidden' : 'block'}`}>
-          LogiTrack
-        </h1>
-        {collapsed && (
-          <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center">
+    <Sidebar>
+      <SidebarHeader className="border-b p-4">
+        <div className="flex items-center space-x-2">
+          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
             <span className="text-white font-bold text-sm">LT</span>
           </div>
-        )}
-      </div>
+          <div>
+            <h2 className="font-bold text-lg text-blue-600">LogiTrack</h2>
+            <p className="text-xs text-gray-500">Gestion des livraisons</p>
+          </div>
+        </div>
+      </SidebarHeader>
 
-      <SidebarContent className="p-2">
+      <SidebarContent>
         <SidebarGroup>
+          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {filteredNavigation.map((item) => (
-                <div key={item.title}>
-                  {item.subItems ? (
-                    <div className="mb-2">
-                      <SidebarGroupLabel className="px-3 py-2 text-sm font-medium text-gray-900 flex items-center">
-                        <item.icon className="mr-3 h-4 w-4" />
-                        {!collapsed && item.title}
-                      </SidebarGroupLabel>
-                      <div className="ml-4 space-y-1">
-                        {item.subItems
-                          .filter(subItem => subItem.roles.includes(state.user?.role || ''))
-                          .map((subItem) => (
-                            <SidebarMenuItem key={subItem.url}>
-                              <SidebarMenuButton asChild>
-                                <NavLink
-                                  to={subItem.url}
-                                  className={({ isActive }) =>
-                                    `flex items-center px-3 py-2 rounded-md text-sm transition-colors ${
-                                      isActive
-                                        ? 'bg-blue-100 text-blue-700 font-medium'
-                                        : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-                                    }`
-                                  }
-                                >
-                                  <span className="ml-6">{!collapsed && subItem.title}</span>
-                                </NavLink>
+              {navigationItems.map((item) => {
+                if (!hasAccess(item.roles)) return null;
+
+                if (item.items) {
+                  return (
+                    <SidebarMenuItem key={item.title}>
+                      <div className="px-2 py-1">
+                        <div className="flex items-center space-x-2 text-sm font-medium text-gray-700 mb-2">
+                          <item.icon className="h-4 w-4" />
+                          <span>{item.title}</span>
+                        </div>
+                        <div className="ml-6 space-y-1">
+                          {item.items.map((subItem) => {
+                            if (subItem.roles && !hasAccess(subItem.roles)) return null;
+                            return (
+                              <SidebarMenuButton
+                                key={subItem.url}
+                                asChild
+                                isActive={isActive(subItem.url)}
+                                className="text-sm"
+                              >
+                                <Link to={subItem.url}>
+                                  {subItem.title}
+                                </Link>
                               </SidebarMenuButton>
-                            </SidebarMenuItem>
-                          ))}
+                            );
+                          })}
+                        </div>
                       </div>
-                    </div>
-                  ) : (
-                    <SidebarMenuItem>
-                      <SidebarMenuButton asChild>
-                        <NavLink
-                          to={item.url!}
-                          className={({ isActive }) =>
-                            `flex items-center px-3 py-2 rounded-md text-sm transition-colors ${
-                              isActive
-                                ? 'bg-blue-100 text-blue-700 font-medium'
-                                : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-                            }`
-                          }
-                        >
-                          <item.icon className="mr-3 h-4 w-4" />
-                          {!collapsed && item.title}
-                        </NavLink>
-                      </SidebarMenuButton>
                     </SidebarMenuItem>
-                  )}
-                </div>
-              ))}
+                  );
+                }
+
+                return (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild isActive={isActive(item.url!)}>
+                      <Link to={item.url!}>
+                        <item.icon />
+                        <span>{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        {state.user?.role === 'admin' && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Administration</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {adminItems.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild isActive={isActive(item.url)}>
+                      <Link to={item.url}>
+                        <item.icon />
+                        <span>{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
+
+      <SidebarFooter className="border-t p-4">
+        <div className="text-xs text-gray-500">
+          <p>Connecté en tant que:</p>
+          <p className="font-medium text-gray-700">{state.user?.nom}</p>
+          <p className="capitalize">{state.user?.role}</p>
+        </div>
+      </SidebarFooter>
     </Sidebar>
   );
 }
