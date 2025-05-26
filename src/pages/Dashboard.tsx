@@ -55,36 +55,36 @@ export function Dashboard() {
       value: loading ? '...' : stats.enAttente.toString(),
       description: 'Colis en attente',
       icon: Clock,
-      color: 'text-yellow-600',
-      borderColor: 'border-l-yellow-400',
-      bgColor: 'bg-yellow-50',
+      color: 'text-yellow-600 dark:text-[rgb(113,63,18)]',
+      borderColor: 'border-l-yellow-400 dark:border-l-[rgb(113,63,18)]',
+      bgColor: 'bg-yellow-50 dark:bg-[hsl(222.2,84%,4.9%)]',
     },
     {
       title: 'En traitement',
       value: loading ? '...' : stats.enTraitement.toString(),
       description: 'Pris en charge / En cours',
       icon: Truck,
-      color: 'text-blue-600',
-      borderColor: 'border-l-blue-400',
-      bgColor: 'bg-blue-50',
+      color: 'text-blue-600 dark:text-[rgb(30,58,138)]',
+      borderColor: 'border-l-blue-400 dark:border-l-[rgb(30,58,138)]',
+      bgColor: 'bg-blue-50 dark:bg-[hsl(222.2,84%,4.9%)]',
     },
     {
       title: 'Livrés',
       value: loading ? '...' : stats.livres.toString(),
       description: 'Colis livrés',
       icon: CheckCircle,
-      color: 'text-green-600',
-      borderColor: 'border-l-green-400',
-      bgColor: 'bg-green-50',
+      color: 'text-green-600 dark:text-[rgb(20,83,45)]',
+      borderColor: 'border-l-green-400 dark:border-l-[rgb(20,83,45)]',
+      bgColor: 'bg-green-50 dark:bg-[hsl(222.2,84%,4.9%)]',
     },
     {
       title: 'Retournés',
       value: loading ? '...' : stats.retournes.toString(),
       description: 'Colis retournés',
       icon: RotateCcw,
-      color: 'text-red-600',
-      borderColor: 'border-l-red-400',
-      bgColor: 'bg-red-50',
+      color: 'text-red-600 dark:text-[rgb(127,29,29)]',
+      borderColor: 'border-l-red-400 dark:border-l-[rgb(127,29,29)]',
+      bgColor: 'bg-red-50 dark:bg-[hsl(222.2,84%,4.9%)]',
     },
   ];
 
@@ -101,7 +101,7 @@ export function Dashboard() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header with date */}
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
@@ -113,30 +113,30 @@ export function Dashboard() {
       </div>
 
       {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         {statsCards.map((stat) => (
           <Card key={stat.title} className={`${stat.borderColor} border-l-4 ${stat.bgColor}`}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">
+              <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-300">
                 {stat.title}
               </CardTitle>
               <stat.icon className={`h-5 w-5 ${stat.color}`} />
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-gray-900">{stat.value}</div>
-              <p className="text-xs text-gray-500 mt-1">{stat.description}</p>
+              <div className="text-3xl font-bold text-gray-900 dark:text-white">{stat.value}</div>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{stat.description}</p>
             </CardContent>
           </Card>
         ))}
       </div>
 
       {/* Three Column Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         {/* Left Column - Colis par statut */}
-        <Card>
+        <Card className="md:col-span-2 lg:col-span-1">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <RefreshCw className="h-5 w-5 text-blue-600" />
+            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+              <RefreshCw className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
               Colis par statut
             </CardTitle>
           </CardHeader>
@@ -180,7 +180,7 @@ export function Dashboard() {
         {/* Center Column - Activité récente */}
         <Card>
           <CardHeader>
-            <CardTitle>Activité récente</CardTitle>
+            <CardTitle className="text-base sm:text-lg">Activité récente</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -217,8 +217,8 @@ export function Dashboard() {
         {/* Right Column - Aperçu */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <RefreshCw className="h-5 w-5 text-blue-600" />
+            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+              <RefreshCw className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
               Aperçu
             </CardTitle>
           </CardHeader>

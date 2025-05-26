@@ -2,7 +2,8 @@
 import React from 'react';
 import { Header } from './Header';
 import { AppSidebar } from './Sidebar';
-import { SidebarProvider } from '@/components/ui/sidebar';
+import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
+import { ScrollToTop } from '@/components/ui/scroll-to-top';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -11,15 +12,14 @@ interface LayoutProps {
 export function Layout({ children }: LayoutProps) {
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-gray-50">
-        <AppSidebar />
-        <div className="flex-1 flex flex-col">
-          <Header />
-          <main className="flex-1 p-6">
-            {children}
-          </main>
-        </div>
-      </div>
+      <AppSidebar />
+      <SidebarInset>
+        <Header />
+        <main className="flex-1 p-4 sm:p-6 bg-background">
+          {children}
+        </main>
+        <ScrollToTop />
+      </SidebarInset>
     </SidebarProvider>
   );
 }

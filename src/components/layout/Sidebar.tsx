@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Package,
   Truck,
@@ -12,6 +13,7 @@ import {
   ChevronDown,
   ChevronUp,
   Moon,
+  Sun,
   ChevronLeft,
   CheckCircle,
   XCircle,
@@ -29,16 +31,52 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarHeader,
-  SidebarFooter,
+  useSidebar,
 } from '@/components/ui/sidebar';
 import { useLocation, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 export function AppSidebar() {
   const location = useLocation();
-  const [expandedItems, setExpandedItems] = useState<string[]>(['Colis']); // Start with Colis expanded
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const { state, toggleSidebar } = useSidebar();
+  const isMobile = useIsMobile();
+  const [expandedItems, setExpandedItems] = useState<string[]>([]);
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [tooltip, setTooltip] = useState<{ text: string; x: number; y: number } | null>(null);
+  const [dropdownPopup, setDropdownPopup] = useState<{ items: any[]; x: number; y: number } | null>(null);
+
+  // CSS variables will handle the styling properly
+
+  const isCollapsed = state === 'collapsed';
+
+  // Auto-expand dropdown if current page belongs to it, or close all if on regular page
+  useEffect(() => {
+    if (!isCollapsed) {
+      // Find which dropdown contains the current page
+      const activeDropdown = navigationItems.find(item =>
+        item.items && item.items.some(subItem => location.pathname === subItem.url)
+      );
+
+      if (activeDropdown) {
+        // Current page is in a dropdown - expand only that dropdown
+        setExpandedItems(prev => {
+          if (!prev.includes(activeDropdown.title)) {
+            return [activeDropdown.title];
+          }
+          return prev; // Don't change if already correct
+        });
+      } else {
+        // Current page is not in any dropdown - close all dropdowns
+        const isRegularPage = navigationItems.some(item =>
+          item.url && location.pathname === item.url
+        );
+        if (isRegularPage) {
+          setExpandedItems(prev => prev.length > 0 ? [] : prev);
+        }
+      }
+    }
+  }, [location.pathname, isCollapsed]); // Removed expandedItems from dependencies
 
   const navigationItems = [
     {
@@ -134,11 +172,15 @@ export function AppSidebar() {
   };
 
   const toggleExpanded = (itemTitle: string) => {
-    setExpandedItems(prev =>
-      prev.includes(itemTitle)
-        ? prev.filter(item => item !== itemTitle)
-        : [...prev, itemTitle]
-    );
+    setExpandedItems(prev => {
+      if (prev.includes(itemTitle)) {
+        // If clicking on already expanded item, close it
+        return prev.filter(item => item !== itemTitle);
+      } else {
+        // If clicking on collapsed item, close all others and open this one
+        return [itemTitle];
+      }
+    });
   };
 
   const isExpanded = (itemTitle: string) => {
@@ -146,7 +188,7 @@ export function AppSidebar() {
   };
 
   const toggleCollapse = () => {
-    setIsCollapsed(!isCollapsed);
+    toggleSidebar();
   };
 
   const toggleDarkMode = () => {
@@ -159,27 +201,70 @@ export function AppSidebar() {
     }
   };
 
+  const handleMouseEnter = (event: React.MouseEvent, text: string) => {
+    if (!isCollapsed) return;
+
+    const rect = event.currentTarget.getBoundingClientRect();
+    setTooltip({
+      text,
+      x: rect.right + 8, // 8px spacing from the icon (reduced from 20px)
+      y: rect.top + rect.height / 2 // Center vertically
+    });
+  };
+
+  const handleMouseLeave = () => {
+    setTooltip(null);
+  };
+
+  const handleDropdownClick = (event: React.MouseEvent, items: any[]) => {
+    if (!isCollapsed) return;
+
+    const rect = event.currentTarget.getBoundingClientRect();
+    setDropdownPopup({
+      items,
+      x: rect.right + 8, // 8px spacing from the icon (same as tooltip)
+      y: rect.top
+    });
+    // Hide tooltip when showing dropdown
+    setTooltip(null);
+  };
+
+  const handleDropdownClose = () => {
+    setDropdownPopup(null);
+  };
+
+  const handleLinkClick = () => {
+    // Close sidebar on mobile when a link is clicked
+    if (isMobile && state === 'expanded') {
+      toggleSidebar();
+    }
+  };
+
   return (
-    <Sidebar className={`${isCollapsed ? 'w-16' : 'w-64'} bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 transition-all duration-300`}>
+    <>
+      <Sidebar
+        collapsible="icon"
+        className={`bg-sidebar border-r border-sidebar-border ${isCollapsed ? 'sidebar-collapsed' : ''}`}
+      >
       {/* Header */}
-      <SidebarHeader className="p-4 border-b border-gray-100 dark:border-gray-700">
-        <div className="flex items-center justify-between">
+      <SidebarHeader className="h-16 px-4 border-b border-sidebar-border">
+        <div className={`h-full flex items-center w-full ${!isCollapsed ? 'justify-between' : 'justify-center'}`}>
           {!isCollapsed && (
-            <h1 className="text-xl font-bold text-gray-900 dark:text-white">LogiTrack</h1>
+            <h1 className="text-xl font-bold text-sidebar-foreground flex items-center">
+              LogiTrack
+            </h1>
           )}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 hover:bg-gray-100 dark:hover:bg-gray-800"
+          <div
+            className="flex items-center justify-center p-2 rounded-lg transition-colors cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
             onClick={toggleCollapse}
           >
-            <ChevronLeft className={`h-4 w-4 transition-transform duration-300 ${isCollapsed ? 'rotate-180' : ''}`} />
-          </Button>
+            <ChevronLeft className={`h-4 w-4 transition-transform duration-300 text-sidebar-foreground ${isCollapsed ? 'rotate-180' : ''}`} />
+          </div>
         </div>
       </SidebarHeader>
 
       {/* Navigation */}
-      <SidebarContent className="p-4">
+      <SidebarContent className={isCollapsed ? "p-2" : "p-4"}>
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu className="space-y-1">
@@ -194,42 +279,89 @@ export function AppSidebar() {
                   <SidebarMenuItem key={item.title}>
                     {item.url ? (
                       // Single menu item
-                      <Link to={item.url}>
-                        <div
-                          className={`w-full flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors cursor-pointer ${
-                            isCollapsed ? 'justify-center' : 'justify-start space-x-3'
-                          } ${
-                            isItemActive
-                              ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm'
-                              : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
-                          }`}
-                        >
-                          <item.icon className="h-5 w-5 flex-shrink-0" />
-                          {!isCollapsed && <span>{item.title}</span>}
-                        </div>
-                      </Link>
+                      <div className={`relative ${isCollapsed ? 'flex justify-center' : ''}`}>
+                        <Link to={item.url} onClick={handleLinkClick}>
+                          <div
+                            className={`flex items-center text-sm font-medium rounded-lg transition-colors cursor-pointer ${
+                              !isCollapsed
+                                ? 'w-full justify-start space-x-3 px-3 py-2.5'
+                                : 'w-10 h-10 justify-center'
+                            } ${
+                              isItemActive
+                                ? 'bg-sidebar-primary text-sidebar-primary-foreground active-item'
+                                : 'text-sidebar-foreground hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-sidebar-foreground hover-item'
+                            }`}
+
+                            onMouseEnter={(e) => handleMouseEnter(e, item.title)}
+                            onMouseLeave={handleMouseLeave}
+                          >
+                            <item.icon
+                              className={`h-5 w-5 flex-shrink-0 ${
+                                isItemActive ? 'text-sidebar-primary-foreground' : 'text-sidebar-foreground'
+                              }`}
+                            />
+                            {!isCollapsed && <span>{item.title}</span>}
+                          </div>
+                        </Link>
+                      </div>
                     ) : (
                       // Menu item with dropdown
                       <div className="space-y-1">
-                        <Button
-                          variant="ghost"
-                          onClick={() => !isCollapsed && toggleExpanded(item.title)}
-                          className={`w-full px-3 py-2.5 text-sm font-medium rounded-lg transition-colors ${
-                            isCollapsed ? 'justify-center' : 'justify-between'
-                          } ${
-                            hasActiveChild
-                              ? 'bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300'
-                              : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
-                          }`}
-                        >
-                          <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'space-x-3'}`}>
-                            <item.icon className="h-5 w-5 flex-shrink-0" />
-                            {!isCollapsed && <span>{item.title}</span>}
-                          </div>
-                          {!isCollapsed && item.hasDropdown && (
-                            expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
+                        <div className={`relative ${isCollapsed ? 'flex justify-center' : ''}`}>
+                          {isCollapsed ? (
+                            // When collapsed, show dropdown popup on click - MATCH REGULAR MENU STRUCTURE EXACTLY
+                            <div onClick={(e) => handleDropdownClick(e, item.items || [])}>
+                              <div
+                                className={`flex items-center text-sm font-medium rounded-lg transition-colors cursor-pointer ${
+                                  !isCollapsed
+                                    ? 'w-full justify-start space-x-3 px-3 py-2.5'
+                                    : 'w-10 h-10 justify-center'
+                                } ${
+                                  hasActiveChild
+                                    ? 'bg-sidebar-primary text-sidebar-primary-foreground active-item'
+                                    : 'text-sidebar-foreground hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-sidebar-foreground hover-item'
+                                }`}
+                                onMouseEnter={(e) => handleMouseEnter(e, item.title)}
+                                onMouseLeave={handleMouseLeave}
+                              >
+                                <item.icon
+                                  className={`h-5 w-5 flex-shrink-0 ${
+                                    hasActiveChild ? 'text-sidebar-primary-foreground' : 'text-sidebar-foreground'
+                                  }`}
+                                />
+                                {!isCollapsed && <span>{item.title}</span>}
+                              </div>
+                            </div>
+                          ) : (
+                            // When expanded, keep original dropdown button
+                            <button
+                              onClick={() => toggleExpanded(item.title)}
+                              className={`flex items-center text-sm font-medium rounded-lg transition-colors cursor-pointer w-full justify-between px-3 py-2.5 ${
+                                hasActiveChild
+                                  ? 'bg-sidebar-primary text-sidebar-primary-foreground active-item'
+                                  : 'text-sidebar-foreground hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-sidebar-foreground hover-item'
+                              }`}
+                              onMouseEnter={(e) => handleMouseEnter(e, item.title)}
+                              onMouseLeave={handleMouseLeave}
+                            >
+                              <>
+                                <div className="flex items-center space-x-3">
+                                  <item.icon
+                                    className={`h-5 w-5 flex-shrink-0 ${
+                                      hasActiveChild ? 'text-sidebar-primary-foreground' : 'text-sidebar-foreground'
+                                    }`}
+                                  />
+                                  <span>{item.title}</span>
+                                </div>
+                                {item.hasDropdown && (
+                                  <div>
+                                    {expanded ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+                                  </div>
+                                )}
+                              </>
+                            </button>
                           )}
-                        </Button>
+                        </div>
 
                         {/* Dropdown items */}
                         {!isCollapsed && expanded && item.items && (
@@ -239,12 +371,12 @@ export function AppSidebar() {
                               const isSubItemActive = isActive(subItem.url);
 
                               return (
-                                <Link key={subItem.url} to={subItem.url}>
+                                <Link key={subItem.url} to={subItem.url} onClick={handleLinkClick} className="block">
                                   <div
-                                    className={`w-full flex items-center space-x-3 px-3 py-2.5 text-sm rounded-lg transition-colors cursor-pointer ${
+                                    className={`w-full flex items-center space-x-3 px-3 py-1.5 text-sm rounded-lg transition-colors cursor-pointer ${
                                       isSubItemActive
-                                        ? 'bg-blue-100 dark:bg-blue-900 text-blue-900 dark:text-blue-100 font-medium border-l-2 border-blue-500'
-                                        : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-200'
+                                        ? 'bg-black/20 dark:bg-blue-900 text-black dark:text-blue-100 font-medium border-l-4 border-black dark:border-sidebar-ring shadow-sm'
+                                        : 'text-sidebar-foreground hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-sidebar-foreground'
                                     }`}
                                   >
                                     <subItem.icon className="h-4 w-4" />
@@ -265,24 +397,86 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      {/* Footer */}
-      <SidebarFooter className="p-4 border-t border-gray-100 dark:border-gray-700">
-        <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
-          {!isCollapsed && (
-            <div className="flex items-center justify-center w-10 h-10 bg-gray-800 dark:bg-gray-600 text-white rounded-full">
-              <span className="text-sm font-medium">N</span>
-            </div>
+      {/* Theme Toggle Button - Fixed at bottom */}
+      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-10 w-10 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+          onClick={toggleDarkMode}
+        >
+          {isDarkMode ? (
+            <Sun className="h-5 w-5 transition-colors text-white" />
+          ) : (
+            <Moon className="h-5 w-5 transition-colors text-sidebar-foreground" />
           )}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 hover:bg-gray-100 dark:hover:bg-gray-800"
-            onClick={toggleDarkMode}
-          >
-            <Moon className={`h-4 w-4 transition-colors ${isDarkMode ? 'text-yellow-500' : 'text-gray-600 dark:text-gray-400'}`} />
-          </Button>
-        </div>
-      </SidebarFooter>
+        </Button>
+      </div>
     </Sidebar>
+
+    {/* Portal-based Tooltip */}
+    {tooltip && createPortal(
+      <div
+        className="fixed px-2 py-1 bg-black text-white text-xs rounded shadow-lg pointer-events-none whitespace-nowrap"
+        style={{
+          left: tooltip.x,
+          top: tooltip.y,
+          transform: 'translateY(-50%)',
+          zIndex: 2147483647
+        }}
+      >
+        {tooltip.text}
+      </div>,
+      document.body
+    )}
+
+    {/* Portal-based Dropdown Popup */}
+    {dropdownPopup && createPortal(
+      <>
+        {/* Backdrop to close dropdown when clicking outside */}
+        <div
+          className="fixed inset-0 z-[2147483646]"
+          onClick={handleDropdownClose}
+        />
+        {/* Dropdown menu */}
+        <div
+          className="fixed bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg py-2 min-w-[180px] z-[2147483647]"
+          style={{
+            left: dropdownPopup.x,
+            top: dropdownPopup.y
+          }}
+        >
+          {dropdownPopup.items.map((subItem) => {
+            if (subItem.roles && !hasAccess(subItem.roles)) return null;
+            const isSubItemActive = isActive(subItem.url);
+
+            return (
+              <Link
+                key={subItem.url}
+                to={subItem.url}
+                onClick={() => {
+                  handleDropdownClose();
+                  handleLinkClick();
+                }}
+                className="block"
+              >
+                <div
+                  className={`flex items-center space-x-3 px-4 py-2.5 text-sm transition-colors cursor-pointer ${
+                    isSubItemActive
+                      ? 'bg-sidebar-primary text-sidebar-primary-foreground font-medium'
+                      : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
+                  }`}
+                >
+                  <subItem.icon className="h-4 w-4 flex-shrink-0" />
+                  <span>{subItem.title}</span>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+      </>,
+      document.body
+    )}
+    </>
   );
 }
