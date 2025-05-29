@@ -264,7 +264,7 @@ export function AppSidebar() {
       </SidebarHeader>
 
       {/* Navigation */}
-      <SidebarContent className={isCollapsed ? "p-2" : "p-4"}>
+      <SidebarContent className={isCollapsed ? "p-2" : "p-2"}>
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu className="space-y-1">
@@ -282,9 +282,9 @@ export function AppSidebar() {
                       <div className={`relative ${isCollapsed ? 'flex justify-center' : ''}`}>
                         <Link to={item.url} onClick={handleLinkClick}>
                           <div
-                            className={`flex items-center text-sm font-medium rounded-lg transition-colors cursor-pointer ${
+                            className={`flex items-center text-sm font-medium rounded-md transition-colors cursor-pointer ${
                               !isCollapsed
-                                ? 'w-full justify-start space-x-3 px-3 py-2.5'
+                                ? 'w-full justify-start space-x-2 px-3 py-2.5'
                                 : 'w-10 h-10 justify-center'
                             } ${
                               isItemActive
@@ -312,9 +312,9 @@ export function AppSidebar() {
                             // When collapsed, show dropdown popup on click - MATCH REGULAR MENU STRUCTURE EXACTLY
                             <div onClick={(e) => handleDropdownClick(e, item.items || [])}>
                               <div
-                                className={`flex items-center text-sm font-medium rounded-lg transition-colors cursor-pointer ${
+                                className={`flex items-center text-sm font-medium rounded-md transition-colors cursor-pointer ${
                                   !isCollapsed
-                                    ? 'w-full justify-start space-x-3 px-3 py-2.5'
+                                    ? 'w-full justify-start space-x-2 px-3 py-2.5'
                                     : 'w-10 h-10 justify-center'
                                 } ${
                                   hasActiveChild
@@ -336,7 +336,7 @@ export function AppSidebar() {
                             // When expanded, keep original dropdown button
                             <button
                               onClick={() => toggleExpanded(item.title)}
-                              className={`flex items-center text-sm font-medium rounded-lg transition-colors cursor-pointer w-full justify-between px-3 py-2.5 ${
+                              className={`flex items-center text-sm font-medium rounded-md transition-colors cursor-pointer w-full justify-between px-3 py-2.5 ${
                                 hasActiveChild
                                   ? 'bg-sidebar-primary text-sidebar-primary-foreground active-item'
                                   : 'text-sidebar-foreground hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-sidebar-foreground hover-item'
@@ -345,7 +345,7 @@ export function AppSidebar() {
                               onMouseLeave={handleMouseLeave}
                             >
                               <>
-                                <div className="flex items-center space-x-3">
+                                <div className="flex items-center space-x-2">
                                   <item.icon
                                     className={`h-5 w-5 flex-shrink-0 ${
                                       hasActiveChild ? 'text-sidebar-primary-foreground' : 'text-sidebar-foreground'
@@ -373,7 +373,7 @@ export function AppSidebar() {
                               return (
                                 <Link key={subItem.url} to={subItem.url} onClick={handleLinkClick} className="block">
                                   <div
-                                    className={`w-full flex items-center space-x-3 px-3 py-1.5 text-sm rounded-lg transition-colors cursor-pointer ${
+                                    className={`w-full flex items-center space-x-2 px-3 py-1.5 text-sm rounded-md transition-colors cursor-pointer ${
                                       isSubItemActive
                                         ? 'bg-black/20 dark:bg-blue-900 text-black dark:text-blue-100 font-medium border-l-4 border-black dark:border-sidebar-ring shadow-sm'
                                         : 'text-sidebar-foreground hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-sidebar-foreground'
@@ -402,7 +402,7 @@ export function AppSidebar() {
         <Button
           variant="ghost"
           size="icon"
-          className="h-10 w-10 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+          className="h-10 w-10 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
           onClick={toggleDarkMode}
         >
           {isDarkMode ? (
@@ -461,7 +461,7 @@ export function AppSidebar() {
                 className="block"
               >
                 <div
-                  className={`flex items-center space-x-3 px-4 py-2.5 text-sm transition-colors cursor-pointer ${
+                  className={`flex items-center space-x-2 px-4 py-2.5 text-sm transition-colors cursor-pointer ${
                     isSubItemActive
                       ? 'bg-sidebar-primary text-sidebar-primary-foreground font-medium'
                       : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'

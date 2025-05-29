@@ -22,7 +22,7 @@ export interface Client {
   nom: string;
   telephone?: string;
   email?: string;
-  adre?: string;
+  adresse?: string;
   entreprise?: string;
   created_at: string;
   description?: string;
@@ -32,7 +32,7 @@ export interface Client {
 export interface Entreprise {
   id: string;
   nom: string;
-  adre?: string;
+  adresse?: string;
   contact?: string;
   created_at: string;
   description?: string;
@@ -43,14 +43,14 @@ export interface Entreprise {
 export interface Colis {
   id: string;
   client_id: string;
-  entreprise_id: string;
+  entreprise_id?: string;
   livreur_id?: string;
   statut: string;
   date_creation: string;
   date_mise_a_jour?: string;
   notes?: string;
-  prix?: number;
-  frais?: number;
+  prix: number;
+  frais: number;
   client?: Client;
   entreprise?: Entreprise;
   livreur?: User;
@@ -73,6 +73,10 @@ export interface HistoriqueColis {
   date: string;
   statut: string;
   utilisateur?: string;
+  user?: {
+    nom: string;
+    prenom?: string;
+  };
 }
 
 export interface Notification {

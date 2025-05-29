@@ -6,8 +6,8 @@ export function Retour() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Retour</h1>
-        <p className="text-gray-600">Gestion des bons de retour</p>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Retour</h1>
+        <p className="text-gray-600 dark:text-gray-400">Gestion des bons de retour</p>
       </div>
 
       <Card>
@@ -21,8 +21,8 @@ export function Retour() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="text-center py-8 text-gray-500">
-            <RotateCcw className="h-12 w-12 mx-auto mb-4 text-orange-300" />
+          <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+            <RotateCcw className="h-12 w-12 mx-auto mb-4 text-orange-300 dark:text-orange-400" />
             <p>Aucun bon de retour pour le moment</p>
           </div>
         </CardContent>

@@ -19,8 +19,8 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-50 h-16 border-b bg-background border-border flex items-center px-4 sm:px-6 transition-colors">
-      {/* Mobile Layout */}
-      <div className="flex items-center justify-between w-full sm:hidden">
+      {/* Mobile/Tablet Layout */}
+      <div className="flex items-center justify-between w-full md:hidden">
         {/* Left side - Hamburger and Search */}
         <div className="flex items-center space-x-6">
           <button
@@ -70,9 +70,9 @@ export function Header() {
         </div>
       </div>
 
-      {/* Mobile Search Overlay - Below Header */}
+      {/* Mobile/Tablet Search Overlay - Below Header */}
       {showMobileSearch && (
-        <div className="absolute top-16 left-0 right-0 bg-background p-4 sm:hidden z-40">
+        <div className="absolute top-16 left-0 right-0 bg-background p-4 md:hidden z-40">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 h-4 w-4" />
             <Input
@@ -92,7 +92,7 @@ export function Header() {
       )}
 
       {/* Desktop Layout */}
-      <div className="hidden sm:flex items-center justify-between w-full">
+      <div className="hidden md:flex items-center justify-between w-full">
         <div className="flex items-center">
           <div className="relative w-80 sm:w-96">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 h-4 w-4" />

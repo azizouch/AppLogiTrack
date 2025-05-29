@@ -6,8 +6,8 @@ export function Distribution() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Distribution</h1>
-        <p className="text-gray-600">Gestion des bons de distribution</p>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Distribution</h1>
+        <p className="text-gray-600 dark:text-gray-400">Gestion des bons de distribution</p>
       </div>
 
       <Card>
@@ -21,8 +21,8 @@ export function Distribution() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="text-center py-8 text-gray-500">
-            <FileText className="h-12 w-12 mx-auto mb-4 text-blue-300" />
+          <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+            <FileText className="h-12 w-12 mx-auto mb-4 text-blue-300 dark:text-blue-400" />
             <p>Aucun bon de distribution pour le moment</p>
           </div>
         </CardContent>

@@ -6,8 +6,8 @@ export function ColisRefuses() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Colis Refusés</h1>
-        <p className="text-gray-600">Liste des colis qui ont été refusés par les destinataires</p>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Colis Refusés</h1>
+        <p className="text-gray-600 dark:text-gray-400">Liste des colis qui ont été refusés par les destinataires</p>
       </div>
 
       <Card>
@@ -21,8 +21,8 @@ export function ColisRefuses() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="text-center py-8 text-gray-500">
-            <XCircle className="h-12 w-12 mx-auto mb-4 text-red-300" />
+          <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+            <XCircle className="h-12 w-12 mx-auto mb-4 text-red-300 dark:text-red-400" />
             <p>Aucun colis refusé pour le moment</p>
           </div>
         </CardContent>
