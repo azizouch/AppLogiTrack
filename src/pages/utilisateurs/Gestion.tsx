@@ -27,7 +27,7 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { TablePagination } from '@/components/ui/table-pagination';
-import { Filter, Search, UserPlus, Settings, Edit, Trash2, X } from 'lucide-react';
+import { Filter, Search, UserPlus, ShieldCheck, Edit, Trash2, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { api } from '@/lib/supabase';
 
@@ -345,7 +345,7 @@ export function Gestion() {
   const hasActiveFilters = searchTerm || roleFilter !== 'all' || statusFilter !== 'all';
 
   return (
-    <div className="space-y-6 bg-white dark:bg-gray-900 min-h-screen text-gray-900 dark:text-white p-6">
+    <div className="space-y-6 bg-white dark:bg-gray-900 min-h-screen text-gray-900 dark:text-white">
       {/* Header */}
       <div className="flex justify-between items-start">
         <div>
@@ -355,18 +355,18 @@ export function Gestion() {
         <div className="flex space-x-3">
           <Dialog open={showRolesModal} onOpenChange={setShowRolesModal}>
             <DialogTrigger asChild>
-              <Button variant="outline" className="h-9 inline-flex items-center space-x-2 transition-colors border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">
-                <Settings className="h-4 w-4" />
-                <span>Rôles et permissions</span>
+              <Button variant="outline" className="h-9 inline-flex items-center gap-2 transition-colors border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">
+                <ShieldCheck className="h-4 w-4" />
+                Rôles et permissions
               </Button>
             </DialogTrigger>
           </Dialog>
 
           <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
             <DialogTrigger asChild>
-              <Button className="h-9 inline-flex items-center space-x-2 transition-colors bg-blue-600 hover:bg-blue-700 text-white">
+              <Button className="h-9 inline-flex items-center gap-2 transition-colors bg-blue-600 hover:bg-blue-700 text-white">
                 <UserPlus className="h-4 w-4" />
-                <span>Ajouter un utilisateur</span>
+                Ajouter un utilisateur
               </Button>
             </DialogTrigger>
           </Dialog>
@@ -433,36 +433,34 @@ export function Gestion() {
       </div>
 
       {/* Users Table */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-          <div className="flex justify-between items-center">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Liste des utilisateurs</h2>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-500 dark:text-gray-400">Afficher</span>
-                <Select value={itemsPerPage.toString()} onValueChange={(value) => {
-                  setItemsPerPage(Number(value));
-                  setCurrentPage(1);
-                }}>
-                  <SelectTrigger className="w-16 h-8 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
-                    <SelectItem value="5" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">5</SelectItem>
-                    <SelectItem value="10" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">10</SelectItem>
-                    <SelectItem value="25" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">25</SelectItem>
-                    <SelectItem value="50" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">50</SelectItem>
-                  </SelectContent>
-                </Select>
-                <span className="text-sm text-gray-500 dark:text-gray-400">entrées</span>
-              </div>
-              <span className="text-sm text-gray-500 dark:text-gray-400">
-                Total: {filteredUsers.length} utilisateurs
-              </span>
+      <div className="space-y-4">
+        <div className="flex justify-between items-center">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Liste des utilisateurs</h2>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-500 dark:text-gray-400">Afficher</span>
+              <Select value={itemsPerPage.toString()} onValueChange={(value) => {
+                setItemsPerPage(Number(value));
+                setCurrentPage(1);
+              }}>
+                <SelectTrigger className="w-16 h-8 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
+                  <SelectItem value="5" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">5</SelectItem>
+                  <SelectItem value="10" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">10</SelectItem>
+                  <SelectItem value="25" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">25</SelectItem>
+                  <SelectItem value="50" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">50</SelectItem>
+                </SelectContent>
+              </Select>
+              <span className="text-sm text-gray-500 dark:text-gray-400">entrées</span>
             </div>
+            <span className="text-sm text-gray-500 dark:text-gray-400">
+              Total: {filteredUsers.length} utilisateurs
+            </span>
           </div>
         </div>
-        <div className="p-6">
+        <div>
 
           {loading ? (
             <div className="text-center py-8">
@@ -473,19 +471,19 @@ export function Gestion() {
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow className="border-gray-200 dark:border-gray-700">
-                    <TableHead className="text-gray-900 dark:text-white font-medium">Nom</TableHead>
-                    <TableHead className="text-gray-900 dark:text-white font-medium">Email</TableHead>
-                    <TableHead className="text-gray-900 dark:text-white font-medium">Téléphone</TableHead>
-                    <TableHead className="text-gray-900 dark:text-white font-medium">Rôle</TableHead>
-                    <TableHead className="text-gray-900 dark:text-white font-medium">Statut</TableHead>
-                    <TableHead className="text-gray-900 dark:text-white font-medium">Dernière connexion</TableHead>
-                    <TableHead className="text-gray-900 dark:text-white font-medium">Actions</TableHead>
+                  <TableRow className="border-gray-200 dark:border-gray-700" style={{ backgroundColor: 'hsl(210, 40%, 96.1%)' }}>
+                    <TableHead className="text-gray-900 font-medium">Nom</TableHead>
+                    <TableHead className="text-gray-900 font-medium">Email</TableHead>
+                    <TableHead className="text-gray-900 font-medium">Téléphone</TableHead>
+                    <TableHead className="text-gray-900 font-medium">Rôle</TableHead>
+                    <TableHead className="text-gray-900 font-medium">Statut</TableHead>
+                    <TableHead className="text-gray-900 font-medium">Dernière connexion</TableHead>
+                    <TableHead className="text-gray-900 font-medium">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {paginatedUsers.map((user) => (
-                    <TableRow key={user.id} className="border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
+                    <TableRow key={user.id} className="border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 bg-white dark:bg-transparent">
                       <TableCell className="text-gray-900 dark:text-white font-medium">
                         {user.nom} {user.prenom}
                       </TableCell>

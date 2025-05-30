@@ -91,44 +91,39 @@ export function AddEntreprise() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
+      <div className="space-y-2">
         <Button
           variant="ghost"
           onClick={() => navigate('/entreprises')}
-          className="p-2"
+          className="inline-flex h-9 items-center justify-center gap-2 whitespace-nowrap rounded-md px-3 text-sm font-medium transition-colors ring-offset-background hover:bg-gray-100 dark:hover:bg-gray-800"
         >
           <ArrowLeft className="h-4 w-4" />
+          Retour à la liste
         </Button>
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Ajouter une entreprise</h1>
-          <p className="text-gray-600 dark:text-gray-400">Créer une nouvelle entreprise partenaire</p>
-        </div>
+
+        {/* Title */}
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Ajouter une entreprise</h1>
       </div>
 
-      <Card className="bg-white dark:bg-gray-800 shadow-sm border-0">
-        <CardHeader className="pb-4">
-          <CardTitle className="flex items-center gap-2">
-            <Building2 className="h-5 w-5 text-purple-600" />
-            Informations de l'entreprise
-          </CardTitle>
-          <CardDescription>
-            Remplissez les informations pour créer une nouvelle entreprise
-          </CardDescription>
-        </CardHeader>
+      {/* Form Card */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <div className="mb-6">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Informations de l'entreprise</h2>
+          <p className="text-gray-600 dark:text-gray-400">Remplissez les informations pour créer une nouvelle entreprise</p>
+        </div>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)}>
-            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Nom */}
               <FormField
                 control={form.control}
                 name="nom"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-base font-semibold">Nom de l'entreprise *</FormLabel>
+                    <FormLabel>Nom de l'entreprise *</FormLabel>
                     <FormControl>
                       <Input
                         {...field}
-                        className="bg-white dark:bg-gray-700"
                         placeholder="Nom de l'entreprise"
                       />
                     </FormControl>
@@ -143,11 +138,10 @@ export function AddEntreprise() {
                 name="contact"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-base font-semibold">Personne de contact</FormLabel>
+                    <FormLabel>Personne de contact</FormLabel>
                     <FormControl>
                       <Input
                         {...field}
-                        className="bg-white dark:bg-gray-700"
                         placeholder="Nom de la personne de contact"
                       />
                     </FormControl>
@@ -162,11 +156,10 @@ export function AddEntreprise() {
                 name="telephone"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-base font-semibold">Téléphone</FormLabel>
+                    <FormLabel>Téléphone</FormLabel>
                     <FormControl>
                       <Input
                         {...field}
-                        className="bg-white dark:bg-gray-700"
                         placeholder="Numéro de téléphone"
                       />
                     </FormControl>
@@ -181,12 +174,11 @@ export function AddEntreprise() {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-base font-semibold">Email</FormLabel>
+                    <FormLabel>Email</FormLabel>
                     <FormControl>
                       <Input
                         {...field}
                         type="email"
-                        className="bg-white dark:bg-gray-700"
                         placeholder="Adresse email"
                       />
                     </FormControl>
@@ -201,11 +193,10 @@ export function AddEntreprise() {
                 name="adre"
                 render={({ field }) => (
                   <FormItem className="md:col-span-2">
-                    <FormLabel className="text-base font-semibold">Adresse</FormLabel>
+                    <FormLabel>Adresse</FormLabel>
                     <FormControl>
                       <Input
                         {...field}
-                        className="bg-white dark:bg-gray-700"
                         placeholder="Adresse complète de l'entreprise"
                       />
                     </FormControl>
@@ -220,11 +211,10 @@ export function AddEntreprise() {
                 name="description"
                 render={({ field }) => (
                   <FormItem className="md:col-span-2">
-                    <FormLabel className="text-base font-semibold">Description</FormLabel>
+                    <FormLabel>Description</FormLabel>
                     <FormControl>
                       <Textarea
                         {...field}
-                        className="bg-white dark:bg-gray-700"
                         placeholder="Description de l'entreprise ou notes"
                         rows={3}
                       />
@@ -236,20 +226,12 @@ export function AddEntreprise() {
                   </FormItem>
                 )}
               />
-            </CardContent>
-            <CardFooter className="flex justify-end gap-4 pt-6">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => navigate('/entreprises')}
-                disabled={loading}
-              >
-                Annuler
-              </Button>
+            </div>
+            <div className="flex gap-4 mt-6">
               <Button
                 type="submit"
                 disabled={loading}
-                className="bg-purple-600 hover:bg-purple-700"
+                className="bg-blue-600 hover:bg-blue-700"
               >
                 {loading ? (
                   <>
@@ -263,10 +245,18 @@ export function AddEntreprise() {
                   </>
                 )}
               </Button>
-            </CardFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => navigate('/entreprises')}
+                disabled={loading}
+              >
+                Annuler
+              </Button>
+            </div>
           </form>
         </Form>
-      </Card>
+      </div>
     </div>
   );
 }

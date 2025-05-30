@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { api } from '@/lib/supabase';
 import { Client } from '@/types';
 import { useToast } from '@/hooks/use-toast';
@@ -127,17 +128,17 @@ export function EditClient() {
   if (initialLoading) {
     return (
       <div className="space-y-6">
-        <div className="flex items-center gap-4">
+        <div className="space-y-2">
           <Button
             variant="ghost"
             onClick={() => navigate('/clients')}
-            className="p-2"
+            className="inline-flex h-9 items-center justify-center gap-2 whitespace-nowrap rounded-md px-3 text-sm font-medium transition-colors ring-offset-background hover:bg-gray-100 dark:hover:bg-gray-800"
           >
             <ArrowLeft className="h-4 w-4" />
+            Retour aux détails
           </Button>
-          <h1 className="text-2xl font-bold text-gray-900">Retour aux détails</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Modifier le Client</h1>
         </div>
-        <h1 className="text-3xl font-bold text-gray-900">Modifier le Client</h1>
         <div className="bg-white rounded-lg shadow-sm border p-6">
           <div className="flex items-center justify-center py-8">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -167,18 +168,18 @@ export function EditClient() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-4">
+      <div className="space-y-2">
         <Button
           variant="ghost"
           onClick={() => navigate(`/clients/${id}`)}
-          className="p-2"
+          className="inline-flex h-9 items-center justify-center gap-2 whitespace-nowrap rounded-md px-3 text-sm font-medium transition-colors ring-offset-background hover:bg-gray-100 dark:hover:bg-gray-800"
         >
           <ArrowLeft className="h-4 w-4" />
+          Retour aux détails
         </Button>
-        <h1 className="text-2xl font-bold text-gray-900">Retour aux détails</h1>
-      </div>
 
-      <h1 className="text-3xl font-bold text-gray-900">Modifier le Client</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Modifier le Client</h1>
+      </div>
 
       {/* Form */}
       <div className="bg-white rounded-lg shadow-sm border p-6">
@@ -238,12 +239,14 @@ export function EditClient() {
 
           <div className="space-y-2">
             <Label htmlFor="entreprise">Entreprise (fonctionnalité future)</Label>
-            <select
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              disabled
-            >
-              <option value="">Aucune</option>
-            </select>
+            <Select disabled>
+              <SelectTrigger>
+                <SelectValue placeholder="Aucune" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Aucune</SelectItem>
+              </SelectContent>
+            </Select>
             <p className="text-sm text-gray-500">Note: Cette fonctionnalité sera disponible dans une future mise à jour.</p>
           </div>
 
@@ -258,14 +261,7 @@ export function EditClient() {
               rows={3}
             />
           </div>
-          <div className="flex justify-start gap-4 mt-6">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => navigate(`/clients/${id}`)}
-            >
-              Annuler
-            </Button>
+          <div className="flex gap-4 mt-6">
             <Button
               type="submit"
               disabled={loading}
@@ -282,6 +278,13 @@ export function EditClient() {
                   Enregistrer
                 </>
               )}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => navigate(`/clients/${id}`)}
+            >
+              Annuler
             </Button>
           </div>
         </form>

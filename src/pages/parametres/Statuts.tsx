@@ -330,7 +330,7 @@ export function Statuts() {
   }
 
   return (
-    <div className="space-y-6 bg-white dark:bg-gray-900 min-h-screen text-gray-900 dark:text-white p-6">
+    <div className="space-y-6 bg-white dark:bg-gray-900 min-h-screen text-gray-900 dark:text-white">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -407,38 +407,36 @@ export function Statuts() {
       </div>
 
       {/* Status List */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Liste des statuts</h2>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-500 dark:text-gray-400">Afficher</span>
-                <Select value={itemsPerPage.toString()} onValueChange={(value) => {
-                  setItemsPerPage(parseInt(value));
-                  setCurrentPage(1);
-                }}>
-                  <SelectTrigger className="w-16 h-8 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
-                    <SelectItem value="5" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">5</SelectItem>
-                    <SelectItem value="10" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">10</SelectItem>
-                    <SelectItem value="25" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">25</SelectItem>
-                    <SelectItem value="50" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">50</SelectItem>
-                  </SelectContent>
-                </Select>
-                <span className="text-sm text-gray-500 dark:text-gray-400">entrées</span>
-              </div>
-              <span className="text-sm text-gray-500 dark:text-gray-400">
-                Total: {filteredStatuts.length} statuts
-              </span>
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Liste des statuts</h2>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-500 dark:text-gray-400">Afficher</span>
+              <Select value={itemsPerPage.toString()} onValueChange={(value) => {
+                setItemsPerPage(parseInt(value));
+                setCurrentPage(1);
+              }}>
+                <SelectTrigger className="w-16 h-8 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+                  <SelectValue placeholder={itemsPerPage.toString()} />
+                </SelectTrigger>
+                <SelectContent className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
+                  <SelectItem value="5" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">5</SelectItem>
+                  <SelectItem value="10" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">10</SelectItem>
+                  <SelectItem value="25" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">25</SelectItem>
+                  <SelectItem value="50" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">50</SelectItem>
+                </SelectContent>
+              </Select>
+              <span className="text-sm text-gray-500 dark:text-gray-400">entrées</span>
             </div>
+            <span className="text-sm text-gray-500 dark:text-gray-400">
+              Total: {filteredStatuts.length} statuts
+            </span>
           </div>
         </div>
 
         {/* Table Header */}
-        <div className="grid grid-cols-6 gap-4 p-4 border-b border-gray-200 dark:border-gray-700 text-sm font-medium text-gray-600 dark:text-gray-400">
+        <div className="grid grid-cols-6 gap-4 p-4 border-b border-gray-200 dark:border-gray-700 text-sm font-medium text-gray-900" style={{ backgroundColor: 'hsl(210, 40%, 96.1%)' }}>
           <div>Nom</div>
           <div>Couleur</div>
           <div>Type</div>
@@ -451,26 +449,26 @@ export function Statuts() {
         <div className="divide-y divide-gray-200 dark:divide-gray-700">
           {paginatedStatuts.length > 0 ? (
             paginatedStatuts.map((statut) => (
-              <div key={statut.id} className="grid grid-cols-6 gap-4 p-4 items-center hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+              <div key={statut.id} className="grid grid-cols-6 gap-4 p-4 items-center hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors bg-white dark:bg-transparent">
                 {/* Name */}
                 <div>
-                  <Badge className={`${getColorClass(statut.couleur || 'gray')} border-0`}>
+                  <Badge className={`${getColorClass(statut.couleur || 'gray')} border-0 text-xs`}>
                     {statut.nom}
                   </Badge>
                 </div>
 
                 {/* Color */}
-                <div className="capitalize text-gray-700 dark:text-gray-300">
+                <div className="capitalize text-sm text-gray-700 dark:text-gray-300">
                   {COLORS.find(c => c.value === statut.couleur)?.name || statut.couleur}
                 </div>
 
                 {/* Type */}
-                <div className="capitalize text-gray-700 dark:text-gray-300">
+                <div className="capitalize text-sm text-gray-700 dark:text-gray-300">
                   {STATUS_TYPES.find(t => t.value === statut.type)?.label || statut.type}
                 </div>
 
                 {/* Order */}
-                <div className="text-gray-700 dark:text-gray-300">
+                <div className="text-sm text-gray-700 dark:text-gray-300">
                   {statut.ordre || 1}
                 </div>
 
@@ -494,7 +492,7 @@ export function Statuts() {
                         });
                       }
                     }}
-                    className="data-[state=checked]:bg-blue-600"
+                    className="data-[state=checked]:bg-blue-600 scale-75"
                   />
                 </div>
 

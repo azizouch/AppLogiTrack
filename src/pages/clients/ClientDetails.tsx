@@ -1,23 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Edit, User, Mail, Phone, MapPin, Building, Calendar, Package } from 'lucide-react';
+import { ArrowLeft, Edit, User, Mail, Phone, MapPin, RefreshCw, Trash2, Package } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { api } from '@/lib/supabase';
 import { Client, Colis } from '@/types';
@@ -28,6 +13,7 @@ export function ClientDetails() {
   const { id } = useParams<{ id: string }>();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [client, setClient] = useState<Client | null>(null);
   const [clientColis, setClientColis] = useState<Colis[]>([]);
   const [colisLoading, setColisLoading] = useState(true);
@@ -100,64 +86,73 @@ export function ClientDetails() {
     }
   }, [id, client]);
 
-  const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'livré':
-        return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
-      case 'en cours':
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300';
-      case 'en attente':
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300';
-      case 'annulé':
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300';
-      case 'refusé':
-        return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300';
-      default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300';
+  // Refresh data
+  const handleRefresh = async () => {
+    if (!id) return;
+
+    setRefreshing(true);
+    try {
+      // Refresh client data
+      const { data: clientData, error: clientError } = await api.getClientById(id);
+      if (clientError) {
+        toast({
+          title: 'Erreur',
+          description: 'Impossible de rafraîchir les données du client',
+          variant: 'destructive',
+        });
+      } else if (clientData) {
+        setClient(clientData);
+      }
+
+      // Refresh colis data
+      const { data: colisData, error: colisError } = await api.getColisByClientId(id);
+      if (colisError) {
+        console.error('Error refreshing client colis:', colisError);
+      } else {
+        setClientColis(colisData || []);
+      }
+
+      toast({
+        title: 'Succès',
+        description: 'Données actualisées avec succès',
+      });
+    } catch (error) {
+      console.error('Error refreshing data:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Erreur lors de l\'actualisation',
+        variant: 'destructive',
+      });
+    } finally {
+      setRefreshing(false);
     }
   };
 
   if (loading) {
     return (
-      <div className="space-y-6">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            onClick={() => navigate('/clients')}
-            className="p-2"
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Détails du client</h1>
-            <p className="text-gray-600 dark:text-gray-400">Chargement...</p>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="flex items-center justify-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
           </div>
         </div>
-        <Card className="bg-white dark:bg-gray-800 shadow-sm border-0">
-          <CardContent className="p-8">
-            <div className="flex items-center justify-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     );
   }
 
   if (!client) {
     return (
-      <div className="space-y-6">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            onClick={() => navigate('/clients')}
-            className="p-2"
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <div>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="text-center">
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Client introuvable</h1>
-            <p className="text-gray-600 dark:text-gray-400">Le client demandé n'existe pas</p>
+            <p className="text-gray-600 dark:text-gray-400 mt-2">Le client demandé n'existe pas</p>
+            <Button
+              onClick={() => navigate('/clients')}
+              className="mt-4"
+            >
+              Retour à la liste
+            </Button>
           </div>
         </div>
       </div>
@@ -165,190 +160,207 @@ export function ClientDetails() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            onClick={() => navigate('/clients')}
-            className="p-2"
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Retour à la liste</h1>
-        </div>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={() => navigate(`/clients/${client.id}/modifier`)}
-            className="text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30"
-          >
-            <Edit className="mr-2 h-4 w-4" />
-            Modifier
-          </Button>
-          <Button
-            variant="destructive"
-            className="bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800"
-          >
-            Supprimer
-          </Button>
-        </div>
-      </div>
-
-      {/* Title */}
-      <div className="flex items-center gap-3">
-        <svg className="w-6 h-6 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
-          <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-        </svg>
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Détails du Client</h1>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Client Information */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Informations du client</h2>
-
-          <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
-                <User className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-              </div>
-              <div>
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">{client.nom}</h3>
-                <p className="text-gray-600 dark:text-gray-400">ID: {client.id}</p>
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              {client.telephone && (
-                <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                  <Phone className="w-4 h-4" />
-                  <span>{client.telephone}</span>
-                </div>
-              )}
-
-              {client.email && (
-                <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                  <Mail className="w-4 h-4" />
-                  <span>{client.email}</span>
-                </div>
-              )}
-
-              {client.adresse && (
-                <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                  <MapPin className="w-4 h-4" />
-                  <span>{client.adresse}</span>
-                </div>
-              )}
-            </div>
-
-            <div className="bg-blue-50 dark:bg-blue-900/30 p-3 rounded-lg">
-              <p className="text-sm text-blue-600 dark:text-blue-400">
-                La fonctionnalité d'association d'entreprise sera disponible dans une future mise à jour.
-              </p>
-            </div>
-
-            <div className="text-gray-600 dark:text-gray-400">
-              <p className="text-sm font-medium">Date de création</p>
-              <p className="text-lg">{new Date(client.created_at).toLocaleDateString('fr-FR', {
-                day: 'numeric',
-                month: 'long',
-                year: 'numeric'
-              })}</p>
-            </div>
+    <div className="w-full p-6">
+      <div className="mb-6">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate('/clients')}
+          className="mb-2"
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Retour à la liste
+        </Button>
+        <div className="flex justify-between items-center">
+          <div className="flex items-center">
+            <h1 className="text-2xl font-bold">Détails du Client</h1>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="ml-2"
+              onClick={handleRefresh}
+              disabled={refreshing}
+              title="Rafraîchir les données"
+            >
+              <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+            </Button>
           </div>
-        </div>
-
-        {/* Statistics */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Statistiques</h2>
-
-          <div className="space-y-4">
-            <div>
-              <p className="text-gray-600 dark:text-gray-400 mb-1">Nombre de colis</p>
-              <p className="text-3xl font-bold text-gray-900 dark:text-white">{clientColis.length}</p>
-            </div>
-
-            <div>
-              <p className="text-gray-600 dark:text-gray-400 mb-2">Statuts des colis</p>
-              <div className="space-y-2">
-                {['En cours', 'Mise en distribution'].map(status => {
-                  const count = clientColis.filter(c => c.statut === status).length;
-                  return (
-                    <div key={status} className="flex justify-between">
-                      <span className="text-gray-600 dark:text-gray-400">{status}</span>
-                      <span className="font-semibold text-gray-900 dark:text-white">{count}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Colis Section */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-          <div className="flex justify-between items-center">
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Colis</h2>
-              <p className="text-gray-600 dark:text-gray-400">Liste des colis associés à ce client</p>
-            </div>
-            <Button className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800">
-              Créer un nouveau colis
+          <div className="flex space-x-2">
+            <Button
+              variant="outline"
+              onClick={() => navigate(`/clients/${client.id}/modifier`)}
+            >
+              <Edit className="mr-2 h-4 w-4" />
+              Modifier
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={refreshing}
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Supprimer
             </Button>
           </div>
         </div>
+      </div>
 
-        <div className="p-6">
-          {colisLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-            </div>
-          ) : clientColis.length === 0 ? (
-            <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-              <Package className="h-12 w-12 mx-auto mb-4 text-gray-300 dark:text-gray-500" />
-              <p className="text-lg font-medium mb-2">Aucun colis</p>
-              <p className="text-sm">Ce client n'a pas encore de colis</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {clientColis.map((colis) => (
-                <div
-                  key={colis.id}
-                  className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer"
-                  onClick={() => navigate(`/colis/${colis.id}`)}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
-                      <Package className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="md:col-span-2 space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Informations du client</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center space-x-4">
+                <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                  <User className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold">{client.nom}</h2>
+                  <p className="text-sm text-muted-foreground">ID: {client.id}</p>
+                </div>
+              </div>
+
+              <Separator />
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {client.telephone && (
+                  <div>
+                    <h3 className="text-sm font-medium text-muted-foreground">Téléphone</h3>
+                    <p className="text-lg font-medium flex items-center">
+                      <Phone className="mr-2 h-4 w-4 text-muted-foreground" />
+                      {client.telephone}
+                    </p>
+                  </div>
+                )}
+
+                {client.email && (
+                  <div>
+                    <h3 className="text-sm font-medium text-muted-foreground">Email</h3>
+                    <p className="text-lg font-medium flex items-center">
+                      <Mail className="mr-2 h-4 w-4 text-muted-foreground" />
+                      {client.email}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {client.adresse && (
+                <div>
+                  <h3 className="text-sm font-medium text-muted-foreground">Adresse</h3>
+                  <p className="text-lg font-medium flex items-start">
+                    <MapPin className="mr-2 h-4 w-4 text-muted-foreground mt-1" />
+                    {client.adresse}
+                  </p>
+                </div>
+              )}
+
+              {/* Entreprise section - Hidden until the feature is implemented */}
+              <div className="bg-muted p-3 rounded-md">
+                <p className="text-sm text-muted-foreground">
+                  La fonctionnalité d'association d'entreprise sera disponible dans une future mise à jour.
+                </p>
+              </div>
+
+              <div>
+                <h3 className="text-sm font-medium text-muted-foreground">Date de création</h3>
+                <p className="text-lg font-medium">
+                  {new Date(client.created_at).toLocaleDateString('fr-FR', {
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric'
+                  })}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <div className="flex justify-between items-center">
+                <div>
+                  <CardTitle>Colis</CardTitle>
+                  <CardDescription>
+                    Liste des colis associés à ce client
+                  </CardDescription>
+                </div>
+                <Button onClick={() => navigate(`/colis/nouveau?client=${id}`)}>
+                  Créer un nouveau colis
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {clientColis.length > 0 ? (
+                <div className="space-y-4">
+                  {clientColis.map((item) => (
+                    <div key={item.id} className="flex items-center justify-between p-3 border rounded-md hover:bg-muted/50 transition-colors">
+                      <div className="flex items-center space-x-3">
+                        <Package className="h-5 w-5 text-primary" />
+                        <div>
+                          <p className="font-medium">{item.id}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {new Date(item.date_creation).toLocaleDateString('fr-FR', {
+                              day: 'numeric',
+                              month: 'long',
+                              year: 'numeric'
+                            })} - {item.statut}
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => navigate(`/colis/${item.id}`)}
+                        className="h-8 px-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 hover:text-gray-900 dark:hover:text-white transition-colors"
+                      >
+                        Voir
+                      </Button>
                     </div>
-                    <div>
-                      <h3 className="font-semibold text-gray-900 dark:text-white">{colis.id}</h3>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        {new Date(colis.date_creation).toLocaleDateString('fr-FR', {
-                          day: 'numeric',
-                          month: 'long',
-                          year: 'numeric'
-                        })} - {colis.statut}
-                      </p>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-muted-foreground">Aucun colis associé à ce client</p>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        <div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Statistiques</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="bg-muted p-4 rounded-md">
+                  <h3 className="font-medium">Nombre de colis</h3>
+                  <p className="text-3xl font-bold">{clientColis.length}</p>
+                </div>
+
+                {clientColis.length > 0 && (
+                  <div className="bg-muted p-4 rounded-md">
+                    <h3 className="font-medium">Statuts des colis</h3>
+                    <div className="mt-2 space-y-2">
+                      {Object.entries(
+                        clientColis.reduce((acc: any, colis) => {
+                          acc[colis.statut] = (acc[colis.statut] || 0) + 1;
+                          return acc;
+                        }, {})
+                      ).map(([statut, count]: [string, any]) => (
+                        <div key={statut} className="flex justify-between">
+                          <span>{statut}</span>
+                          <span className="font-medium">{count}</span>
+                        </div>
+                      ))}
                     </div>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/30"
-                  >
-                    Voir
-                  </Button>
-                </div>
-              ))}
-            </div>
-          )}
+                )}
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
+
     </div>
   );
 }

@@ -110,44 +110,39 @@ export function AddLivreur() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
+      <div className="space-y-2">
         <Button
           variant="ghost"
           onClick={() => navigate('/livreurs')}
-          className="p-2"
+          className="inline-flex h-9 items-center justify-center gap-2 whitespace-nowrap rounded-md px-3 text-sm font-medium transition-colors ring-offset-background hover:bg-gray-100 dark:hover:bg-gray-800"
         >
           <ArrowLeft className="h-4 w-4" />
+          Retour à la liste
         </Button>
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Ajouter un livreur</h1>
-          <p className="text-gray-600 dark:text-gray-400">Créer un nouveau livreur</p>
-        </div>
+
+        {/* Title */}
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Ajouter un livreur</h1>
       </div>
 
-      <Card className="bg-white dark:bg-gray-800 shadow-sm border-0">
-        <CardHeader className="pb-4">
-          <CardTitle className="flex items-center gap-2">
-            <Truck className="h-5 w-5 text-green-600" />
-            Informations du livreur
-          </CardTitle>
-          <CardDescription>
-            Remplissez les informations pour créer un nouveau livreur
-          </CardDescription>
-        </CardHeader>
+      {/* Form Card */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <div className="mb-6">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Informations du livreur</h2>
+          <p className="text-gray-600 dark:text-gray-400">Remplissez les informations pour créer un nouveau livreur</p>
+        </div>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)}>
-            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Nom */}
               <FormField
                 control={form.control}
                 name="nom"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-base font-semibold">Nom *</FormLabel>
+                    <FormLabel>Nom *</FormLabel>
                     <FormControl>
                       <Input
                         {...field}
-                        className="bg-white dark:bg-gray-700"
                         placeholder="Nom du livreur"
                       />
                     </FormControl>
@@ -162,11 +157,10 @@ export function AddLivreur() {
                 name="prenom"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-base font-semibold">Prénom *</FormLabel>
+                    <FormLabel>Prénom *</FormLabel>
                     <FormControl>
                       <Input
                         {...field}
-                        className="bg-white dark:bg-gray-700"
                         placeholder="Prénom du livreur"
                       />
                     </FormControl>
@@ -181,12 +175,11 @@ export function AddLivreur() {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-base font-semibold">Email *</FormLabel>
+                    <FormLabel>Email *</FormLabel>
                     <FormControl>
                       <Input
                         {...field}
                         type="email"
-                        className="bg-white dark:bg-gray-700"
                         placeholder="Adresse email"
                       />
                     </FormControl>
@@ -201,11 +194,10 @@ export function AddLivreur() {
                 name="telephone"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-base font-semibold">Téléphone</FormLabel>
+                    <FormLabel>Téléphone</FormLabel>
                     <FormControl>
                       <Input
                         {...field}
-                        className="bg-white dark:bg-gray-700"
                         placeholder="Numéro de téléphone"
                       />
                     </FormControl>
@@ -220,11 +212,10 @@ export function AddLivreur() {
                 name="zone"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-base font-semibold">Zone de livraison</FormLabel>
+                    <FormLabel>Zone de livraison</FormLabel>
                     <FormControl>
                       <Input
                         {...field}
-                        className="bg-white dark:bg-gray-700"
                         placeholder="Zone de livraison assignée"
                       />
                     </FormControl>
@@ -239,11 +230,10 @@ export function AddLivreur() {
                 name="vehicule"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-base font-semibold">Véhicule</FormLabel>
+                    <FormLabel>Véhicule</FormLabel>
                     <FormControl>
                       <Input
                         {...field}
-                        className="bg-white dark:bg-gray-700"
                         placeholder="Type de véhicule"
                       />
                     </FormControl>
@@ -258,11 +248,10 @@ export function AddLivreur() {
                 name="adre"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-base font-semibold">Adresse</FormLabel>
+                    <FormLabel>Adresse</FormLabel>
                     <FormControl>
                       <Input
                         {...field}
-                        className="bg-white dark:bg-gray-700"
                         placeholder="Adresse complète"
                       />
                     </FormControl>
@@ -277,11 +266,10 @@ export function AddLivreur() {
                 name="ville"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-base font-semibold">Ville</FormLabel>
+                    <FormLabel>Ville</FormLabel>
                     <FormControl>
                       <Input
                         {...field}
-                        className="bg-white dark:bg-gray-700"
                         placeholder="Ville"
                       />
                     </FormControl>
@@ -296,10 +284,10 @@ export function AddLivreur() {
                 name="statut"
                 render={({ field }) => (
                   <FormItem className="md:col-span-2">
-                    <FormLabel className="text-base font-semibold">Statut *</FormLabel>
+                    <FormLabel>Statut *</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
-                        <SelectTrigger className="bg-white dark:bg-gray-700">
+                        <SelectTrigger>
                           <SelectValue placeholder="Sélectionner le statut" />
                         </SelectTrigger>
                       </FormControl>
@@ -316,20 +304,12 @@ export function AddLivreur() {
                   </FormItem>
                 )}
               />
-            </CardContent>
-            <CardFooter className="flex justify-end gap-4 pt-6">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => navigate('/livreurs')}
-                disabled={loading}
-              >
-                Annuler
-              </Button>
+            </div>
+            <div className="flex gap-4 mt-6">
               <Button
                 type="submit"
                 disabled={loading}
-                className="bg-green-600 hover:bg-green-700"
+                className="bg-blue-600 hover:bg-blue-700"
               >
                 {loading ? (
                   <>
@@ -343,10 +323,18 @@ export function AddLivreur() {
                   </>
                 )}
               </Button>
-            </CardFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => navigate('/livreurs')}
+                disabled={loading}
+              >
+                Annuler
+              </Button>
+            </div>
           </form>
         </Form>
-      </Card>
+      </div>
     </div>
   );
 }

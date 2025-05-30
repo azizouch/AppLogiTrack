@@ -284,8 +284,8 @@ export function AddColis() {
         client_id: values.client_id,
         entreprise_id: values.entreprise_id === 'none' ? null : values.entreprise_id || null,
         livreur_id: values.livreur_id === 'none' ? null : values.livreur_id || null,
-        prix: values.prix || 0,
-        frais: values.frais || 0,
+        prix: values.prix ? parseFloat(parseFloat(values.prix.toString()).toFixed(2)) : 0,
+        frais: values.frais ? parseFloat(parseFloat(values.frais.toString()).toFixed(2)) : 0,
         notes: values.notes || '',
       };
 
@@ -319,19 +319,19 @@ export function AddColis() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-3">
+      <div className="space-y-2">
         <Button
           variant="ghost"
           onClick={() => navigate('/colis')}
-          className="flex items-center gap-2 px-3 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-md"
+          className="inline-flex h-9 items-center justify-center gap-2 whitespace-nowrap rounded-md px-3 text-sm font-medium transition-colors ring-offset-background hover:bg-gray-100 dark:hover:bg-gray-800"
         >
           <ArrowLeft className="h-4 w-4" />
-          <span className="text-gray-700 dark:text-gray-300">Retour à la liste</span>
+          Retour à la liste
         </Button>
-      </div>
 
-      {/* Title */}
-      <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Nouveau Colis</h1>
+        {/* Title */}
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Nouveau Colis</h1>
+      </div>
 
       {/* Form Card */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
@@ -355,7 +355,7 @@ export function AddColis() {
                     <FormControl>
                       <Input
                         {...field}
-                        className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400"
+                        className="bg-white dark:bg-gray-700"
                         placeholder="COL-2024-XXXX"
                       />
                     </FormControl>
@@ -430,7 +430,7 @@ export function AddColis() {
                         type="number"
                         step="0.01"
                         placeholder="0"
-                        className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400"
+                        className="bg-white dark:bg-gray-700"
                         {...field}
                       />
                     </FormControl>
@@ -454,7 +454,7 @@ export function AddColis() {
                         type="number"
                         step="0.01"
                         placeholder="0"
-                        className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400"
+                        className="bg-white dark:bg-gray-700"
                         {...field}
                       />
                     </FormControl>
@@ -789,16 +789,7 @@ export function AddColis() {
             />
 
             {/* Action Buttons */}
-            <div className="flex justify-between pt-6">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => navigate('/colis')}
-                disabled={loading}
-                className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
-              >
-                Annuler
-              </Button>
+            <div className="flex gap-4 pt-6">
               <Button
                 type="submit"
                 disabled={loading}
@@ -812,6 +803,15 @@ export function AddColis() {
                     Enregistrer
                   </>
                 )}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => navigate('/colis')}
+                disabled={loading}
+                className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+              >
+                Annuler
               </Button>
             </div>
           </form>

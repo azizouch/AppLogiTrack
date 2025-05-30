@@ -206,57 +206,65 @@ export function Clients() {
               className="pl-10 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400"
             />
           </div>
-          <select className="px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-            <option value="">Toutes les villes</option>
-          </select>
-          <select className="px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-            <option value="">Toutes les entreprises</option>
-          </select>
+          <Select value="" onValueChange={() => {}}>
+            <SelectTrigger className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white">
+              <SelectValue placeholder="Toutes les villes" />
+            </SelectTrigger>
+            <SelectContent className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600">
+              <SelectItem value="all" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600">Toutes les villes</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value="" onValueChange={() => {}}>
+            <SelectTrigger className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white">
+              <SelectValue placeholder="Toutes les entreprises" />
+            </SelectTrigger>
+            <SelectContent className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600">
+              <SelectItem value="all" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600">Toutes les entreprises</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
       {/* Liste des Clients */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-          <div className="flex justify-between items-center">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Liste des Clients</h2>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-500 dark:text-gray-400">Afficher</span>
-                <Select value={itemsPerPage.toString()} onValueChange={(value) => {
-                  setItemsPerPage(Number(value));
-                  setCurrentPage(1);
-                }}>
-                  <SelectTrigger className="w-16 h-8 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
-                    <SelectItem value="5" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">5</SelectItem>
-                    <SelectItem value="10" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">10</SelectItem>
-                    <SelectItem value="25" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">25</SelectItem>
-                    <SelectItem value="50" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">50</SelectItem>
-                  </SelectContent>
-                </Select>
-                <span className="text-sm text-gray-500 dark:text-gray-400">entrées</span>
-              </div>
-              <span className="text-sm text-gray-500 dark:text-gray-400">Total: {totalCount} clients</span>
+      <div className="space-y-4">
+        <div className="flex justify-between items-center">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Liste des Clients</h2>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-500 dark:text-gray-400">Afficher</span>
+              <Select value={itemsPerPage.toString()} onValueChange={(value) => {
+                setItemsPerPage(Number(value));
+                setCurrentPage(1);
+              }}>
+                <SelectTrigger className="w-16 h-8 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+                  <SelectValue placeholder={itemsPerPage.toString()} />
+                </SelectTrigger>
+                <SelectContent className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
+                  <SelectItem value="5" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">5</SelectItem>
+                  <SelectItem value="10" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">10</SelectItem>
+                  <SelectItem value="25" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">25</SelectItem>
+                  <SelectItem value="50" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">50</SelectItem>
+                </SelectContent>
+              </Select>
+              <span className="text-sm text-gray-500 dark:text-gray-400">entrées</span>
             </div>
+            <span className="text-sm text-gray-500 dark:text-gray-400">Total: {totalCount} clients</span>
           </div>
         </div>
         <Table>
           <TableHeader>
-            <TableRow className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
-              <TableHead className="font-semibold text-gray-900 dark:text-white">Nom</TableHead>
-              <TableHead className="font-semibold text-gray-900 dark:text-white">Contact</TableHead>
-              <TableHead className="font-semibold text-gray-900 dark:text-white">Adresse</TableHead>
-              <TableHead className="font-semibold text-gray-900 dark:text-white">Entreprise</TableHead>
-              <TableHead className="font-semibold text-right text-gray-900 dark:text-white">Actions</TableHead>
+            <TableRow className="border-b border-gray-200 dark:border-gray-600" style={{ backgroundColor: 'hsl(210, 40%, 96.1%)' }}>
+              <TableHead className="font-semibold text-gray-900">Nom</TableHead>
+              <TableHead className="font-semibold text-gray-900">Contact</TableHead>
+              <TableHead className="font-semibold text-gray-900">Adresse</TableHead>
+              <TableHead className="font-semibold text-gray-900">Entreprise</TableHead>
+              <TableHead className="font-semibold text-right text-gray-900">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
               Array.from({ length: 5 }).map((_, index) => (
-                <TableRow key={index} className="border-b border-gray-200 dark:border-gray-600">
+                <TableRow key={index} className="border-b border-gray-200 dark:border-gray-600 bg-white dark:bg-transparent">
                   <TableCell colSpan={6}>
                     <div className="flex items-center space-x-4">
                       <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse flex-1"></div>
@@ -265,7 +273,7 @@ export function Clients() {
                 </TableRow>
               ))
             ) : clients.length === 0 ? (
-              <TableRow className="border-b border-gray-200 dark:border-gray-600">
+              <TableRow className="border-b border-gray-200 dark:border-gray-600 bg-white dark:bg-transparent">
                 <TableCell colSpan={6} className="text-center py-8">
                   <div className="flex flex-col items-center justify-center text-gray-500 dark:text-gray-400">
                     <Users className="h-12 w-12 mb-4 text-gray-300 dark:text-gray-600" />
@@ -281,7 +289,7 @@ export function Clients() {
               </TableRow>
             ) : (
               clients.map((client) => (
-                <TableRow key={client.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+                <TableRow key={client.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-200 dark:border-gray-600 bg-white dark:bg-transparent">
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
@@ -337,7 +345,7 @@ export function Clients() {
                       variant="ghost"
                       size="sm"
                       onClick={() => navigate(`/clients/${client.id}`)}
-                      className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:text-blue-400 dark:hover:text-blue-300 dark:hover:bg-blue-900/20"
+                      className="h-8 px-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 hover:text-gray-900 dark:hover:text-white transition-colors"
                     >
                       Détails
                     </Button>

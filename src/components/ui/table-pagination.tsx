@@ -83,27 +83,26 @@ export function TablePagination(props: TablePaginationProps) {
         </Button>
 
         <div className="flex items-center space-x-1">
-          {visiblePages.map((page, index) => (
-            <React.Fragment key={index}>
-              {page === '...' ? (
-                <span className="px-3 py-2 text-gray-500 dark:text-gray-400">...</span>
-              ) : (
-                <Button
-                  variant={page === currentPage ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => onPageChange(page as number)}
-                  disabled={loading}
-                  className={
-                    page === currentPage
-                      ? "h-9 w-9 bg-blue-600 hover:bg-blue-700 text-white border-blue-600"
-                      : "h-9 w-9 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
-                  }
-                >
-                  {page}
-                </Button>
-              )}
-            </React.Fragment>
-          ))}
+          {visiblePages.map((page, index) =>
+            page === '...' ? (
+              <span key={`ellipsis-${index}`} className="px-3 py-2 text-gray-500 dark:text-gray-400">...</span>
+            ) : (
+              <Button
+                key={`page-${page}`}
+                variant={page === currentPage ? "default" : "outline"}
+                size="sm"
+                onClick={() => onPageChange(page as number)}
+                disabled={loading}
+                className={
+                  page === currentPage
+                    ? "h-9 w-9 bg-blue-600 hover:bg-blue-700 text-white border-blue-600"
+                    : "h-9 w-9 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                }
+              >
+                {page}
+              </Button>
+            )
+          )}
         </div>
 
         <Button

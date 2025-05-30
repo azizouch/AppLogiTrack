@@ -46,7 +46,7 @@ export function ColisList() {
   const [totalCount, setTotalCount] = useState(0);
   const [hasNextPage, setHasNextPage] = useState(false);
   const [hasPrevPage, setHasPrevPage] = useState(false);
-  const itemsPerPage = 20;
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   // Debounced search term for performance
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
@@ -182,7 +182,6 @@ export function ColisList() {
             variant="outline"
             onClick={handleRefresh}
             disabled={refreshing}
-            className="bg-transparent border-gray-600 dark:border-gray-600 text-gray-900 dark:text-gray-100 hover:bg-gray-700/10 dark:hover:bg-gray-700/20"
           >
             <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
             Actualiser
@@ -227,12 +226,12 @@ export function ColisList() {
               placeholder="Rechercher..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 bg-transparent border-gray-600 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+              className="pl-10"
             />
           </div>
 
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="bg-transparent border-gray-600 dark:border-gray-600 text-gray-900 dark:text-white">
+            <SelectTrigger>
               <SelectValue placeholder="Tous les statuts" />
             </SelectTrigger>
             <SelectContent>
@@ -246,12 +245,12 @@ export function ColisList() {
           </Select>
 
           <Select value={delivererFilter} onValueChange={setDelivererFilter}>
-            <SelectTrigger className="bg-transparent border-gray-600 dark:border-gray-600 text-gray-900 dark:text-white">
+            <SelectTrigger>
               <SelectValue placeholder="Tous les livreurs" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Tous les livreurs</SelectItem>
-              <SelectItem value="unassigned">Non assigné</SelectItem>
+              <SelectItem value="unassigned">N/A</SelectItem>
               {livreurs.map((livreur) => (
                 <SelectItem key={livreur.id} value={livreur.id}>
                   {`${livreur.prenom || ''} ${livreur.nom}`.trim()}
@@ -261,7 +260,7 @@ export function ColisList() {
           </Select>
 
           <Select value={sortBy} onValueChange={(value) => setSortBy(value as 'recent' | 'oldest' | 'status')}>
-            <SelectTrigger className="bg-transparent border-gray-600 dark:border-gray-600 text-gray-900 dark:text-white">
+            <SelectTrigger>
               <SelectValue placeholder="Plus récent" />
             </SelectTrigger>
             <SelectContent>
@@ -277,50 +276,82 @@ export function ColisList() {
       <div className="space-y-4">
         <div className="flex items-center justify-between gap-2">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Liste des Colis</h2>
-          <span className="text-sm text-gray-500 dark:text-gray-400">
-            {loading ? (
-              'Chargement...'
-            ) : (
-              `${totalCount} colis trouvé${totalCount > 1 ? 's' : ''}`
-            )}
-          </span>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-500 dark:text-gray-400">Afficher</span>
+              <Select value={itemsPerPage.toString()} onValueChange={(value) => {
+                setItemsPerPage(Number(value));
+                setCurrentPage(1);
+              }}>
+                <SelectTrigger className="w-16 h-8">
+                  <SelectValue placeholder={itemsPerPage.toString()} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="5" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">5</SelectItem>
+                  <SelectItem value="10" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">10</SelectItem>
+                  <SelectItem value="25" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">25</SelectItem>
+                  <SelectItem value="50" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">50</SelectItem>
+                </SelectContent>
+              </Select>
+              <span className="text-sm text-gray-500 dark:text-gray-400">entrées</span>
+            </div>
+            <span className="text-sm text-gray-500 dark:text-gray-400">
+              {loading ? (
+                'Chargement...'
+              ) : (
+                `Total: ${totalCount} colis`
+              )}
+            </span>
+          </div>
         </div>
 
         <div className="overflow-x-auto">
-          <Table className="bg-transparent min-w-full">
+          <Table className="bg-white dark:bg-transparent min-w-full">
             <TableHeader>
-              <TableRow className="border-b border-gray-600 dark:border-gray-600" style={{ backgroundColor: 'hsl(217.2, 32.6%, 17.5%)' }}>
-                <TableHead className="text-gray-300 font-medium">ID Colis</TableHead>
-                <TableHead className="text-gray-300 font-medium">Client</TableHead>
-                <TableHead className="text-gray-300 font-medium hidden sm:table-cell">Entreprise</TableHead>
-                <TableHead className="text-gray-300 font-medium">Statut</TableHead>
-                <TableHead className="text-gray-300 font-medium hidden md:table-cell">Date de création</TableHead>
-                <TableHead className="text-gray-300 font-medium hidden lg:table-cell">Livreur</TableHead>
-                <TableHead className="text-gray-300 font-medium">Actions</TableHead>
+              <TableRow className="border-b border-gray-200 dark:border-gray-600" style={{ backgroundColor: 'hsl(210, 40%, 96.1%)' }}>
+                <TableHead className="text-gray-900 font-medium">ID Colis</TableHead>
+                <TableHead className="text-gray-900 font-medium">Client</TableHead>
+                <TableHead className="text-gray-900 font-medium hidden sm:table-cell">Entreprise</TableHead>
+                <TableHead className="text-gray-900 font-medium">Statut</TableHead>
+                <TableHead className="text-gray-900 font-medium hidden md:table-cell">Prix</TableHead>
+                <TableHead className="text-gray-900 font-medium hidden md:table-cell">Frais</TableHead>
+                <TableHead className="text-gray-900 font-medium hidden lg:table-cell">Date de création</TableHead>
+                <TableHead className="text-gray-900 font-medium hidden lg:table-cell">Livreur</TableHead>
+                <TableHead className="text-gray-900 font-medium">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
                 // Loading skeleton
                 Array.from({ length: 5 }).map((_, index) => (
-                  <TableRow key={index} className="border-b border-gray-600 dark:border-gray-600 bg-transparent">
+                  <TableRow key={index} className="border-b border-gray-200 dark:border-gray-600 bg-white dark:bg-transparent">
                     <TableCell><div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div></TableCell>
                     <TableCell><div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div></TableCell>
                     <TableCell className="hidden sm:table-cell"><div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div></TableCell>
                     <TableCell><div className="h-6 bg-gray-200 dark:bg-gray-600 rounded animate-pulse w-16"></div></TableCell>
                     <TableCell className="hidden md:table-cell"><div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div></TableCell>
+                    <TableCell className="hidden md:table-cell"><div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div></TableCell>
+                    <TableCell className="hidden lg:table-cell"><div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div></TableCell>
                     <TableCell className="hidden lg:table-cell"><div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div></TableCell>
                     <TableCell><div className="h-8 bg-gray-200 dark:bg-gray-600 rounded animate-pulse w-16"></div></TableCell>
                   </TableRow>
                 ))
               ) : colis.length > 0 ? (
                 colis.map((colisItem) => (
-                  <TableRow key={colisItem.id} className="border-b border-gray-600 dark:border-gray-600 bg-transparent hover:bg-gray-700/10 dark:hover:bg-gray-700/20">
+                  <TableRow key={colisItem.id} className="border-b border-gray-200 dark:border-gray-600 bg-white dark:bg-transparent hover:bg-gray-50 dark:hover:bg-gray-700/20">
                     <TableCell className="font-mono text-sm text-gray-900 dark:text-gray-100">{colisItem.id}</TableCell>
                     <TableCell className="text-gray-900 dark:text-gray-100">{colisItem.client?.nom}</TableCell>
-                    <TableCell className="text-gray-900 dark:text-gray-100 hidden sm:table-cell">{colisItem.entreprise?.nom}</TableCell>
+                    <TableCell className="text-gray-900 dark:text-gray-100 hidden sm:table-cell">
+                      {colisItem.entreprise?.nom || 'N/A'}
+                    </TableCell>
                     <TableCell>{getStatusBadge(colisItem.statut)}</TableCell>
                     <TableCell className="text-gray-900 dark:text-gray-100 hidden md:table-cell">
+                      {colisItem.prix ? `${colisItem.prix} DH` : '-'}
+                    </TableCell>
+                    <TableCell className="text-gray-900 dark:text-gray-100 hidden md:table-cell">
+                      {colisItem.frais ? `${colisItem.frais} DH` : '-'}
+                    </TableCell>
+                    <TableCell className="text-gray-900 dark:text-gray-100 hidden lg:table-cell">
                       {new Date(colisItem.date_creation).toLocaleDateString('fr-FR')}
                     </TableCell>
                     <TableCell className="text-sm text-gray-600 dark:text-gray-400 hidden lg:table-cell">
@@ -328,10 +359,10 @@ export function ColisList() {
                     </TableCell>
                     <TableCell>
                       <Button
-                        variant="outline"
+                        variant="ghost"
                         size="sm"
                         onClick={() => navigate(`/colis/${colisItem.id}`)}
-                        className="bg-transparent border-gray-600 dark:border-gray-600 text-gray-900 dark:text-gray-100 hover:bg-gray-700/10 dark:hover:bg-gray-700/20"
+                        className="h-8 px-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 hover:text-gray-900 dark:hover:text-white transition-colors"
                       >
                         Voir
                       </Button>
@@ -339,8 +370,8 @@ export function ColisList() {
                   </TableRow>
                 ))
               ) : (
-                <TableRow className="border-b border-gray-600 dark:border-gray-600 bg-transparent">
-                  <TableCell colSpan={7} className="text-center py-8 text-gray-500 dark:text-gray-400">
+                <TableRow className="border-b border-gray-200 dark:border-gray-600 bg-white dark:bg-transparent">
+                  <TableCell colSpan={9} className="text-center py-8 text-gray-500 dark:text-gray-400">
                     Aucun colis trouvé
                   </TableCell>
                 </TableRow>

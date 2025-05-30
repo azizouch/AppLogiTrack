@@ -160,18 +160,17 @@ export function EditLivreur() {
   if (initialLoading) {
     return (
       <div className="space-y-6">
-        <div className="flex items-center gap-4">
+        <div className="space-y-2">
           <Button
             variant="ghost"
             onClick={() => navigate('/livreurs')}
-            className="p-2"
+            className="inline-flex h-9 items-center justify-center gap-2 whitespace-nowrap rounded-md px-3 text-sm font-medium transition-colors ring-offset-background hover:bg-gray-100 dark:hover:bg-gray-800"
           >
             <ArrowLeft className="h-4 w-4" />
+            Retour aux détails
           </Button>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Modifier le livreur</h1>
-            <p className="text-gray-600 dark:text-gray-400">Chargement...</p>
-          </div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Modifier le livreur</h1>
+          <p className="text-gray-600 dark:text-gray-400">Chargement...</p>
         </div>
         <Card className="bg-white dark:bg-gray-800 shadow-sm border-0">
           <CardContent className="p-8">
@@ -206,18 +205,16 @@ export function EditLivreur() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
+      <div className="space-y-2">
         <Button
           variant="ghost"
           onClick={() => navigate(`/livreurs/${id}`)}
-          className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
+          className="inline-flex h-9 items-center justify-center gap-2 whitespace-nowrap rounded-md px-3 text-sm font-medium transition-colors ring-offset-background hover:bg-gray-100 dark:hover:bg-gray-800"
         >
-          <ArrowLeft className="h-4 w-4 mr-2" />
+          <ArrowLeft className="h-4 w-4" />
           Retour aux détails
         </Button>
-      </div>
 
-      <div>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Modifier le Livreur</h1>
       </div>
 
@@ -374,16 +371,7 @@ export function EditLivreur() {
               )}
             />
             {/* Footer */}
-            <div className="flex justify-end gap-4 pt-6 border-t border-gray-200 dark:border-gray-700">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => navigate(`/livreurs/${id}`)}
-                disabled={loading}
-                className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
-              >
-                Annuler
-              </Button>
+            <div className="flex gap-4 pt-6 border-t border-gray-200 dark:border-gray-700">
               <Button
                 type="submit"
                 disabled={loading}
@@ -400,6 +388,15 @@ export function EditLivreur() {
                     Enregistrer
                   </>
                 )}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => navigate(`/livreurs/${id}`)}
+                disabled={loading}
+                className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
+              >
+                Annuler
               </Button>
             </div>
           </form>

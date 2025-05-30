@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Edit, Package, User, Building, Truck, Calendar, MapPin, Phone, Mail, Clock, Trash2 } from 'lucide-react';
+import { ArrowLeft, Edit, Package, User, Building, Truck, Calendar, MapPin, Phone, Mail, Clock, Trash2, DollarSign } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -258,11 +258,11 @@ export function ViewColis() {
   return (
     <div className="max-w-7xl mx-auto space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-3 mb-8">
+      <div className="mb-2">
         <Button
           variant="ghost"
           onClick={() => navigate('/colis')}
-          className="flex items-center gap-2 text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
+          className="inline-flex h-9 items-center justify-center gap-2 whitespace-nowrap rounded-md px-3 text-sm font-medium transition-colors ring-offset-background hover:bg-gray-100 dark:hover:bg-gray-800"
         >
           <ArrowLeft className="h-4 w-4" />
           Retour à la liste
@@ -276,7 +276,7 @@ export function ViewColis() {
             <Package className="h-6 w-6 text-blue-600 dark:text-blue-400" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{colis.id}</h1>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{colis.id}</h1>
             <p className="text-gray-500 dark:text-gray-400">
               Créé le {new Intl.DateTimeFormat('fr-FR', {
                 day: 'numeric',
@@ -343,6 +343,32 @@ export function ViewColis() {
                 <div>
                   <h3 className="font-medium text-gray-900 dark:text-white mb-1">Statut actuel</h3>
                   {getStatusBadge(colis.statut)}
+                </div>
+              </div>
+
+              {/* Prix */}
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mt-1">
+                  <DollarSign className="h-5 w-5 text-green-600 dark:text-green-400" />
+                </div>
+                <div>
+                  <h3 className="font-medium text-gray-900 dark:text-white mb-1">Prix</h3>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    {colis.prix ? `${colis.prix} DH` : 'Non défini'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Frais de livraison */}
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 bg-orange-100 dark:bg-orange-900 rounded-full flex items-center justify-center mt-1">
+                  <DollarSign className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                </div>
+                <div>
+                  <h3 className="font-medium text-gray-900 dark:text-white mb-1">Frais de livraison</h3>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    {colis.frais ? `${colis.frais} DH` : 'Non défini'}
+                  </p>
                 </div>
               </div>
 
@@ -466,13 +492,15 @@ export function ViewColis() {
                 </div>
               )}
 
-              <Button
-                variant="outline"
-                className="w-full mt-4 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
-                onClick={() => navigate(`/entreprises/${colis.entreprise?.id}`)}
-              >
-                Voir le profil
-              </Button>
+              {colis.entreprise && (
+                <Button
+                  variant="outline"
+                  className="w-full mt-4 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                  onClick={() => navigate(`/entreprises/${colis.entreprise?.id}`)}
+                >
+                  Voir le profil
+                </Button>
+              )}
             </div>
           </div>
 

@@ -321,19 +321,19 @@ export function UpdateColis() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-3">
+      <div className="space-y-2">
         <Button
           variant="ghost"
           onClick={() => navigate(`/colis/${id}`)}
-          className="flex items-center gap-2 px-3 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-md"
+          className="inline-flex h-9 items-center justify-center gap-2 whitespace-nowrap rounded-md px-3 text-sm font-medium transition-colors ring-offset-background hover:bg-gray-100 dark:hover:bg-gray-800"
         >
           <ArrowLeft className="h-4 w-4" />
-          <span className="text-gray-700 dark:text-gray-300">Retour aux détails</span>
+          Retour aux détails
         </Button>
-      </div>
 
-      {/* Title */}
-      <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Modifier le Colis</h1>
+        {/* Title */}
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Modifier le Colis</h1>
+      </div>
 
       {/* Form Card */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
@@ -778,16 +778,7 @@ export function UpdateColis() {
 
 
             {/* Action Buttons */}
-            <div className="flex justify-between pt-6">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => navigate(`/colis/${id}`)}
-                disabled={saving}
-                className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
-              >
-                Annuler
-              </Button>
+            <div className="flex gap-4 pt-6">
               <Button
                 type="submit"
                 disabled={saving}
@@ -801,6 +792,15 @@ export function UpdateColis() {
                     Enregistrer
                   </>
                 )}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => navigate(`/colis/${id}`)}
+                disabled={saving}
+                className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+              >
+                Annuler
               </Button>
             </div>
           </form>

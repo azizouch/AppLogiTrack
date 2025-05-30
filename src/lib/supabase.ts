@@ -423,6 +423,84 @@ export const api = {
     return { data, error }
   },
 
+
+
+  // Global search functionality
+  globalSearch: async (query: string, limit: number = 10) => {
+    if (!query || query.trim().length < 2) {
+      return {
+        clients: [],
+        colis: [],
+        entreprises: [],
+        error: null
+      };
+    }
+
+    const searchTerm = query.trim();
+    console.log('Global search for:', searchTerm);
+
+    try {
+      // Search clients with OR query
+      console.log('Searching clients...');
+      const { data: clients, error: clientsError } = await supabase
+        .from('clients')
+        .select('id, nom, email, telephone, adresse')
+        .or(`nom.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,telephone.ilike.%${searchTerm}%`)
+        .limit(limit);
+
+      console.log('Clients result:', { clients, clientsError });
+
+      // Search colis - separate queries to avoid complex joins with OR
+      console.log('Searching colis...');
+
+      // Search colis by ID
+      const { data: colisByID, error: colisIDError } = await supabase
+        .from('colis')
+        .select(`
+          id,
+          statut,
+          prix,
+          client:clients(nom),
+          entreprise:entreprises(nom)
+        `)
+        .ilike('id', `%${searchTerm}%`)
+        .limit(limit);
+
+      console.log('Colis by ID result:', { colisByID, colisIDError });
+
+      // For now, just use colis by ID to avoid complex joins
+      const colis = colisByID;
+
+      // Search entreprises with OR query
+      console.log('Searching entreprises...');
+      const { data: entreprises, error: entreprisesError } = await supabase
+        .from('entreprises')
+        .select('id, nom, contact, telephone, email, adresse')
+        .or(`nom.ilike.%${searchTerm}%,contact.ilike.%${searchTerm}%,telephone.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%`)
+        .limit(limit);
+
+      console.log('Entreprises result:', { entreprises, entreprisesError });
+
+      const result = {
+        clients: clients || [],
+        colis: colis || [],
+        entreprises: entreprises || [],
+        error: clientsError || colisIDError || entreprisesError
+      };
+
+      console.log('Final search result:', result);
+      return result;
+    } catch (error) {
+      console.error('Global search error:', error);
+      return {
+        clients: [],
+        colis: [],
+        entreprises: [],
+        error: error as PostgrestError
+      };
+    }
+  },
+
   // CRUD operations for Colis
   createColis: async (colis: Omit<Colis, 'id' | 'date_creation'>) => {
     const { data, error } = await supabase

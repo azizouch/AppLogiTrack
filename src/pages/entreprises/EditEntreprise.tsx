@@ -15,7 +15,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+
 import { api } from '@/lib/supabase';
 import { Entreprise } from '@/types';
 import { z } from 'zod';
@@ -63,7 +63,7 @@ export function EditEntreprise() {
 
       try {
         const { data, error } = await api.getEntrepriseById(id);
-        
+
         if (error) {
           toast({
             title: 'Erreur',
@@ -147,18 +147,17 @@ export function EditEntreprise() {
   if (initialLoading) {
     return (
       <div className="space-y-6">
-        <div className="flex items-center gap-4">
+        <div className="space-y-2">
           <Button
             variant="ghost"
             onClick={() => navigate('/entreprises')}
-            className="p-2"
+            className="inline-flex h-9 items-center justify-center gap-2 whitespace-nowrap rounded-md px-3 text-sm font-medium transition-colors ring-offset-background hover:bg-gray-100 dark:hover:bg-gray-800"
           >
             <ArrowLeft className="h-4 w-4" />
+            Retour aux détails
           </Button>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Modifier l'entreprise</h1>
-            <p className="text-gray-600 dark:text-gray-400">Chargement...</p>
-          </div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Modifier l'entreprise</h1>
+          <p className="text-gray-600 dark:text-gray-400">Chargement...</p>
         </div>
         <Card className="bg-white dark:bg-gray-800 shadow-sm border-0">
           <CardContent className="p-8">
@@ -174,18 +173,19 @@ export function EditEntreprise() {
   if (!entreprise) {
     return (
       <div className="space-y-6">
-        <div className="flex items-center gap-4">
+        <div className="mb-2">
           <Button
             variant="ghost"
             onClick={() => navigate('/entreprises')}
-            className="p-2"
+            className="inline-flex h-9 items-center justify-center gap-2 whitespace-nowrap rounded-md px-3 text-sm font-medium transition-colors ring-offset-background hover:bg-gray-100 dark:hover:bg-gray-800"
           >
             <ArrowLeft className="h-4 w-4" />
+            Retour à la liste
           </Button>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Entreprise introuvable</h1>
-            <p className="text-gray-600 dark:text-gray-400">L'entreprise demandée n'existe pas</p>
-          </div>
+        </div>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Entreprise introuvable</h1>
+          <p className="text-gray-600 dark:text-gray-400">L'entreprise demandée n'existe pas</p>
         </div>
       </div>
     );
@@ -193,33 +193,31 @@ export function EditEntreprise() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
+      <div className="space-y-2">
         <Button
           variant="ghost"
-          onClick={() => navigate('/entreprises')}
-          className="p-2"
+          onClick={() => navigate(`/entreprises/${id}`)}
+          className="inline-flex h-9 items-center justify-center gap-2 whitespace-nowrap rounded-md px-3 text-sm font-medium transition-colors ring-offset-background hover:bg-gray-100 dark:hover:bg-gray-800"
         >
           <ArrowLeft className="h-4 w-4" />
+          Retour aux détails
         </Button>
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Modifier l'entreprise</h1>
-          <p className="text-gray-600 dark:text-gray-400">Modifier les informations de {entreprise.nom}</p>
-        </div>
+
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Modifier l'entreprise</h1>
+        <p className="text-gray-600 dark:text-gray-400">Modifier les informations de {entreprise.nom}</p>
       </div>
 
-      <Card className="bg-white dark:bg-gray-800 shadow-sm border-0">
-        <CardHeader className="pb-4">
-          <CardTitle className="flex items-center gap-2">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <div className="mb-6">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
             <Building2 className="h-5 w-5 text-purple-600" />
             Informations de l'entreprise
-          </CardTitle>
-          <CardDescription>
-            Modifiez les informations de l'entreprise
-          </CardDescription>
-        </CardHeader>
+          </h2>
+          <p className="text-gray-600 dark:text-gray-400">Modifiez les informations de l'entreprise</p>
+        </div>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)}>
-            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Nom */}
               <FormField
                 control={form.control}
@@ -338,16 +336,10 @@ export function EditEntreprise() {
                   </FormItem>
                 )}
               />
-            </CardContent>
-            <CardFooter className="flex justify-end gap-4 pt-6">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => navigate('/entreprises')}
-                disabled={loading}
-              >
-                Annuler
-              </Button>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-4 pt-6">
               <Button
                 type="submit"
                 disabled={loading}
@@ -365,10 +357,18 @@ export function EditEntreprise() {
                   </>
                 )}
               </Button>
-            </CardFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => navigate('/entreprises')}
+                disabled={loading}
+              >
+                Annuler
+              </Button>
+            </div>
           </form>
         </Form>
-      </Card>
+      </div>
     </div>
   );
 }

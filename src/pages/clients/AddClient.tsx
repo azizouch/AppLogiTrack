@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { api } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 
@@ -79,18 +80,18 @@ export function AddClient() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-4">
+      <div className="space-y-2">
         <Button
           variant="ghost"
           onClick={() => navigate('/clients')}
-          className="p-2"
+          className="inline-flex h-9 items-center justify-center gap-2 whitespace-nowrap rounded-md px-3 text-sm font-medium transition-colors ring-offset-background hover:bg-gray-100 dark:hover:bg-gray-800"
         >
           <ArrowLeft className="h-4 w-4" />
+          Retour à la liste
         </Button>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Retour à la liste</h1>
-      </div>
 
-      <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Nouveau Client</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Nouveau Client</h1>
+      </div>
 
       {/* Form */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
@@ -152,12 +153,14 @@ export function AddClient() {
 
           <div className="space-y-2">
             <Label htmlFor="entreprise">Entreprise (fonctionnalité future)</Label>
-            <select
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              disabled
-            >
-              <option value="">Aucune</option>
-            </select>
+            <Select disabled>
+              <SelectTrigger>
+                <SelectValue placeholder="Aucune" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Aucune</SelectItem>
+              </SelectContent>
+            </Select>
             <p className="text-sm text-gray-500 dark:text-gray-400">Note: Cette fonctionnalité sera disponible dans une future mise à jour.</p>
           </div>
 
@@ -172,14 +175,7 @@ export function AddClient() {
               rows={3}
             />
           </div>
-          <div className="flex justify-start gap-4 mt-6">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => navigate('/clients')}
-            >
-              Annuler
-            </Button>
+          <div className="flex gap-4 mt-6">
             <Button
               type="submit"
               disabled={loading}
@@ -196,6 +192,13 @@ export function AddClient() {
                   Enregistrer
                 </>
               )}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => navigate('/clients')}
+            >
+              Annuler
             </Button>
           </div>
         </form>

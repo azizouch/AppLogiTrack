@@ -43,7 +43,7 @@ export function ColisLivres() {
   const [totalCount, setTotalCount] = useState(0);
   const [hasNextPage, setHasNextPage] = useState(false);
   const [hasPrevPage, setHasPrevPage] = useState(false);
-  const itemsPerPage = 20;
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   // Debounced search term for performance
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
@@ -165,7 +165,7 @@ export function ColisLivres() {
             variant="outline"
             onClick={handleRefresh}
             disabled={refreshing}
-            className="bg-transparent border-gray-600 dark:border-gray-600 text-gray-900 dark:text-gray-100 hover:bg-gray-700/10 dark:hover:bg-gray-700/20"
+            className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700"
           >
             <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
             Actualiser
@@ -188,7 +188,7 @@ export function ColisLivres() {
                 setDelivererFilter('all');
                 setSortBy('recent');
               }}
-              className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+              className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800"
             >
               Réinitialiser
             </Button>
@@ -202,12 +202,12 @@ export function ColisLivres() {
               placeholder="Rechercher..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 bg-transparent border-gray-600 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+              className="pl-10 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
             />
           </div>
 
           <Select value={delivererFilter} onValueChange={setDelivererFilter}>
-            <SelectTrigger className="bg-transparent border-gray-600 dark:border-gray-600 text-gray-900 dark:text-white">
+            <SelectTrigger className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white">
               <SelectValue placeholder="Tous les livreurs" />
             </SelectTrigger>
             <SelectContent>
@@ -227,7 +227,7 @@ export function ColisLivres() {
           </Select>
 
           <Select value={sortBy} onValueChange={(value) => setSortBy(value as 'recent' | 'oldest')}>
-            <SelectTrigger className="bg-transparent border-gray-600 dark:border-gray-600 text-gray-900 dark:text-white">
+            <SelectTrigger className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white">
               <SelectValue placeholder="Plus récent" />
             </SelectTrigger>
             <SelectContent>
@@ -239,60 +239,58 @@ export function ColisLivres() {
       </div>
 
       {/* Colis Table */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-          <div className="flex justify-between items-center">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-              <CheckCircle className="h-5 w-5 text-green-600" />
-              <span>Colis Livrés</span>
-            </h2>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-500 dark:text-gray-400">Afficher</span>
-                <Select value={itemsPerPage.toString()} onValueChange={(value) => {
-                  setItemsPerPage(Number(value));
-                  setCurrentPage(1);
-                }}>
-                  <SelectTrigger className="w-16 h-8 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
-                    <SelectItem value="5" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">5</SelectItem>
-                    <SelectItem value="10" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">10</SelectItem>
-                    <SelectItem value="25" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">25</SelectItem>
-                    <SelectItem value="50" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">50</SelectItem>
-                  </SelectContent>
-                </Select>
-                <span className="text-sm text-gray-500 dark:text-gray-400">entrées</span>
-              </div>
-              <span className="text-sm text-gray-500 dark:text-gray-400">
-                {loading ? (
-                  'Chargement...'
-                ) : (
-                  `Total: ${totalCount} colis`
-                )}
-              </span>
+      <div className="space-y-4">
+        <div className="flex justify-between items-center">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+            <CheckCircle className="h-5 w-5 text-green-600" />
+            <span>Colis Livrés</span>
+          </h2>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-500 dark:text-gray-400">Afficher</span>
+              <Select value={itemsPerPage.toString()} onValueChange={(value) => {
+                setItemsPerPage(Number(value));
+                setCurrentPage(1);
+              }}>
+                <SelectTrigger className="w-16 h-8 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+                  <SelectValue placeholder={itemsPerPage.toString()} />
+                </SelectTrigger>
+                <SelectContent className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
+                  <SelectItem value="5" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">5</SelectItem>
+                  <SelectItem value="10" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">10</SelectItem>
+                  <SelectItem value="25" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">25</SelectItem>
+                  <SelectItem value="50" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">50</SelectItem>
+                </SelectContent>
+              </Select>
+              <span className="text-sm text-gray-500 dark:text-gray-400">entrées</span>
             </div>
+            <span className="text-sm text-gray-500 dark:text-gray-400">
+              {loading ? (
+                'Chargement...'
+              ) : (
+                `Total: ${totalCount} colis`
+              )}
+            </span>
           </div>
         </div>
 
         <div className="overflow-x-auto">
           <Table className="bg-transparent min-w-full">
             <TableHeader>
-              <TableRow className="border-b border-gray-600 dark:border-gray-600" style={{ backgroundColor: 'hsl(217.2, 32.6%, 17.5%)' }}>
-                <TableHead className="text-gray-300 font-medium">ID Colis</TableHead>
-                <TableHead className="text-gray-300 font-medium">Client</TableHead>
-                <TableHead className="text-gray-300 font-medium hidden sm:table-cell">Entreprise</TableHead>
-                <TableHead className="text-gray-300 font-medium hidden md:table-cell">Date de livraison</TableHead>
-                <TableHead className="text-gray-300 font-medium hidden lg:table-cell">Livreur</TableHead>
-                <TableHead className="text-gray-300 font-medium">Actions</TableHead>
+              <TableRow className="border-b border-gray-200 dark:border-gray-600" style={{ backgroundColor: 'hsl(210, 40%, 96.1%)' }}>
+                <TableHead className="text-gray-900 font-medium">ID Colis</TableHead>
+                <TableHead className="text-gray-900 font-medium">Client</TableHead>
+                <TableHead className="text-gray-900 font-medium hidden sm:table-cell">Entreprise</TableHead>
+                <TableHead className="text-gray-900 font-medium hidden md:table-cell">Date de livraison</TableHead>
+                <TableHead className="text-gray-900 font-medium hidden lg:table-cell">Livreur</TableHead>
+                <TableHead className="text-gray-900 font-medium">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
                 // Loading skeleton
                 Array.from({ length: 5 }).map((_, index) => (
-                  <TableRow key={index} className="border-b border-gray-600 dark:border-gray-600 bg-transparent">
+                  <TableRow key={index} className="border-b border-gray-200 dark:border-gray-600 bg-white dark:bg-transparent">
                     <TableCell><div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div></TableCell>
                     <TableCell><div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div></TableCell>
                     <TableCell className="hidden sm:table-cell"><div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div></TableCell>
@@ -303,7 +301,7 @@ export function ColisLivres() {
                 ))
               ) : colis.length > 0 ? (
                 colis.map((colisItem) => (
-                  <TableRow key={colisItem.id} className="border-b border-gray-600 dark:border-gray-600 bg-transparent hover:bg-gray-700/10 dark:hover:bg-gray-700/20">
+                  <TableRow key={colisItem.id} className="border-b border-gray-200 dark:border-gray-600 bg-white dark:bg-transparent hover:bg-gray-50 dark:hover:bg-gray-700/20">
                     <TableCell className="font-mono text-sm text-gray-900 dark:text-gray-100">{colisItem.id}</TableCell>
                     <TableCell className="text-gray-900 dark:text-gray-100">{colisItem.client?.nom}</TableCell>
                     <TableCell className="text-gray-900 dark:text-gray-100 hidden sm:table-cell">{colisItem.entreprise?.nom}</TableCell>
@@ -315,19 +313,18 @@ export function ColisLivres() {
                     </TableCell>
                     <TableCell>
                       <Button
-                        variant="outline"
+                        variant="ghost"
                         size="sm"
-                        className="bg-transparent border-gray-600 dark:border-gray-600 text-gray-900 dark:text-gray-100 hover:bg-gray-700/10 dark:hover:bg-gray-700/20"
+                        className="h-8 px-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 hover:text-gray-900 dark:hover:text-white transition-colors"
                         onClick={() => navigate(`/colis/${colisItem.id}`)}
                       >
-                        <Eye className="h-4 w-4 mr-1" />
                         Voir
                       </Button>
                     </TableCell>
                   </TableRow>
                 ))
               ) : (
-                <TableRow className="border-b border-gray-600 dark:border-gray-600 bg-transparent">
+                <TableRow className="border-b border-gray-200 dark:border-gray-600 bg-white dark:bg-transparent">
                   <TableCell colSpan={6} className="text-center py-8 text-gray-500 dark:text-gray-400">
                     <CheckCircle className="h-12 w-12 mx-auto mb-4 text-green-300" />
                     <p>Aucun colis livré trouvé</p>

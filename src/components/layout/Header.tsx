@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { SidebarTrigger, useSidebar } from '@/components/ui/sidebar';
+import { GlobalSearch } from '@/components/ui/global-search';
 import { useState } from 'react';
 
 export function Header() {
@@ -72,36 +73,19 @@ export function Header() {
 
       {/* Mobile/Tablet Search Overlay - Below Header */}
       {showMobileSearch && (
-        <div className="absolute top-16 left-0 right-0 bg-background p-4 md:hidden z-40">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 h-4 w-4" />
-            <Input
-              type="text"
-              placeholder="Rechercher..."
-              className="pl-10 pr-12 py-3 w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 rounded-lg focus:ring-1 focus:ring-gray-400 dark:focus:ring-gray-500 focus:border-gray-400 dark:focus:border-gray-500"
-              autoFocus
-            />
-            <button
-              onClick={() => setShowMobileSearch(false)}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0 hover:bg-transparent flex items-center justify-center"
-            >
-              <X className="h-5 w-5 text-gray-500 dark:text-gray-400" />
-            </button>
-          </div>
+        <div className="absolute top-16 left-0 right-0 bg-background p-4 md:hidden z-40 border-b border-border">
+          <GlobalSearch
+            isMobile={true}
+            onClose={() => setShowMobileSearch(false)}
+            className="w-full"
+          />
         </div>
       )}
 
       {/* Desktop Layout */}
       <div className="hidden md:flex items-center justify-between w-full">
         <div className="flex items-center">
-          <div className="relative w-80 sm:w-96">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 h-4 w-4" />
-            <Input
-              type="text"
-              placeholder="Rechercher par ID, nom, adresse..."
-              className="pl-10 pr-4 py-2 w-full bg-white dark:bg-[hsl(222.2,84%,4.9%)] border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
-            />
-          </div>
+          <GlobalSearch className="w-80 sm:w-96" />
         </div>
 
         <div className="flex items-center space-x-4 ml-6">
