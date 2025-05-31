@@ -1,5 +1,5 @@
 
-import { Search, Bell, User, Menu, X } from 'lucide-react';
+import { Search, Bell, User, Menu, X, LogOut, CheckCircle, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -12,11 +12,38 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { SidebarTrigger, useSidebar } from '@/components/ui/sidebar';
 import { GlobalSearch } from '@/components/ui/global-search';
+import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
+import { useAuth } from '@/contexts/AuthContext';
 import { useState } from 'react';
+import { toast } from 'sonner';
 
 export function Header() {
   const { toggleSidebar } = useSidebar();
+  const { state, logout } = useAuth();
   const [showMobileSearch, setShowMobileSearch] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+
+  const handleLogoutClick = () => {
+    setShowLogoutConfirm(true);
+  };
+
+  const handleLogoutConfirm = async () => {
+    try {
+      await logout();
+      toast.success('Déconnexion réussie', {
+        description: 'Vous avez été déconnecté avec succès',
+        duration: 3000,
+        icon: <CheckCircle className="h-5 w-5 text-green-500" />,
+      });
+    } catch (error) {
+      console.error('Logout error:', error);
+      toast.error('Erreur lors de la déconnexion', {
+        description: 'Une erreur est survenue lors de la déconnexion',
+        duration: 4000,
+        icon: <XCircle className="h-5 w-5 text-red-500" />,
+      });
+    }
+  };
 
   return (
     <header className="sticky top-0 z-50 h-16 border-b bg-background border-border flex items-center px-4 sm:px-6 transition-colors">
@@ -63,7 +90,11 @@ export function Header() {
               <DropdownMenuItem className="text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">Profil</DropdownMenuItem>
               <DropdownMenuItem className="text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">Paramètres</DropdownMenuItem>
               <DropdownMenuSeparator className="bg-gray-200 dark:bg-gray-700" />
-              <DropdownMenuItem className="text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+              <DropdownMenuItem
+                className="text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
+                onClick={handleLogoutClick}
+              >
+                <LogOut className="mr-2 h-4 w-4" />
                 Se déconnecter
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -99,9 +130,11 @@ export function Header() {
                 {/* Desktop: Show user info */}
                 <div className="text-right">
                   <div className="font-medium text-sm text-gray-900 dark:text-gray-100">
-                    Jean Dupont
+                    {state.user ? `${state.user.prenom} ${state.user.nom}` : 'Utilisateur'}
                   </div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">jean.dupont@example.com</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                    {state.user?.email || 'email@example.com'}
+                  </div>
                 </div>
                 <div className="h-8 w-8 rounded-full border border-gray-300 dark:border-gray-600 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                   <User className="h-4 w-4 text-gray-600 dark:text-gray-400" />
@@ -114,13 +147,29 @@ export function Header() {
             <DropdownMenuItem className="text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">Profil</DropdownMenuItem>
             <DropdownMenuItem className="text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">Paramètres</DropdownMenuItem>
             <DropdownMenuSeparator className="bg-gray-200 dark:bg-gray-700" />
-            <DropdownMenuItem className="text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+            <DropdownMenuItem
+              className="text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
+              onClick={handleLogoutClick}
+            >
+              <LogOut className="mr-2 h-4 w-4" />
               Se déconnecter
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
         </div>
       </div>
+
+      {/* Logout Confirmation Dialog */}
+      <ConfirmationDialog
+        open={showLogoutConfirm}
+        onOpenChange={setShowLogoutConfirm}
+        title="Confirmer la déconnexion"
+        description="Êtes-vous sûr de vouloir vous déconnecter ? Vous devrez vous reconnecter pour accéder à votre compte."
+        confirmText="Se déconnecter"
+        cancelText="Annuler"
+        onConfirm={handleLogoutConfirm}
+        variant="destructive"
+      />
     </header>
   );
 }

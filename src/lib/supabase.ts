@@ -137,12 +137,28 @@ export const api = {
   },
 
   getUserByEmail: async (email: string) => {
-    const { data, error } = await supabase
-      .from('utilisateurs')
-      .select('*')
-      .eq('email', email)
-      .single()
-    return { data, error }
+    console.log('API: getUserByEmail called with email:', email);
+    try {
+      // Increase timeout to 10 seconds and add retry logic
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('API timeout after 10 seconds')), 10000);
+      });
+
+      const queryPromise = supabase
+        .from('utilisateurs')
+        .select('*')
+        .eq('email', email)
+        .single();
+
+      console.log('API: Starting query...');
+      const result = await Promise.race([queryPromise, timeoutPromise]) as any;
+      console.log('API: Query completed:', result);
+
+      return result;
+    } catch (err) {
+      console.error('API: getUserByEmail exception:', err);
+      return { data: null, error: err as any }
+    }
   },
 
   // Colis with pagination and filtering

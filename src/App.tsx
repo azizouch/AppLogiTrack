@@ -4,6 +4,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
+import { AuthProvider } from "@/contexts/AuthContext";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { Dashboard } from "@/pages/Dashboard";
 import { ColisList } from "@/pages/colis/ColisList";
 import { ColisLivres } from "@/pages/colis/ColisLivres";
@@ -32,6 +34,7 @@ import { Gestion } from "@/pages/utilisateurs/Gestion";
 import { Suivi } from "@/pages/utilisateurs/Suivi";
 import { General } from "@/pages/parametres/General";
 import { Statuts } from "@/pages/parametres/Statuts";
+import { LoginPage } from "@/components/auth/LoginPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -41,164 +44,225 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={
-            <Layout>
-              <Dashboard />
-            </Layout>
-          } />
+      <AuthProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={
+              <ProtectedRoute>
+                <Layout>
+                  <Dashboard />
+                </Layout>
+              </ProtectedRoute>
+            } />
 
           {/* Colis Routes */}
           <Route path="/colis" element={
-            <Layout>
-              <ColisList />
-            </Layout>
+            <ProtectedRoute>
+              <Layout>
+                <ColisList />
+              </Layout>
+            </ProtectedRoute>
           } />
           <Route path="/colis/nouveau" element={
-            <Layout>
-              <AddColis />
-            </Layout>
+            <ProtectedRoute>
+              <Layout>
+                <AddColis />
+              </Layout>
+            </ProtectedRoute>
           } />
           <Route path="/colis/:id" element={
-            <Layout>
-              <ViewColis />
-            </Layout>
+            <ProtectedRoute>
+              <Layout>
+                <ViewColis />
+              </Layout>
+            </ProtectedRoute>
           } />
           <Route path="/colis/:id/modifier" element={
-            <Layout>
-              <UpdateColis />
-            </Layout>
+            <ProtectedRoute>
+              <Layout>
+                <UpdateColis />
+              </Layout>
+            </ProtectedRoute>
           } />
           <Route path="/colis/livres" element={
-            <Layout>
-              <ColisLivres />
-            </Layout>
+            <ProtectedRoute>
+              <Layout>
+                <ColisLivres />
+              </Layout>
+            </ProtectedRoute>
           } />
           <Route path="/colis/refuses" element={
-            <Layout>
-              <ColisRefuses />
-            </Layout>
+            <ProtectedRoute>
+              <Layout>
+                <ColisRefuses />
+              </Layout>
+            </ProtectedRoute>
           } />
           <Route path="/colis/annules" element={
-            <Layout>
-              <ColisAnnules />
-            </Layout>
+            <ProtectedRoute>
+              <Layout>
+                <ColisAnnules />
+              </Layout>
+            </ProtectedRoute>
           } />
 
           {/* Bons Routes */}
           <Route path="/bons/distribution" element={
-            <Layout>
-              <Distribution />
-            </Layout>
+            <ProtectedRoute>
+              <Layout>
+                <Distribution />
+              </Layout>
+            </ProtectedRoute>
           } />
           <Route path="/bons/paiement" element={
-            <Layout>
-              <Paiement />
-            </Layout>
+            <ProtectedRoute>
+              <Layout>
+                <Paiement />
+              </Layout>
+            </ProtectedRoute>
           } />
           <Route path="/bons/retour" element={
-            <Layout>
-              <Retour />
-            </Layout>
+            <ProtectedRoute>
+              <Layout>
+                <Retour />
+              </Layout>
+            </ProtectedRoute>
           } />
 
           {/* Other Routes */}
           <Route path="/clients" element={
-            <Layout>
-              <Clients />
-            </Layout>
+            <ProtectedRoute>
+              <Layout>
+                <Clients />
+              </Layout>
+            </ProtectedRoute>
           } />
           <Route path="/clients/nouveau" element={
-            <Layout>
-              <AddClient />
-            </Layout>
+            <ProtectedRoute>
+              <Layout>
+                <AddClient />
+              </Layout>
+            </ProtectedRoute>
           } />
           <Route path="/clients/:id" element={
-            <Layout>
-              <ClientDetails />
-            </Layout>
+            <ProtectedRoute>
+              <Layout>
+                <ClientDetails />
+              </Layout>
+            </ProtectedRoute>
           } />
           <Route path="/clients/:id/modifier" element={
-            <Layout>
-              <EditClient />
-            </Layout>
+            <ProtectedRoute>
+              <Layout>
+                <EditClient />
+              </Layout>
+            </ProtectedRoute>
           } />
           <Route path="/entreprises" element={
-            <Layout>
-              <Entreprises />
-            </Layout>
+            <ProtectedRoute>
+              <Layout>
+                <Entreprises />
+              </Layout>
+            </ProtectedRoute>
           } />
           <Route path="/entreprises/ajouter" element={
-            <Layout>
-              <AddEntreprise />
-            </Layout>
+            <ProtectedRoute>
+              <Layout>
+                <AddEntreprise />
+              </Layout>
+            </ProtectedRoute>
           } />
           <Route path="/entreprises/:id" element={
-            <Layout>
-              <EntrepriseDetails />
-            </Layout>
+            <ProtectedRoute>
+              <Layout>
+                <EntrepriseDetails />
+              </Layout>
+            </ProtectedRoute>
           } />
           <Route path="/entreprises/:id/modifier" element={
-            <Layout>
-              <EditEntreprise />
-            </Layout>
+            <ProtectedRoute>
+              <Layout>
+                <EditEntreprise />
+              </Layout>
+            </ProtectedRoute>
           } />
           <Route path="/livreurs" element={
-            <Layout>
-              <Livreurs />
-            </Layout>
+            <ProtectedRoute>
+              <Layout>
+                <Livreurs />
+              </Layout>
+            </ProtectedRoute>
           } />
           <Route path="/livreurs/ajouter" element={
-            <Layout>
-              <AddLivreur />
-            </Layout>
+            <ProtectedRoute>
+              <Layout>
+                <AddLivreur />
+              </Layout>
+            </ProtectedRoute>
           } />
           <Route path="/livreurs/:id" element={
-            <Layout>
-              <LivreurDetails />
-            </Layout>
+            <ProtectedRoute>
+              <Layout>
+                <LivreurDetails />
+              </Layout>
+            </ProtectedRoute>
           } />
           <Route path="/livreurs/:id/modifier" element={
-            <Layout>
-              <EditLivreur />
-            </Layout>
+            <ProtectedRoute>
+              <Layout>
+                <EditLivreur />
+              </Layout>
+            </ProtectedRoute>
           } />
           <Route path="/notifications" element={
-            <Layout>
-              <Notifications />
-            </Layout>
+            <ProtectedRoute>
+              <Layout>
+                <Notifications />
+              </Layout>
+            </ProtectedRoute>
           } />
 
           {/* Utilisateurs Routes */}
           <Route path="/utilisateurs" element={
-            <Layout>
-              <Gestion />
-            </Layout>
+            <ProtectedRoute>
+              <Layout>
+                <Gestion />
+              </Layout>
+            </ProtectedRoute>
           } />
           <Route path="/utilisateurs/suivi" element={
-            <Layout>
-              <Suivi />
-            </Layout>
+            <ProtectedRoute>
+              <Layout>
+                <Suivi />
+              </Layout>
+            </ProtectedRoute>
           } />
 
           {/* Paramètres Routes */}
           <Route path="/parametres" element={
-            <Layout>
-              <General />
-            </Layout>
+            <ProtectedRoute>
+              <Layout>
+                <General />
+              </Layout>
+            </ProtectedRoute>
           } />
           <Route path="/parametres/statuts" element={
-            <Layout>
-              <Statuts />
-            </Layout>
+            <ProtectedRoute>
+              <Layout>
+                <Statuts />
+              </Layout>
+            </ProtectedRoute>
           } />
+
+          {/* Login route for testing */}
+          <Route path="/login" element={<LoginPage />} />
 
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
+    </AuthProvider>
+  </TooltipProvider>
+</QueryClientProvider>
 );
 
 export default App;

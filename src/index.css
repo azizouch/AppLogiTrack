@@ -101,3 +101,72 @@
     font-style: normal;
   }
 }
+
+/* Custom animations for LogiTrack loader */
+@layer utilities {
+  @keyframes logitrack-spin {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+
+  @keyframes logitrack-pulse {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.3;
+    }
+  }
+
+  @keyframes logitrack-fade-in {
+    0% {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .logitrack-spin {
+    animation: logitrack-spin 1s linear infinite;
+  }
+
+  .logitrack-pulse {
+    animation: logitrack-pulse 1.5s ease-in-out infinite;
+  }
+
+  .logitrack-fade-in {
+    animation: logitrack-fade-in 0.5s ease-out;
+  }
+
+  .logitrack-pulse-delay-150 {
+    animation: logitrack-pulse 1.5s ease-in-out infinite;
+    animation-delay: 0.15s;
+  }
+
+  .logitrack-pulse-delay-300 {
+    animation: logitrack-pulse 1.5s ease-in-out infinite;
+    animation-delay: 0.3s;
+  }
+
+  @keyframes fade-in-down {
+    0% {
+      opacity: 0;
+      transform: translateY(-20px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-fade-in-down {
+    animation: fade-in-down 0.6s ease-out;
+  }
+}

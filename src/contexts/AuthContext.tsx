@@ -19,7 +19,7 @@ type AuthAction =
 const initialState: AuthState = {
   user: null,
   isAuthenticated: false,
-  loading: true,
+  loading: false,
 };
 
 const authReducer = (state: AuthState, action: AuthAction): AuthState => {
@@ -90,11 +90,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         if (userError) {
           console.error('User profile error:', userError);
-          // If user profile doesn't exist, create a basic one for now
+          // Instead of throwing error, let's try to continue with basic auth data
+          console.log('Falling back to auth user data');
           const basicUser = {
             id: authData.user.id,
-            nom: 'Test',
-            prenom: 'User',
+            nom: authData.user.user_metadata?.nom || 'Utilisateur',
+            prenom: authData.user.user_metadata?.prenom || '',
             email: email,
             role: 'gestionnaire' as const,
             mot_de_passe: '',
@@ -106,13 +107,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
 
         if (userData) {
+          console.log('Successfully fetched user data:', userData);
+          console.log('User role:', userData.role);
           dispatch({ type: 'LOGIN_SUCCESS', payload: userData });
         } else {
-          // Create a basic user profile if none exists
+          console.log('No user data returned, creating fallback user');
           const basicUser = {
             id: authData.user.id,
-            nom: 'Test',
-            prenom: 'User',
+            nom: authData.user.user_metadata?.nom || 'Utilisateur',
+            prenom: authData.user.user_metadata?.prenom || '',
             email: email,
             role: 'gestionnaire' as const,
             mot_de_passe: '',
@@ -135,30 +138,72 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
-    // Check for existing Supabase session
+    let mounted = true;
+
+    // Add timeout to prevent infinite loading
+    const timeoutId = setTimeout(() => {
+      if (mounted) {
+        console.log('Session check timeout - forcing login failure');
+        dispatch({ type: 'LOGIN_FAILURE' });
+      }
+    }, 5000); // Reduced to 5 second timeout
+
+    // Simplified session check - just check if user is authenticated
     const checkSession = async () => {
       try {
+        console.log('Checking session...');
+        dispatch({ type: 'SET_LOADING', payload: true });
         const { user: authUser, error } = await auth.getCurrentUser();
 
+        if (!mounted) return;
+
+        clearTimeout(timeoutId);
+
         if (error) {
-          dispatch({ type: 'SET_LOADING', payload: false });
+          console.log('Auth error:', error);
+          dispatch({ type: 'LOGIN_FAILURE' });
           return;
         }
 
         if (authUser) {
-          // Get user profile from our users table
-          const { data: userData, error: userError } = await api.getUserByEmail(authUser.email!);
+          console.log('Auth user found:', authUser.email);
+          // Fetch real user data from database
+          try {
+            const { data: userData, error: userError } = await api.getUserByEmail(authUser.email!);
 
-          if (userError || !userData) {
-            dispatch({ type: 'LOGIN_FAILURE' });
-          } else {
+            if (userError || !userData) {
+              console.log('No user data found during session check, creating fallback');
+              const basicUser = {
+                id: authUser.id,
+                nom: authUser.user_metadata?.nom || 'Utilisateur',
+                prenom: authUser.user_metadata?.prenom || '',
+                email: authUser.email!,
+                role: 'gestionnaire' as const,
+                mot_de_passe: '',
+                statut: 'actif',
+                date_creation: new Date().toISOString(),
+              };
+              dispatch({ type: 'LOGIN_SUCCESS', payload: basicUser });
+              return;
+            }
+
+            console.log('Using real user profile for session:', userData);
+            console.log('Session user role:', userData.role);
             dispatch({ type: 'LOGIN_SUCCESS', payload: userData });
+          } catch (error) {
+            console.error('Error fetching user data:', error);
+            dispatch({ type: 'LOGIN_FAILURE' });
           }
         } else {
-          dispatch({ type: 'SET_LOADING', payload: false });
+          console.log('No auth user found');
+          dispatch({ type: 'LOGIN_FAILURE' });
         }
       } catch (error) {
-        dispatch({ type: 'LOGIN_FAILURE' });
+        console.error('Session check error:', error);
+        if (mounted) {
+          clearTimeout(timeoutId);
+          dispatch({ type: 'LOGIN_FAILURE' });
+        }
       }
     };
 
@@ -166,17 +211,58 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Listen for auth state changes
     const { data: { subscription } } = auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state change:', event, session?.user?.email);
+
       if (event === 'SIGNED_OUT' || !session) {
+        console.log('User signed out, dispatching LOGOUT');
         dispatch({ type: 'LOGOUT' });
       } else if (event === 'SIGNED_IN' && session.user) {
-        const { data: userData, error } = await api.getUserByEmail(session.user.email!);
-        if (userData && !error) {
-          dispatch({ type: 'LOGIN_SUCCESS', payload: userData });
+        // Only handle SIGNED_IN if we don't already have a user
+        if (!state.user) {
+          console.log('User signed in, fetching real profile for:', session.user.email);
+
+          // Fetch real user data from database
+          try {
+            const { data: userData, error: userError } = await api.getUserByEmail(session.user.email!);
+
+            if (userError || !userData) {
+              console.log('No user data found during sign in, creating fallback');
+              const basicUser = {
+                id: session.user.id,
+                nom: session.user.user_metadata?.nom || 'Utilisateur',
+                prenom: session.user.user_metadata?.prenom || '',
+                email: session.user.email!,
+                role: 'gestionnaire' as const,
+                mot_de_passe: '',
+                statut: 'actif',
+                date_creation: new Date().toISOString(),
+              };
+              dispatch({ type: 'LOGIN_SUCCESS', payload: basicUser });
+              return;
+            }
+
+            console.log('Dispatching LOGIN_SUCCESS with real user data:', userData);
+            dispatch({ type: 'LOGIN_SUCCESS', payload: userData });
+          } catch (error) {
+            console.error('Error fetching user data during sign in:', error);
+            dispatch({ type: 'LOGIN_FAILURE' });
+          }
+        } else {
+          console.log('User already logged in, skipping SIGNED_IN event');
         }
+      } else if (event === 'INITIAL_SESSION') {
+        // Handle initial session - this is fired when the page loads
+        console.log('Initial session detected, handled by checkSession');
+      } else {
+        console.log('Unknown auth state, event:', event);
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      clearTimeout(timeoutId);
+      subscription.unsubscribe();
+    };
   }, []);
 
   return (

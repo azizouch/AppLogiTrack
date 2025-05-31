@@ -21,7 +21,8 @@ import {
   CreditCard,
   RotateCcw,
   UserCheck,
-  UserPlus
+  UserPlus,
+  UserX
 } from 'lucide-react';
 import {
   Sidebar,
@@ -36,10 +37,12 @@ import {
 import { useLocation, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useAuth } from '@/contexts/AuthContext';
 
 export function AppSidebar() {
   const location = useLocation();
   const { state, toggleSidebar } = useSidebar();
+  const { state: authState } = useAuth();
   const isMobile = useIsMobile();
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -91,16 +94,29 @@ export function AppSidebar() {
       roles: ['admin', 'gestionnaire', 'livreur'],
       hasDropdown: true,
       items: [
-        { title: 'Liste Colis', url: '/colis', icon: Package },
+        { title: 'Liste Colis', url: '/colis', icon: Package, roles: ['admin', 'gestionnaire'] },
+        { title: 'Mes Colis', url: '/colis/mes-colis', icon: Package, roles: ['livreur'] },
         { title: 'Colis Livrés', url: '/colis/livres', icon: CheckCircle },
-        { title: 'Colis Refusés', url: '/colis/refuses', icon: XCircle, roles: ['admin', 'gestionnaire'] },
-        { title: 'Colis Annulés', url: '/colis/annules', icon: Ban, roles: ['admin', 'gestionnaire'] },
+        { title: 'Colis Refusés', url: '/colis/refuses', icon: XCircle, roles: ['admin', 'gestionnaire', 'livreur'] },
+        { title: 'Colis Annulés', url: '/colis/annules', icon: Ban, roles: ['admin', 'gestionnaire', 'livreur'] },
       ]
+    },
+    {
+      title: 'Colis Relancé',
+      url: '/colis/relance',
+      icon: RotateCcw,
+      roles: ['livreur']
+    },
+    {
+      title: 'Relancé Autre Client',
+      url: '/colis/relance-autre',
+      icon: UserX,
+      roles: ['livreur']
     },
     {
       title: 'Bons',
       icon: FileText,
-      roles: ['admin', 'gestionnaire'],
+      roles: ['admin', 'gestionnaire', 'livreur'],
       hasDropdown: true,
       items: [
         { title: 'Distribution', url: '/bons/distribution', icon: FileText },
@@ -154,9 +170,10 @@ export function AppSidebar() {
     },
   ];
 
-  const hasAccess = (_itemRoles?: string[]) => {
-    // Since we removed auth, show all items (admin access)
-    return true;
+  const hasAccess = (itemRoles?: string[]) => {
+    if (!itemRoles || itemRoles.length === 0) return true;
+    if (!authState.user) return false;
+    return itemRoles.includes(authState.user.role);
   };
 
   const isActive = (url: string) => {
