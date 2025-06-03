@@ -14,7 +14,7 @@ import { SidebarTrigger, useSidebar } from '@/components/ui/sidebar';
 import { GlobalSearch } from '@/components/ui/global-search';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { useAuth } from '@/contexts/AuthContext';
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 
 export function Header() {
@@ -23,18 +23,44 @@ export function Header() {
   const [showMobileSearch, setShowMobileSearch] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
+
+
+  // Force close logout dialog when component unmounts (during logout)
+  useEffect(() => {
+    return () => {
+      setShowLogoutConfirm(false);
+    };
+  }, []);
+
+  // Global cleanup effect to monitor and fix pointer-events issues
+  useEffect(() => {
+    const interval = setInterval(() => {
+      // Check if body has pointer-events: none but no modal is open
+      if (document.body.style.pointerEvents === 'none' && !showLogoutConfirm) {
+        // Check if there are any open modals/dialogs
+        const hasOpenModal = document.querySelector('[role="alertdialog"][data-state="open"]') ||
+                            document.querySelector('[role="dialog"][data-state="open"]') ||
+                            document.querySelector('[data-radix-popper-content-wrapper]');
+
+        if (!hasOpenModal) {
+          // No modals open, safe to remove pointer-events
+          document.body.style.removeProperty('pointer-events');
+          document.body.removeAttribute('data-scroll-locked');
+        }
+      }
+    }, 500);
+
+    return () => clearInterval(interval);
+  }, [showLogoutConfirm]);
+
   const handleLogoutClick = () => {
     setShowLogoutConfirm(true);
   };
 
   const handleLogoutConfirm = async () => {
     try {
+      // Perform logout
       await logout();
-      toast.success('Déconnexion réussie', {
-        description: 'Vous avez été déconnecté avec succès',
-        duration: 3000,
-        icon: <CheckCircle className="h-5 w-5 text-green-500" />,
-      });
     } catch (error) {
       console.error('Logout error:', error);
       toast.error('Erreur lors de la déconnexion', {
@@ -42,6 +68,28 @@ export function Header() {
         duration: 4000,
         icon: <XCircle className="h-5 w-5 text-red-500" />,
       });
+    }
+  };
+
+  // Handle modal close with proper cleanup
+  const handleModalClose = (open: boolean) => {
+    setShowLogoutConfirm(open);
+
+    // If modal is being closed, ensure body styles are cleaned up
+    if (!open) {
+      // Multiple cleanup attempts with different delays to ensure it works
+      const cleanupBody = () => {
+        document.body.style.removeProperty('pointer-events');
+        document.body.removeAttribute('data-scroll-locked');
+      };
+
+      // Immediate cleanup
+      cleanupBody();
+
+      // Delayed cleanup (after Radix animations)
+      setTimeout(cleanupBody, 100);
+      setTimeout(cleanupBody, 300);
+      setTimeout(cleanupBody, 500);
     }
   };
 
@@ -85,7 +133,16 @@ export function Header() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
-              <DropdownMenuLabel className="text-gray-900 dark:text-gray-100">Mon compte</DropdownMenuLabel>
+              <DropdownMenuLabel className="text-gray-900 dark:text-gray-100">
+                <div className="flex flex-col space-y-1">
+                  <div className="font-medium">
+                    {state.user ? `${state.user.prenom} ${state.user.nom}` : 'Utilisateur'}
+                  </div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400 font-normal">
+                    {state.user?.email || 'email@example.com'}
+                  </div>
+                </div>
+              </DropdownMenuLabel>
               <DropdownMenuSeparator className="bg-gray-200 dark:bg-gray-700" />
               <DropdownMenuItem className="text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">Profil</DropdownMenuItem>
               <DropdownMenuItem className="text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">Paramètres</DropdownMenuItem>
@@ -162,7 +219,7 @@ export function Header() {
       {/* Logout Confirmation Dialog */}
       <ConfirmationDialog
         open={showLogoutConfirm}
-        onOpenChange={setShowLogoutConfirm}
+        onOpenChange={handleModalClose}
         title="Confirmer la déconnexion"
         description="Êtes-vous sûr de vouloir vous déconnecter ? Vous devrez vous reconnecter pour accéder à votre compte."
         confirmText="Se déconnecter"

@@ -3,10 +3,13 @@ import { useState, useEffect } from 'react';
 import { Package, Truck, Users, Clock, CheckCircle, RotateCcw, RefreshCw } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
+import { useAuth } from '@/contexts/AuthContext';
+import { LivreurDashboard } from './livreur/LivreurDashboard';
 
 import { api } from '@/lib/supabase';
 
 export function Dashboard() {
+  const { state } = useAuth();
   const [stats, setStats] = useState({
     enAttente: 0,
     enTraitement: 5,
@@ -99,6 +102,11 @@ export function Dashboard() {
     };
     return now.toLocaleDateString('fr-FR', options);
   };
+
+  // Render livreur dashboard if user is a livreur (case-insensitive)
+  if (state.user?.role?.toLowerCase() === 'livreur') {
+    return <LivreurDashboard />;
+  }
 
   return (
     <div className="space-y-4 sm:space-y-6">

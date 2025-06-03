@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Search, Filter, RefreshCw, Eye, CheckCircle } from 'lucide-react';
+import { Search, Filter, RefreshCw, Eye, CheckCircle, Phone, MessageCircle, MapPin, Building, Package, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   Table,
   TableBody,
@@ -23,9 +24,15 @@ import { Colis, User } from '@/types';
 import { api } from '@/lib/supabase';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 
 export function ColisLivres() {
   const navigate = useNavigate();
+  const { state } = useAuth();
+
+  // Check if user is livreur
+  const isLivreur = state.user?.role === 'livreur';
+
   // Data state
   const [colis, setColis] = useState<Colis[]>([]);
   const [livreurs, setLivreurs] = useState<User[]>([]);
@@ -57,13 +64,13 @@ export function ColisLivres() {
         setLoading(true);
       }
 
-      // Get colis with status "Livré"
+      // Get colis with status "livre" - filter by current livreur if user is livreur
       const { data, error, count, totalPages: pages, hasNextPage: hasNext, hasPrevPage: hasPrev } = await api.getColis({
         page: currentPage,
         limit: itemsPerPage,
         search: debouncedSearchTerm,
-        status: 'Livré',
-        livreurId: delivererFilter,
+        status: 'livre',
+        livreurId: isLivreur ? state.user?.id : (delivererFilter !== 'all' ? delivererFilter : undefined),
         sortBy: sortBy
       });
 
@@ -157,8 +164,15 @@ export function ColisLivres() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Colis Livrés</h1>
-          <p className="text-gray-600 dark:text-gray-400">Liste des colis qui ont été livrés avec succès</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+            {isLivreur ? 'Mes Colis Livrés' : 'Colis Livrés'}
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400">
+            {isLivreur
+              ? `Total: ${totalCount} colis livrés`
+              : 'Liste des colis qui ont été livrés avec succès'
+            }
+          </p>
         </div>
         <div className="flex items-center gap-2 w-full sm:w-auto">
           <Button
@@ -195,7 +209,7 @@ export function ColisLivres() {
           )}
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className={`grid gap-4 ${isLivreur ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'}`}>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 h-4 w-4" />
             <Input
@@ -206,25 +220,27 @@ export function ColisLivres() {
             />
           </div>
 
-          <Select value={delivererFilter} onValueChange={setDelivererFilter}>
-            <SelectTrigger className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white">
-              <SelectValue placeholder="Tous les livreurs" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Tous les livreurs</SelectItem>
-              <SelectItem value="unassigned">Non assigné</SelectItem>
-              {livreurs.map((livreur) => (
-                <SelectItem key={livreur.id} value={livreur.id}>
-                  <div className="flex items-center gap-2">
-                    <div className="flex-shrink-0 h-6 w-6 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-                      {livreur.prenom?.[0] || livreur.nom[0]}
+          {!isLivreur && (
+            <Select value={delivererFilter} onValueChange={setDelivererFilter}>
+              <SelectTrigger className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white">
+                <SelectValue placeholder="Tous les livreurs" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tous les livreurs</SelectItem>
+                <SelectItem value="unassigned">Non assigné</SelectItem>
+                {livreurs.map((livreur) => (
+                  <SelectItem key={livreur.id} value={livreur.id}>
+                    <div className="flex items-center gap-2">
+                      <div className="flex-shrink-0 h-6 w-6 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                        {livreur.prenom?.[0] || livreur.nom[0]}
+                      </div>
+                      <span>{`${livreur.prenom || ''} ${livreur.nom}`.trim()}</span>
                     </div>
-                    <span>{`${livreur.prenom || ''} ${livreur.nom}`.trim()}</span>
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
 
           <Select value={sortBy} onValueChange={(value) => setSortBy(value as 'recent' | 'oldest')}>
             <SelectTrigger className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white">

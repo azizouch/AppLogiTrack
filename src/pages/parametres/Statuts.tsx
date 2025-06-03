@@ -218,7 +218,6 @@ export function Statuts() {
       resetForm();
       fetchStatuts();
     } catch (error) {
-      console.error('Error creating statut:', error);
       toast({
         title: 'Erreur',
         description: 'Impossible de créer le statut',

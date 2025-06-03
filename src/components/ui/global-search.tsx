@@ -46,14 +46,11 @@ export function GlobalSearch({
       return;
     }
 
-    console.log('Performing search for:', searchQuery);
     setIsLoading(true);
     try {
       const searchResults = await api.globalSearch(searchQuery, 5);
-      console.log('Search results received:', searchResults);
 
       if (searchResults.error) {
-        console.error('Search API error:', searchResults.error);
         setResults({ clients: [], colis: [], entreprises: [] });
       } else {
         setResults({
@@ -65,7 +62,6 @@ export function GlobalSearch({
         setIsOpen(true);
       }
     } catch (error) {
-      console.error('Search error:', error);
       setResults({ clients: [], colis: [], entreprises: [] });
     } finally {
       setIsLoading(false);

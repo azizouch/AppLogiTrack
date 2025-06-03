@@ -36,8 +36,10 @@ import {
 } from '@/components/ui/sidebar';
 import { useLocation, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/contexts/AuthContext';
+import { api } from '@/lib/supabase';
 
 export function AppSidebar() {
   const location = useLocation();
@@ -48,6 +50,9 @@ export function AppSidebar() {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [tooltip, setTooltip] = useState<{ text: string; x: number; y: number } | null>(null);
   const [dropdownPopup, setDropdownPopup] = useState<{ items: any[]; x: number; y: number } | null>(null);
+  const [badgeCounts, setBadgeCounts] = useState<Record<string, number>>({});
+
+
 
   // CSS variables will handle the styling properly
 
@@ -81,6 +86,40 @@ export function AppSidebar() {
     }
   }, [location.pathname, isCollapsed]); // Removed expandedItems from dependencies
 
+  // Fetch badge counts for livreur
+  useEffect(() => {
+    const fetchBadgeCounts = async () => {
+      if (authState.user?.role?.toLowerCase() === 'livreur' && authState.user?.id) {
+        console.log('Fetching badge counts for livreur:', authState.user.id);
+        try {
+          const { data, error } = await api.getColisCountsByStatus(authState.user.id, ['Relancé', 'Relancé Autre Client']);
+          console.log('Badge counts response:', { data, error });
+          if (data && !error) {
+            setBadgeCounts(data);
+          } else {
+            // Set default counts if no data
+            setBadgeCounts({
+              'Relancé': 0,
+              'Relancé Autre Client': 0
+            });
+          }
+        } catch (error) {
+          console.error('Error fetching badge counts:', error);
+          // Set default counts on error
+          setBadgeCounts({
+            'Relancé': 0,
+            'Relancé Autre Client': 0
+          });
+        }
+      }
+    };
+
+    fetchBadgeCounts();
+    // Refresh counts every 30 seconds
+    const interval = setInterval(fetchBadgeCounts, 30000);
+    return () => clearInterval(interval);
+  }, [authState.user?.id, authState.user?.role]);
+
   const navigationItems = [
     {
       title: 'Accueil',
@@ -96,22 +135,27 @@ export function AppSidebar() {
       items: [
         { title: 'Liste Colis', url: '/colis', icon: Package, roles: ['admin', 'gestionnaire'] },
         { title: 'Mes Colis', url: '/colis/mes-colis', icon: Package, roles: ['livreur'] },
-        { title: 'Colis Livrés', url: '/colis/livres', icon: CheckCircle },
-        { title: 'Colis Refusés', url: '/colis/refuses', icon: XCircle, roles: ['admin', 'gestionnaire', 'livreur'] },
-        { title: 'Colis Annulés', url: '/colis/annules', icon: Ban, roles: ['admin', 'gestionnaire', 'livreur'] },
+        { title: 'Colis Livrés', url: '/colis/livres', icon: CheckCircle, roles: ['admin', 'gestionnaire'] },
+        { title: 'Colis Refusés', url: '/colis/refuses', icon: XCircle, roles: ['admin', 'gestionnaire'] },
+        { title: 'Colis Annulés', url: '/colis/annules', icon: Ban, roles: ['admin', 'gestionnaire'] },
+        { title: 'Colis Livrés', url: '/colis/mes-livres', icon: CheckCircle, roles: ['livreur'] },
+        { title: 'Colis Retournés', url: '/colis/mes-refuses', icon: XCircle, roles: ['livreur'] },
+        { title: 'Colis Annulés', url: '/colis/mes-annules', icon: Ban, roles: ['livreur'] },
       ]
     },
     {
       title: 'Colis Relancé',
       url: '/colis/relance',
       icon: RotateCcw,
-      roles: ['livreur']
+      roles: ['livreur'],
+      badgeCount: badgeCounts['Relancé'] ?? 0
     },
     {
       title: 'Relancé Autre Client',
       url: '/colis/relance-autre',
       icon: UserX,
-      roles: ['livreur']
+      roles: ['livreur'],
+      badgeCount: badgeCounts['Relancé Autre Client'] ?? 0
     },
     {
       title: 'Bons',
@@ -173,8 +217,15 @@ export function AppSidebar() {
   const hasAccess = (itemRoles?: string[]) => {
     if (!itemRoles || itemRoles.length === 0) return true;
     if (!authState.user) return false;
-    return itemRoles.includes(authState.user.role);
+
+    // Make role comparison case-insensitive
+    const userRole = authState.user.role.toLowerCase();
+    const hasRole = itemRoles.some(role => role.toLowerCase() === userRole);
+
+    return hasRole;
   };
+
+
 
   const isActive = (url: string) => {
     if (url === '/') {
@@ -317,7 +368,19 @@ export function AppSidebar() {
                                 isItemActive ? 'text-sidebar-primary-foreground' : 'text-sidebar-foreground'
                               }`}
                             />
-                            {!isCollapsed && <span>{item.title}</span>}
+                            {!isCollapsed && (
+                              <div className="flex items-center justify-between w-full">
+                                <span>{item.title}</span>
+                                {item.badgeCount !== undefined && (
+                                  <Badge
+                                    variant="secondary"
+                                    className="ml-2 bg-gray-200 text-black dark:bg-gray-700 dark:text-white text-xs px-2 py-0.5 min-w-[20px] h-5 flex items-center justify-center"
+                                  >
+                                    {item.badgeCount}
+                                  </Badge>
+                                )}
+                              </div>
+                            )}
                           </div>
                         </Link>
                       </div>
@@ -383,7 +446,7 @@ export function AppSidebar() {
                         {/* Dropdown items */}
                         {!isCollapsed && expanded && item.items && (
                           <div className="ml-8 space-y-1 mt-2">
-                            {item.items.map((subItem) => {
+                            {item.items.map((subItem: any) => {
                               if (subItem.roles && !hasAccess(subItem.roles)) return null;
                               const isSubItemActive = isActive(subItem.url);
 

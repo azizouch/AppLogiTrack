@@ -8,7 +8,23 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables')
 }
 
-export const supabase: SupabaseClient = createClient(supabaseUrl, supabaseAnonKey)
+// Singleton pattern to prevent multiple instances
+let supabaseInstance: SupabaseClient | null = null
+
+const getSupabaseClient = (): SupabaseClient => {
+  if (!supabaseInstance) {
+    supabaseInstance = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: true
+      }
+    })
+  }
+  return supabaseInstance
+}
+
+export const supabase: SupabaseClient = getSupabaseClient()
 
 export interface ApiResponse<T> {
   data: T | null;
@@ -85,16 +101,17 @@ export const auth = {
         .from('utilisateurs')
         .insert({
           id: data.user.id,
-          email: email,
           nom: userData.nom,
           prenom: userData.prenom,
+          email: email, // Store email in our table too
           role: userData.role,
           statut: 'actif',
           mot_de_passe: '', // We don't store passwords in our table
+          date_creation: new Date().toISOString(),
         })
 
       if (profileError) {
-        console.error('Error creating user profile:', profileError)
+        return { data, error: profileError }
       }
     }
 
@@ -102,17 +119,59 @@ export const auth = {
   },
 
   signOut: async () => {
-    const { error } = await supabase.auth.signOut()
-    return { error }
+    try {
+      const { error } = await supabase.auth.signOut()
+
+      // Clear any stored auth data from localStorage
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('supabase.auth.token')
+        localStorage.removeItem('sb-' + supabaseUrl.split('//')[1].split('.')[0] + '-auth-token')
+      }
+
+      return { error }
+    } catch (error: any) {
+      return { error }
+    }
   },
 
   getCurrentUser: async () => {
-    const { data: { user }, error } = await supabase.auth.getUser()
-    return { user, error }
+    try {
+      const { data: { user }, error } = await supabase.auth.getUser()
+
+      // Handle specific auth errors gracefully
+      if (error) {
+        // These errors are expected when no session exists
+        if (error.message.includes('Auth session missing') ||
+            error.message.includes('Invalid Refresh Token') ||
+            error.message.includes('Refresh Token Not Found')) {
+          return { user: null, error: null } // Treat as no user logged in
+        }
+        return { user, error }
+      }
+
+      return { user, error }
+    } catch (error: any) {
+      return { user: null, error: null }
+    }
   },
 
   onAuthStateChange: (callback: (event: string, session: any) => void) => {
     return supabase.auth.onAuthStateChange(callback)
+  },
+
+  // Password reset functionality
+  resetPassword: async (email: string) => {
+    const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    })
+    return { data, error }
+  },
+
+  updatePassword: async (newPassword: string) => {
+    const { data, error } = await supabase.auth.updateUser({
+      password: newPassword
+    })
+    return { data, error }
   }
 }
 
@@ -137,26 +196,39 @@ export const api = {
   },
 
   getUserByEmail: async (email: string) => {
-    console.log('API: getUserByEmail called with email:', email);
     try {
-      // Increase timeout to 10 seconds and add retry logic
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('API timeout after 10 seconds')), 10000);
-      });
+      // Get the current authenticated user
+      const { data: authUser, error: authError } = await supabase.auth.getUser();
 
-      const queryPromise = supabase
+      if (authError || !authUser.user) {
+        console.log('Auth error or no user:', authError?.message);
+        return { data: null, error: authError };
+      }
+
+      const authUserId = authUser.user.id;
+      console.log('Looking for user with auth_id:', authUserId);
+
+      // Find user by auth_id (correct relationship)
+      const { data: userData, error: userError } = await supabase
         .from('utilisateurs')
         .select('*')
-        .eq('email', email)
+        .eq('auth_id', authUserId)
         .single();
 
-      console.log('API: Starting query...');
-      const result = await Promise.race([queryPromise, timeoutPromise]) as any;
-      console.log('API: Query completed:', result);
+      if (!userError && userData) {
+        console.log('User found in database:', userData.nom, 'with role:', userData.role);
+        const userWithEmail = {
+          ...userData,
+          email: email
+        };
+        return { data: userWithEmail, error: null };
+      }
 
-      return result;
+      console.log('User not found in database:', userError?.message);
+      return { data: null, error: { message: 'User profile not found in database' } };
+
     } catch (err) {
-      console.error('API: getUserByEmail exception:', err);
+      console.log('Error in getUserByEmail:', err);
       return { data: null, error: err as any }
     }
   },
@@ -169,6 +241,7 @@ export const api = {
     status?: string;
     livreurId?: string;
     sortBy?: 'recent' | 'oldest' | 'status';
+    dateFilter?: string;
   } = {}) => {
     const {
       page = 1,
@@ -176,7 +249,8 @@ export const api = {
       search = '',
       status = '',
       livreurId = '',
-      sortBy = 'recent'
+      sortBy = 'recent',
+      dateFilter = ''
     } = options;
 
     let query = supabase
@@ -188,14 +262,79 @@ export const api = {
         livreur:utilisateurs(id, nom, prenom, telephone)
       `, { count: 'exact' });
 
-    // Apply search filter
+    // Apply search filter - comprehensive search across multiple fields
     if (search) {
-      query = query.or(`id.ilike.%${search}%,clients.nom.ilike.%${search}%,entreprises.nom.ilike.%${search}%`);
+      // First, get client IDs that match the search term
+      const { data: matchingClients } = await supabase
+        .from('clients')
+        .select('id')
+        .ilike('nom', `%${search}%`);
+
+      // Get entreprise IDs that match the search term
+      const { data: matchingEntreprises } = await supabase
+        .from('entreprises')
+        .select('id')
+        .ilike('nom', `%${search}%`);
+
+      const clientIds = matchingClients?.map(c => c.id) || [];
+      const entrepriseIds = matchingEntreprises?.map(e => e.id) || [];
+
+      // Build OR conditions for search
+      const searchConditions = [`id.ilike.%${search}%`];
+
+      if (clientIds.length > 0) {
+        searchConditions.push(`client_id.in.(${clientIds.join(',')})`);
+      }
+
+      if (entrepriseIds.length > 0) {
+        searchConditions.push(`entreprise_id.in.(${entrepriseIds.join(',')})`);
+      }
+
+      query = query.or(searchConditions.join(','));
     }
 
     // Apply status filter
     if (status && status !== 'all') {
       query = query.eq('statut', status);
+    }
+
+    // Apply date filter
+    if (dateFilter && dateFilter !== 'toutes') {
+      const now = new Date();
+      let startDate: Date;
+      let endDate: Date = now;
+
+      switch (dateFilter) {
+        case 'aujourd_hui':
+          startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          break;
+        case 'hier':
+          startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+          endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          break;
+        case '7_derniers_jours':
+          startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+          break;
+        case '30_derniers_jours':
+          startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+          break;
+        case 'ce_mois':
+          startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+          break;
+        case 'le_mois_dernier':
+          startDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+          endDate = new Date(now.getFullYear(), now.getMonth(), 0);
+          break;
+        default:
+          startDate = new Date(0); // No filter
+      }
+
+      if (startDate) {
+        query = query.gte('date_creation', startDate.toISOString());
+        if (endDate && dateFilter !== 'aujourd_hui' && dateFilter !== '7_derniers_jours' && dateFilter !== '30_derniers_jours' && dateFilter !== 'ce_mois') {
+          query = query.lte('date_creation', endDate.toISOString());
+        }
+      }
     }
 
     // Apply livreur filter
@@ -405,6 +544,24 @@ export const api = {
     return { data, error }
   },
 
+  // Get colis counts by status for a specific livreur
+  getColisCountsByStatus: async (livreurId: string, statuses: string[]) => {
+    const { data, error } = await supabase
+      .from('colis')
+      .select('statut')
+      .eq('livreur_id', livreurId)
+      .in('statut', statuses);
+
+    if (error) return { data: null, error };
+
+    const counts: Record<string, number> = {};
+    statuses.forEach(status => {
+      counts[status] = data?.filter(c => c.statut === status).length || 0;
+    });
+
+    return { data: counts, error: null };
+  },
+
   // Dashboard stats
   getDashboardStats: async () => {
     const [colisResult, usersResult] = await Promise.all([
@@ -439,8 +596,6 @@ export const api = {
     return { data, error }
   },
 
-
-
   // Global search functionality
   globalSearch: async (query: string, limit: number = 10) => {
     if (!query || query.trim().length < 2) {
@@ -453,21 +608,14 @@ export const api = {
     }
 
     const searchTerm = query.trim();
-    console.log('Global search for:', searchTerm);
 
     try {
       // Search clients with OR query
-      console.log('Searching clients...');
       const { data: clients, error: clientsError } = await supabase
         .from('clients')
         .select('id, nom, email, telephone, adresse')
         .or(`nom.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,telephone.ilike.%${searchTerm}%`)
         .limit(limit);
-
-      console.log('Clients result:', { clients, clientsError });
-
-      // Search colis - separate queries to avoid complex joins with OR
-      console.log('Searching colis...');
 
       // Search colis by ID
       const { data: colisByID, error: colisIDError } = await supabase
@@ -482,32 +630,22 @@ export const api = {
         .ilike('id', `%${searchTerm}%`)
         .limit(limit);
 
-      console.log('Colis by ID result:', { colisByID, colisIDError });
-
-      // For now, just use colis by ID to avoid complex joins
       const colis = colisByID;
 
       // Search entreprises with OR query
-      console.log('Searching entreprises...');
       const { data: entreprises, error: entreprisesError } = await supabase
         .from('entreprises')
         .select('id, nom, contact, telephone, email, adresse')
         .or(`nom.ilike.%${searchTerm}%,contact.ilike.%${searchTerm}%,telephone.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%`)
         .limit(limit);
 
-      console.log('Entreprises result:', { entreprises, entreprisesError });
-
-      const result = {
+      return {
         clients: clients || [],
         colis: colis || [],
         entreprises: entreprises || [],
         error: clientsError || colisIDError || entreprisesError
       };
-
-      console.log('Final search result:', result);
-      return result;
     } catch (error) {
-      console.error('Global search error:', error);
       return {
         clients: [],
         colis: [],

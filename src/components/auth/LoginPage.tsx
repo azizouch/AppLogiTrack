@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { Eye, EyeOff, AlertCircle, CheckCircle } from 'lucide-react';
+import { ForgotPasswordModal } from './ForgotPasswordModal';
 
 export function LoginPage() {
   const [email, setEmail] = useState('');
@@ -16,7 +17,51 @@ export function LoginPage() {
   const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
   const { login } = useAuth();
+
+  // Reset form state when component mounts (after logout)
+  useEffect(() => {
+    // Reset all local state
+    setEmail('');
+    setPassword('');
+    setShowPassword(false);
+    setRememberMe(false);
+    setLoading(false);
+    setError('');
+
+    // Force cleanup of any stuck modal/dialog styles on login page load
+    if (typeof window !== 'undefined') {
+      document.body.style.removeProperty('pointer-events');
+      document.body.style.removeProperty('overflow');
+      document.body.removeAttribute('data-scroll-locked');
+    }
+
+    // Show logout success message if user was just logged out
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('logout') === 'success') {
+      toast.success('Déconnexion réussie', {
+        description: 'Vous avez été déconnecté avec succès',
+        duration: 3000,
+        icon: <CheckCircle className="h-5 w-5 text-green-500" />,
+      });
+      // Clean up URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+
+    // Show password reset success message
+    if (urlParams.get('password-reset') === 'success') {
+      toast.success('Mot de passe mis à jour !', {
+        description: 'Vous pouvez maintenant vous connecter avec votre nouveau mot de passe',
+        duration: 5000,
+        icon: <CheckCircle className="h-5 w-5 text-green-500" />,
+      });
+      // Clean up URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
+
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,7 +83,6 @@ export function LoginPage() {
         icon: <CheckCircle className="h-5 w-5 text-green-500" />,
       });
     } catch (error: any) {
-      console.error('Login error:', error);
       let errorMessage = 'Erreur de connexion. Veuillez réessayer.';
 
       if (error?.message?.includes('Invalid login credentials')) {
@@ -115,7 +159,9 @@ export function LoginPage() {
                   </Label>
                   <button
                     type="button"
+                    onClick={() => setShowForgotPassword(true)}
                     className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                    disabled={loading}
                   >
                     Mot de passe oublié?
                   </button>
@@ -187,6 +233,12 @@ export function LoginPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Forgot Password Modal */}
+      <ForgotPasswordModal
+        open={showForgotPassword}
+        onOpenChange={setShowForgotPassword}
+      />
     </div>
   );
 }

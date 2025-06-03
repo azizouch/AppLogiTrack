@@ -5,6 +5,7 @@ import { AppSidebar } from './Sidebar';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { ScrollToTop } from '@/components/ui/scroll-to-top';
 
+
 interface LayoutProps {
   children: React.ReactNode;
 }
@@ -20,6 +21,7 @@ export function Layout({ children }: LayoutProps) {
         </main>
         <ScrollToTop />
       </SidebarInset>
+
     </SidebarProvider>
   );
 }

@@ -3,7 +3,7 @@ export interface User {
   id: string;
   nom: string;
   prenom?: string;
-  email: string;
+  email?: string;
   telephone?: string;
   role: 'admin' | 'gestionnaire' | 'livreur';
   mot_de_passe: string;
@@ -51,6 +51,7 @@ export interface Colis {
   notes?: string;
   prix: number;
   frais: number;
+  adresse_livraison?: string;
   client?: Client;
   entreprise?: Entreprise;
   livreur?: User;

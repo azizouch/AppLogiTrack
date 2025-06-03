@@ -140,8 +140,6 @@ export function AddColis() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        console.log('🚀 Starting to fetch data...');
-        // Try both approaches to see which works
         const [clientsRes, entreprisesRes, allUsersRes, livreursRes, statusesRes] = await Promise.all([
           api.getClients(),
           api.getEntreprises(),
@@ -149,64 +147,37 @@ export function AddColis() {
           api.getLivreurs(), // Get filtered livreurs
           api.getStatuts('colis'), // Filter by type 'colis'
         ]);
-        console.log('✅ All API calls completed');
 
         // Handle clients data with proper error checking
-        console.log('📋 Clients response:', clientsRes);
         if (clientsRes.data && Array.isArray(clientsRes.data)) {
-          console.log('✅ Setting clients:', clientsRes.data.length, 'clients found');
           setClients(clientsRes.data);
         } else {
-          console.log('❌ Clients data issue:', clientsRes.error || 'Data is not an array');
           setClients([]);
         }
 
         // Handle entreprises data with proper error checking
-        console.log('🏢 Entreprises response:', entreprisesRes);
         if (entreprisesRes.data && Array.isArray(entreprisesRes.data)) {
-          console.log('✅ Setting entreprises:', entreprisesRes.data.length, 'entreprises found');
           setEntreprises(entreprisesRes.data);
         } else {
-          console.log('❌ Entreprises data issue:', entreprisesRes.error || 'Data is not an array');
           setEntreprises([]);
         }
 
-        // Debug both approaches
-        console.log('=== LIVREURS DEBUG ===');
-        console.log('📊 All users approach:');
-        if (allUsersRes.data) {
-          const livreursFromAllUsers = allUsersRes.data.filter(user => user.role === 'livreur');
-          console.log('- All users count:', allUsersRes.data.length);
-          console.log('- Users with role=livreur:', livreursFromAllUsers.length);
-          console.log('- Livreurs from all users:', livreursFromAllUsers);
-        } else {
-          console.log('- All users error:', allUsersRes.error);
-        }
-
-        console.log('🎯 Direct livreurs approach:');
         if (livreursRes.data) {
-          console.log('- Direct livreurs count:', livreursRes.data.length);
-          console.log('- Direct livreurs:', livreursRes.data);
           setLivreurs(livreursRes.data);
         } else {
-          console.log('- Direct livreurs error:', livreursRes.error);
           // Fallback to filtering all users
           if (allUsersRes.data) {
             const livreursFromAllUsers = allUsersRes.data.filter(user => user.role === 'livreur');
-            console.log('- Using fallback, found:', livreursFromAllUsers.length, 'livreurs');
             setLivreurs(livreursFromAllUsers);
           } else {
             setLivreurs([]);
           }
         }
-        console.log('=== END DEBUG ===');
         if (statusesRes.data) setStatuses(statusesRes.data);
 
         // Mark data as loaded
         setDataLoaded(true);
-        console.log('✅ Data loading completed');
       } catch (error) {
-        console.error('Error fetching data:', error);
         setDataLoaded(true); // Still mark as loaded even on error
         toast({
           title: 'Erreur',
@@ -221,7 +192,6 @@ export function AddColis() {
 
   // Client creation handler
   const onCreateClient = async (values: ClientFormValues) => {
-    console.log('👤 Client creation started with values:', values);
     setClientModalLoading(true);
     try {
       const { data: newClient, error } = await api.createClient(values);
@@ -256,7 +226,6 @@ export function AddColis() {
         });
       }
     } catch (error) {
-      console.error('Error creating client:', error);
       toast({
         title: 'Erreur',
         description: 'Impossible de créer le client',
@@ -269,7 +238,6 @@ export function AddColis() {
 
   // Form submission handler
   const onSubmit = async (values: FormValues) => {
-    console.log('🚀 Colis form submission started with values:', values);
     setLoading(true);
     try {
       // Validate required fields
@@ -289,7 +257,6 @@ export function AddColis() {
         notes: values.notes || '',
       };
 
-      console.log('📦 Creating colis with data:', colisData);
       // Call API to create colis
       const { error: createError } = await api.createColis(colisData);
 
@@ -305,7 +272,6 @@ export function AddColis() {
       // Navigate back to colis list
       navigate('/colis');
     } catch (error) {
-      console.error('Error creating colis:', error);
       toast({
         title: 'Erreur',
         description: 'Impossible de créer le colis',

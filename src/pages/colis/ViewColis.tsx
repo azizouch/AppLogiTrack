@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Edit, Package, User, Building, Truck, Calendar, MapPin, Phone, Mail, Clock, Trash2, DollarSign } from 'lucide-react';
+import { ArrowLeft, Edit, Package, User, Building, Truck, Calendar, MapPin, Phone, Mail, Clock, DollarSign } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -80,14 +80,11 @@ export function ViewColis() {
         }
 
         // Fetch statuses for the select dropdown
-        const { data: statusesData, error: statusesError } = await api.getStatuts('colis');
-        if (statusesError) {
-          console.error('Error fetching statuses:', statusesError);
-        } else if (statusesData) {
+        const { data: statusesData } = await api.getStatuts('colis');
+        if (statusesData) {
           setStatuses(statusesData);
         }
       } catch (error) {
-        console.error('Error fetching data:', error);
         toast({
           title: 'Erreur',
           description: 'Impossible de charger les données du colis',
@@ -139,8 +136,6 @@ export function ViewColis() {
 
     setUpdating(true);
     try {
-      console.log('🔄 Starting status update...', { colisId: id, oldStatus: colis.statut, newStatus: selectedStatus });
-
       // Update colis status
       const { error: updateError } = await supabase
         .from('colis')
@@ -151,19 +146,12 @@ export function ViewColis() {
         .eq('id', id);
 
       if (updateError) {
-        console.error('❌ Error updating colis:', updateError);
         throw new Error(updateError.message);
       }
 
-      console.log('✅ Colis status updated successfully');
-
       // Get current user for historique
-      const { data: userData, error: userError } = await supabase.auth.getUser();
+      const { data: userData } = await supabase.auth.getUser();
       const currentUserId = userData?.user?.id || null;
-
-      if (userError) {
-        console.warn('⚠️ Could not get current user:', userError);
-      }
 
       // Add to historique
       const historiqueEntry = {
@@ -173,18 +161,11 @@ export function ViewColis() {
         utilisateur: currentUserId
       };
 
-      console.log('📝 Adding historique entry:', historiqueEntry);
-
-      const { error: historiqueError } = await supabase
+      await supabase
         .from('historique_colis')
         .insert(historiqueEntry);
 
-      if (historiqueError) {
-        console.error('❌ Error adding to historique:', historiqueError);
-        // Don't throw here - the colis update was successful
-      } else {
-        console.log('✅ Historique entry added successfully');
-      }
+      // Don't throw here - the colis update was successful
 
       // Update local state immediately for better UX
       setColis(prev => prev ? {
@@ -197,8 +178,7 @@ export function ViewColis() {
       await new Promise(resolve => setTimeout(resolve, 200));
 
       // Refresh historique to show the new entry immediately
-      console.log('🔄 Refreshing historique...');
-      const { data: historiqueData, error: refreshError } = await supabase
+      const { data: historiqueData } = await supabase
         .from('historique_colis')
         .select(`
           id,
@@ -211,10 +191,7 @@ export function ViewColis() {
         .order('date', { ascending: false })
         .limit(20);
 
-      if (refreshError) {
-        console.error('❌ Error refreshing historique:', refreshError);
-      } else if (historiqueData) {
-        console.log('✅ Historique refreshed:', historiqueData.length, 'entries');
+      if (historiqueData) {
         setHistorique(historiqueData);
       }
 
