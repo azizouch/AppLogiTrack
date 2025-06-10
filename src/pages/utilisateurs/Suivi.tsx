@@ -18,7 +18,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { TablePagination } from '@/components/ui/table-pagination';
-import { Filter, Search, Eye, UserCheck, UserX, MessageCircle } from 'lucide-react';
+import { Filter, Search, Eye, UserCheck, UserX, MessageCircle, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { api } from '@/lib/supabase';
 
@@ -197,9 +197,11 @@ export function Suivi() {
           {hasActiveFilters && (
             <Button
               variant="outline"
+              size="sm"
               onClick={resetFilters}
               className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
             >
+              <X className="mr-2 h-4 w-4" />
               Réinitialiser
             </Button>
           )}

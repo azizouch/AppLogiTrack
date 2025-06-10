@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Plus, Search, RefreshCw, Eye, Edit, Trash2, Building2, Filter, MapPin, User, Package } from 'lucide-react';
+import { Plus, Search, RefreshCw, Eye, Edit, Trash2, Building2, Filter, MapPin, User, Package, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -252,9 +252,11 @@ export function Entreprises() {
           {hasActiveFilters && (
             <Button
               variant="outline"
+              size="sm"
               onClick={resetFilters}
               className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
             >
+              <X className="mr-2 h-4 w-4" />
               Réinitialiser
             </Button>
           )}

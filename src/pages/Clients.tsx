@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Plus, Search, RefreshCw, Eye, Edit, Trash2, Users } from 'lucide-react';
+import { Plus, Search, RefreshCw, Eye, Edit, Trash2, Users, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -189,9 +189,11 @@ export function Clients() {
           {searchTerm && (
             <Button
               variant="outline"
+              size="sm"
               onClick={() => setSearchTerm('')}
               className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
             >
+              <X className="mr-2 h-4 w-4" />
               Réinitialiser
             </Button>
           )}
@@ -206,7 +208,7 @@ export function Clients() {
               className="pl-10 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400"
             />
           </div>
-          <Select value="" onValueChange={() => {}}>
+          <Select value="all" onValueChange={() => {}}>
             <SelectTrigger className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white">
               <SelectValue placeholder="Toutes les villes" />
             </SelectTrigger>
@@ -214,7 +216,7 @@ export function Clients() {
               <SelectItem value="all" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600">Toutes les villes</SelectItem>
             </SelectContent>
           </Select>
-          <Select value="" onValueChange={() => {}}>
+          <Select value="all" onValueChange={() => {}}>
             <SelectTrigger className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white">
               <SelectValue placeholder="Toutes les entreprises" />
             </SelectTrigger>

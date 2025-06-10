@@ -3,7 +3,9 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Save, ArrowLeft, Truck, User as UserIcon, Building } from 'lucide-react';
+import { Save, ArrowLeft, Truck, User as UserIcon, Building, Plus } from 'lucide-react';
+import { ClientCombobox } from '@/components/ui/client-combobox';
+import { AddClientModal } from '@/components/modals/AddClientModal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -30,6 +32,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+
 import { api, supabase } from '@/lib/supabase';
 import { Client, Entreprise, User, Colis, Statut } from '@/types';
 import { useToast } from '@/hooks/use-toast';
@@ -58,6 +61,7 @@ export function UpdateColis() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [colis, setColis] = useState<Colis | null>(null);
+  const [showAddClientModal, setShowAddClientModal] = useState(false);
 
   // Initialize form
   const form = useForm<FormValues>({
@@ -108,8 +112,8 @@ export function UpdateColis() {
         // Set form values
         form.reset({
           client_id: colisData.client_id,
-          entreprise_id: colisData.entreprise_id,
-          livreur_id: colisData.livreur_id || '',
+          entreprise_id: colisData.entreprise_id || 'none',
+          livreur_id: colisData.livreur_id || 'none',
           statut: colisData.statut,
           prix: colisData.prix,
           frais: colisData.frais,
@@ -133,6 +137,14 @@ export function UpdateColis() {
     }
   }, [id, navigate, toast, form]);
 
+  // Handle new client creation
+  const handleClientCreated = (newClient: any) => {
+    // Add the new client to the list
+    setClients(prev => [...prev, newClient]);
+    // Select the new client
+    form.setValue('client_id', newClient.id);
+  };
+
   // Form submission handler
   const onSubmit = async (values: FormValues) => {
     if (!id) return;
@@ -142,8 +154,8 @@ export function UpdateColis() {
       // Prepare data for submission
       const colisData = {
         client_id: values.client_id,
-        entreprise_id: values.entreprise_id,
-        livreur_id: values.livreur_id || null,
+        entreprise_id: values.entreprise_id === 'none' ? null : values.entreprise_id || null,
+        livreur_id: values.livreur_id === 'none' ? null : values.livreur_id || null,
         statut: values.statut,
         prix: values.prix || 0,
         frais: values.frais || 0,
@@ -196,121 +208,183 @@ export function UpdateColis() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate('/colis')}
-            className="h-8 w-8"
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Modifier le Colis</h1>
-        </div>
+    <div>
+      {/* Header */}
+      <div className="mb-6">
+        <Button
+          variant="ghost"
+          onClick={() => navigate(`/colis/${id}`)}
+          className="mb-2"
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Retour aux détails
+        </Button>
+        <h1 className="text-3xl font-bold">Modifier le Colis</h1>
       </div>
 
-      <Card className="border-gray-600 dark:border-gray-600 bg-transparent">
-        <CardHeader>
-          <CardTitle>Informations du Colis #{id}</CardTitle>
-          <CardDescription>
-            Modifiez les détails du colis
-          </CardDescription>
-        </CardHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)}>
+      {/* Form */}
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)}>
+          <Card>
+            <CardHeader>
+              <CardTitle>Informations du colis</CardTitle>
+              <CardDescription>Modifiez les informations du colis</CardDescription>
+            </CardHeader>
             <CardContent className="space-y-6">
-              {/* Client Selection */}
-              <FormField
-                control={form.control}
-                name="client_id"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="flex items-center gap-2">
-                      <UserIcon className="h-4 w-4" /> Client
-                    </FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      value={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger className="bg-transparent border-gray-600 dark:border-gray-600 text-gray-900 dark:text-white">
-                          <SelectValue placeholder="Sélectionner un client" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {clients.map((client) => (
-                          <SelectItem key={client.id} value={client.id}>
-                            {client.nom} {client.telephone && `- ${client.telephone}`}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {/* ID Colis and Status Row */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70" htmlFor="id">
+                    ID Colis
+                  </label>
+                  <Input
+                    id="id"
+                    placeholder="ID du colis"
+                    value={id}
+                    disabled
+                  />
+                </div>
 
-              {/* Entreprise Selection */}
-              <FormField
-                control={form.control}
-                name="entreprise_id"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="flex items-center gap-2">
-                      <Building className="h-4 w-4" /> Entreprise
-                    </FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      value={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger className="bg-transparent border-gray-600 dark:border-gray-600 text-gray-900 dark:text-white">
-                          <SelectValue placeholder="Sélectionner une entreprise" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {entreprises.map((entreprise) => (
-                          <SelectItem key={entreprise.id} value={entreprise.id}>
-                            {entreprise.nom}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                <FormField
+                  control={form.control}
+                  name="statut"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel htmlFor="statut">Statut</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger id="statut">
+                            <SelectValue placeholder="Sélectionner un statut" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {statuts.map((statut) => (
+                            <SelectItem key={statut.id} value={statut.nom}>
+                              {statut.nom}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
-              {/* Status Selection */}
-              <FormField
-                control={form.control}
-                name="statut"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Statut</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      value={field.value}
-                    >
+              {/* Prix and Frais Row */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <FormField
+                  control={form.control}
+                  name="prix"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel htmlFor="prix">Prix (DH)</FormLabel>
                       <FormControl>
-                        <SelectTrigger className="bg-transparent border-gray-600 dark:border-gray-600 text-gray-900 dark:text-white">
-                          <SelectValue placeholder="Sélectionner un statut" />
-                        </SelectTrigger>
+                        <Input
+                          id="prix"
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          {...field}
+                        />
                       </FormControl>
-                      <SelectContent>
-                        {statuts.map((statut) => (
-                          <SelectItem key={statut.id} value={statut.nom}>
-                            {statut.nom}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                      <p className="text-sm text-muted-foreground">Montant à payer par le client</p>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="frais"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel htmlFor="frais">Frais de livraison (DH)</FormLabel>
+                      <FormControl>
+                        <Input
+                          id="frais"
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          {...field}
+                        />
+                      </FormControl>
+                      <p className="text-sm text-muted-foreground">Frais supplémentaires de livraison</p>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {/* Client and Entreprise Row */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Client Selection */}
+                <FormField
+                  control={form.control}
+                  name="client_id"
+                  render={({ field }) => (
+                    <FormItem>
+                      <div className="flex justify-between items-center">
+                        <FormLabel>
+                          Client <span className="text-red-500">*</span>
+                        </FormLabel>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setShowAddClientModal(true)}
+                        >
+                          <Plus className="h-4 w-4 mr-1" />
+                          Nouveau Client
+                        </Button>
+                      </div>
+                      <FormControl>
+                        <ClientCombobox
+                          clients={clients}
+                          value={field.value}
+                          onValueChange={field.onChange}
+                          onNewClientClick={() => setShowAddClientModal(true)}
+                          placeholder="Rechercher un client..."
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Entreprise Selection */}
+                <FormField
+                  control={form.control}
+                  name="entreprise_id"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel htmlFor="entreprise">Entreprise (optionnel)</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger id="entreprise">
+                            <SelectValue placeholder="Sélectionner une entreprise" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="none">Aucune</SelectItem>
+                          {entreprises.map((entreprise) => (
+                            <SelectItem key={entreprise.id} value={entreprise.id}>
+                              {entreprise.nom}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
               {/* Livreur Selection */}
               <FormField
@@ -318,40 +392,21 @@ export function UpdateColis() {
                 name="livreur_id"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="flex items-center gap-2">
-                      <Truck className="h-4 w-4" /> Livreur
-                    </FormLabel>
+                    <FormLabel htmlFor="livreur">Livreur (optionnel)</FormLabel>
                     <Select
                       onValueChange={field.onChange}
                       value={field.value}
                     >
                       <FormControl>
-                        <SelectTrigger className="bg-transparent border-gray-600 dark:border-gray-600 text-gray-900 dark:text-white">
-                          <SelectValue placeholder="Sélectionner un livreur (optionnel)" />
+                        <SelectTrigger id="livreur">
+                          <SelectValue placeholder="Aucun" />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent className="max-h-[300px]">
-                        <SelectItem value="">
-                          <div className="flex items-center gap-2">
-                            <div className="flex-shrink-0 h-6 w-6 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-                              <UserIcon className="h-4 w-4 text-gray-500" />
-                            </div>
-                            <span>Non assigné</span>
-                          </div>
-                        </SelectItem>
+                      <SelectContent>
+                        <SelectItem value="none">Aucun</SelectItem>
                         {livreurs.map((livreur) => (
                           <SelectItem key={livreur.id} value={livreur.id}>
-                            <div className="flex items-center gap-2">
-                              <div className="flex-shrink-0 h-6 w-6 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-                                {livreur.prenom?.[0] || livreur.nom[0]}
-                              </div>
-                              <div className="flex flex-col">
-                                <span className="font-medium">{`${livreur.prenom || ''} ${livreur.nom}`.trim()}</span>
-                                {livreur.telephone && (
-                                  <span className="text-sm text-gray-500">{livreur.telephone}</span>
-                                )}
-                              </div>
-                            </div>
+                            {`${livreur.prenom || ''} ${livreur.nom}`.trim()}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -361,82 +416,38 @@ export function UpdateColis() {
                 )}
               />
 
-              {/* Prix */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="prix"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Prix</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          placeholder="0.00"
-                          className="bg-transparent border-gray-600 dark:border-gray-600 text-gray-900 dark:text-white"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {/* Frais */}
-                <FormField
-                  control={form.control}
-                  name="frais"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Frais de livraison</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          placeholder="0.00"
-                          className="bg-transparent border-gray-600 dark:border-gray-600 text-gray-900 dark:text-white"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
               {/* Notes */}
               <FormField
                 control={form.control}
                 name="notes"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Notes</FormLabel>
+                    <FormLabel htmlFor="notes">Notes (optionnel - fonctionnalité future)</FormLabel>
                     <FormControl>
                       <Textarea
-                        placeholder="Informations supplémentaires..."
-                        className="resize-none bg-transparent border-gray-600 dark:border-gray-600 text-gray-900 dark:text-white"
+                        id="notes"
+                        placeholder="Informations supplémentaires sur le colis..."
+                        rows={4}
                         {...field}
                       />
                     </FormControl>
+                    <p className="text-sm text-muted-foreground">Note: Cette fonctionnalité sera disponible dans une future mise à jour.</p>
                     <FormMessage />
                   </FormItem>
                 )}
               />
             </CardContent>
-            <CardFooter className="flex justify-end space-x-2 pt-6 border-t border-gray-600 dark:border-gray-600">
+            <CardFooter className="flex justify-between">
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => navigate('/colis')}
-                className="bg-transparent border-gray-600 dark:border-gray-600 text-gray-900 dark:text-white hover:bg-gray-700/10 dark:hover:bg-gray-700/20"
+                onClick={() => navigate(`/colis/${id}`)}
               >
                 Annuler
               </Button>
               <Button
                 type="submit"
                 disabled={saving}
-                className="bg-blue-600 hover:bg-blue-700"
               >
                 {saving ? (
                   <span className="flex items-center gap-2">
@@ -444,16 +455,23 @@ export function UpdateColis() {
                     Enregistrement...
                   </span>
                 ) : (
-                  <span className="flex items-center gap-2">
-                    <Save className="h-4 w-4" />
+                  <>
+                    <Save className="mr-2 h-4 w-4" />
                     Enregistrer
-                  </span>
+                  </>
                 )}
               </Button>
             </CardFooter>
-          </form>
-        </Form>
-      </Card>
+          </Card>
+        </form>
+      </Form>
+
+      {/* Add Client Modal */}
+      <AddClientModal
+        open={showAddClientModal}
+        onOpenChange={setShowAddClientModal}
+        onClientCreated={handleClientCreated}
+      />
     </div>
   );
 }

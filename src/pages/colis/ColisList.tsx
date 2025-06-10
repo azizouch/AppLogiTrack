@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Plus, Search, Filter, RefreshCw } from 'lucide-react';
+import { Plus, Search, Filter, RefreshCw, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -22,17 +22,14 @@ import {
 import { TablePagination } from '@/components/ui/table-pagination';
 import { Colis, User, Statut } from '@/types';
 import { api } from '@/lib/supabase';
-import { useSessionRecovery, useSessionMonitor } from '@/hooks/useSessionRecovery';
+
 import { useDebounce } from '@/hooks/useDebounce';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 export function ColisList() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { withRecovery } = useSessionRecovery();
 
-  // Enable session monitoring
-  useSessionMonitor();
 
   // Data state
   const [colis, setColis] = useState<Colis[]>([]);
@@ -67,30 +64,14 @@ export function ColisList() {
         setLoading(true);
       }
 
-      const result = await withRecovery(
-        () => api.getColis({
-          page: currentPage,
-          limit: itemsPerPage,
-          search: debouncedSearchTerm,
-          status: statusFilter,
-          livreurId: delivererFilter,
-          sortBy: sortBy
-        }),
-        (error) => {
-          console.error('Error fetching colis:', error);
-          // Don't show toast here as it might be too frequent
-        }
-      );
-
-      if (!result) {
-        // Session recovery failed or other error
-        setColis([]);
-        setTotalCount(0);
-        setTotalPages(0);
-        setHasNextPage(false);
-        setHasPrevPage(false);
-        return;
-      }
+      const result = await api.getColis({
+        page: currentPage,
+        limit: itemsPerPage,
+        search: debouncedSearchTerm,
+        status: statusFilter,
+        livreurId: delivererFilter,
+        sortBy: sortBy
+      });
 
       const { data, error, count, totalPages: pages, hasNextPage: hasNext, hasPrevPage: hasPrev } = result;
 
@@ -119,15 +100,12 @@ export function ColisList() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [currentPage, debouncedSearchTerm, statusFilter, delivererFilter, sortBy, itemsPerPage, withRecovery]);
+  }, [currentPage, debouncedSearchTerm, statusFilter, delivererFilter, sortBy, itemsPerPage]);
 
   // Fetch livreurs for filter dropdown
   const fetchLivreurs = useCallback(async () => {
     try {
-      const result = await withRecovery(
-        () => api.getLivreurs(),
-        (error) => console.error('Error fetching livreurs:', error)
-      );
+      const result = await api.getLivreurs();
 
       if (result?.data) {
         setLivreurs(result.data);
@@ -135,15 +113,12 @@ export function ColisList() {
     } catch (error) {
       console.error('Error fetching livreurs:', error);
     }
-  }, [withRecovery]);
+  }, []);
 
   // Fetch statuts for filter dropdown
   const fetchStatuts = useCallback(async () => {
     try {
-      const result = await withRecovery(
-        () => api.getStatuts('colis'),
-        (error) => console.error('Error fetching statuts:', error)
-      );
+      const result = await api.getStatuts('colis');
 
       if (result?.data) {
         setStatuts(result.data);
@@ -151,7 +126,7 @@ export function ColisList() {
     } catch (error) {
       console.error('Error fetching statuts:', error);
     }
-  }, [withRecovery]);
+  }, []);
 
   // Initial data fetch
   useEffect(() => {
@@ -202,6 +177,18 @@ export function ColisList() {
     fetchColis(true);
   };
 
+  // Reset filters function
+  const resetFilters = () => {
+    setSearchTerm('');
+    setStatusFilter('all');
+    setDelivererFilter('all');
+    setSortBy('recent');
+    setCurrentPage(1);
+  };
+
+  // Check if any filters are active
+  const hasActiveFilters = searchTerm || statusFilter !== 'all' || delivererFilter !== 'all' || sortBy !== 'recent';
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -227,9 +214,22 @@ export function ColisList() {
 
       {/* Filters */}
       <div className="space-y-4">
-        <div className="flex items-center space-x-2">
-          <Filter className="h-4 w-4 text-gray-500 dark:text-gray-400" />
-          <span className="font-medium text-gray-700 dark:text-gray-300">Filtres</span>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <Filter className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+            <span className="font-medium text-gray-700 dark:text-gray-300">Filtres</span>
+          </div>
+          {hasActiveFilters && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={resetFilters}
+              className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+            >
+              <X className="mr-2 h-4 w-4" />
+              Réinitialiser
+            </Button>
+          )}
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

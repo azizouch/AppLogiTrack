@@ -383,9 +383,11 @@ export function Gestion() {
           {hasActiveFilters && (
             <Button
               variant="outline"
+              size="sm"
               onClick={resetFilters}
               className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
             >
+              <X className="mr-2 h-4 w-4" />
               Réinitialiser
             </Button>
           )}

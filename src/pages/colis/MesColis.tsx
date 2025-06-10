@@ -490,6 +490,7 @@ export function MesColis() {
                 size="sm"
                 className="text-sm"
               >
+                <X className="mr-2 h-4 w-4" />
                 Réinitialiser
               </Button>
             )}

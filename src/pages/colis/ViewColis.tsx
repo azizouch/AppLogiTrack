@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { api, supabase } from '@/lib/supabase';
-import { useSessionRecovery, useSessionMonitor } from '@/hooks/useSessionRecovery';
+
 import { Colis, HistoriqueColis, Statut } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 
@@ -19,10 +19,7 @@ export function ViewColis() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { withRecovery } = useSessionRecovery();
 
-  // Enable session monitoring
-  useSessionMonitor();
 
   const [colis, setColis] = useState<Colis | null>(null);
   const [historique, setHistorique] = useState<HistoriqueColis[]>([]);
@@ -35,20 +32,9 @@ export function ViewColis() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        console.log('ViewColis: Fetching data for colis ID:', id);
 
-        // Fetch colis data using the API function with session recovery
-        const colisResult = await withRecovery(
-          () => api.getColisById(id!),
-          (error) => {
-            console.error('ViewColis: Colis fetch error:', error);
-            toast({
-              title: 'Erreur de connexion',
-              description: 'Impossible de charger les données du colis. Veuillez réessayer.',
-              variant: 'destructive',
-            });
-          }
-        );
+        // Fetch colis data using the API function
+        const colisResult = await api.getColisById(id!);
 
         if (!colisResult) {
           throw new Error('Impossible de charger les données du colis');
@@ -56,25 +42,20 @@ export function ViewColis() {
 
         const { data: colisData, error: colisError } = colisResult;
 
-        console.log('ViewColis: Colis query result:', { colisData, colisError });
-
         if (colisError) {
-          console.error('ViewColis: Colis error:', colisError);
           throw new Error(colisError.message);
         }
 
         if (!colisData) {
-          console.error('ViewColis: No colis data returned');
           throw new Error('Colis non trouvé');
         }
 
-        console.log('ViewColis: Successfully fetched colis data:', colisData);
         setColis(colisData);
         setSelectedStatus(colisData.statut);
 
         // Fetch historique with optimized query - join with users to get names
-        const historiqueResult = await withRecovery(
-          () => supabase
+        try {
+          const historiqueResult = await supabase
             .from('historique_colis')
             .select(`
               id,
@@ -85,29 +66,27 @@ export function ViewColis() {
             `)
             .eq('colis_id', id)
             .order('date', { ascending: false })
-            .limit(20), // Limit to last 20 status changes for performance
-          (error) => console.error('Error fetching historique:', error)
-        );
+            .limit(20); // Limit to last 20 status changes for performance
 
-        if (historiqueResult?.data) {
-          setHistorique(historiqueResult.data);
+          if (historiqueResult?.data) {
+            setHistorique(historiqueResult.data);
+          }
+        } catch (error) {
+          console.error('Error fetching historique:', error);
         }
 
         // Fetch statuses for the select dropdown
-        console.log('ViewColis: Fetching statuses...');
-        const statusesResult = await withRecovery(
-          () => api.getStatuts('colis'),
-          (error) => console.error('Error fetching statuses:', error)
-        );
+        try {
+          const statusesResult = await api.getStatuts('colis');
 
-        if (statusesResult?.data) {
-          setStatuses(statusesResult.data);
-          console.log('ViewColis: Successfully fetched statuses:', statusesResult.data.length);
+          if (statusesResult?.data) {
+            setStatuses(statusesResult.data);
+          }
+        } catch (error) {
+          console.error('Error fetching statuses:', error);
         }
-
-        console.log('ViewColis: Data fetch completed successfully');
       } catch (error) {
-        console.error('ViewColis: Error in fetchData:', error);
+        console.error('Error in fetchData:', error);
         toast({
           title: 'Erreur',
           description: 'Impossible de charger les données du colis',
@@ -115,7 +94,6 @@ export function ViewColis() {
         });
         navigate('/colis');
       } finally {
-        console.log('ViewColis: Setting loading to false');
         setLoading(false);
       }
     };
@@ -160,34 +138,21 @@ export function ViewColis() {
 
     setUpdating(true);
     try {
-      // Update colis status with session recovery
-      const updateResult = await withRecovery(
-        () => supabase
-          .from('colis')
-          .update({
-            statut: selectedStatus,
-            date_mise_a_jour: new Date().toISOString()
-          })
-          .eq('id', id),
-        (error) => {
-          console.error('Error updating colis status:', error);
-          toast({
-            title: 'Erreur de connexion',
-            description: 'Impossible de mettre à jour le statut. Veuillez réessayer.',
-            variant: 'destructive',
-          });
-        }
-      );
+      // Update colis status
+      const updateResult = await supabase
+        .from('colis')
+        .update({
+          statut: selectedStatus,
+          date_mise_a_jour: new Date().toISOString()
+        })
+        .eq('id', id);
 
       if (!updateResult || updateResult.error) {
         throw new Error(updateResult?.error?.message || 'Erreur lors de la mise à jour');
       }
 
       // Get current user for historique
-      const userResult = await withRecovery(
-        () => supabase.auth.getUser(),
-        (error) => console.error('Error getting current user:', error)
-      );
+      const userResult = await supabase.auth.getUser();
       const currentUserId = userResult?.data?.user?.id || null;
 
       // Add to historique
@@ -198,10 +163,11 @@ export function ViewColis() {
         utilisateur: currentUserId
       };
 
-      await withRecovery(
-        () => supabase.from('historique_colis').insert(historiqueEntry),
-        (error) => console.error('Error inserting historique:', error)
-      );
+      try {
+        await supabase.from('historique_colis').insert(historiqueEntry);
+      } catch (error) {
+        console.error('Error inserting historique:', error);
+      }
 
       // Update local state immediately for better UX
       setColis(prev => prev ? {
@@ -214,8 +180,8 @@ export function ViewColis() {
       await new Promise(resolve => setTimeout(resolve, 200));
 
       // Refresh historique to show the new entry immediately
-      const historiqueRefreshResult = await withRecovery(
-        () => supabase
+      try {
+        const historiqueRefreshResult = await supabase
           .from('historique_colis')
           .select(`
             id,
@@ -226,12 +192,13 @@ export function ViewColis() {
           `)
           .eq('colis_id', id)
           .order('date', { ascending: false })
-          .limit(20),
-        (error) => console.error('Error refreshing historique:', error)
-      );
+          .limit(20);
 
-      if (historiqueRefreshResult?.data) {
-        setHistorique(historiqueRefreshResult.data);
+        if (historiqueRefreshResult?.data) {
+          setHistorique(historiqueRefreshResult.data);
+        }
+      } catch (error) {
+        console.error('Error refreshing historique:', error);
       }
 
       toast({
@@ -239,7 +206,7 @@ export function ViewColis() {
         description: 'Le statut du colis a été mis à jour',
       });
     } catch (error) {
-      console.error('❌ Error updating status:', error);
+      console.error('Error updating status:', error);
       toast({
         title: 'Erreur',
         description: 'Impossible de mettre à jour le statut',

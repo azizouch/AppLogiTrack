@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Package, Search, Filter, RefreshCw, Phone, MessageCircle, MapPin, Building, CheckCircle, Info, Eye, Mail, House, Building2, Calendar, Send, MessageSquare } from 'lucide-react';
+import { Package, Search, Filter, RefreshCw, Phone, MessageCircle, MapPin, Building, CheckCircle, Info, Eye, Mail, House, Building2, Calendar, Send, MessageSquare, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -347,6 +347,7 @@ export function MesColisLivres() {
                 size="sm"
                 className="text-sm"
               >
+                <X className="mr-2 h-4 w-4" />
                 Réinitialiser
               </Button>
             )}

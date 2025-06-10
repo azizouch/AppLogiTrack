@@ -3,7 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Save, ArrowLeft, Truck, User, Building } from 'lucide-react';
+import { Save, ArrowLeft, Truck, User, Building, Plus } from 'lucide-react';
+import { ClientCombobox } from '@/components/ui/client-combobox';
+import { AddClientModal } from '@/components/modals/AddClientModal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -31,8 +33,8 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { api } from '@/lib/supabase';
-import type { Client, Entreprise, Livreur } from '@/types';
+import { api, supabase } from '@/lib/supabase';
+import type { Client, Entreprise, User, Statut } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 
 // Form schema
@@ -55,7 +57,9 @@ export function AddColis() {
   const [clients, setClients] = useState<Client[]>([]);
   const [entreprises, setEntreprises] = useState<Entreprise[]>([]);
   const [livreurs, setLivreurs] = useState<User[]>([]);
+  const [statuts, setStatuts] = useState<Statut[]>([]);
   const [loading, setLoading] = useState(false);
+  const [showAddClientModal, setShowAddClientModal] = useState(false);
 
   // Initialize form
   const form = useForm<FormValues>({
@@ -76,15 +80,17 @@ export function AddColis() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [clientsRes, entreprisesRes, livreursRes] = await Promise.all([
+        const [clientsRes, entreprisesRes, livreursRes, statutsRes] = await Promise.all([
           api.getClients(),
           api.getEntreprises(),
           api.getLivreurs(),
+          api.getStatuts('colis'),
         ]);
 
         if (clientsRes.data) setClients(clientsRes.data);
         if (entreprisesRes.data) setEntreprises(entreprisesRes.data);
         if (livreursRes.data) setLivreurs(livreursRes.data);
+        if (statutsRes.data) setStatuts(statutsRes.data);
       } catch (error) {
         console.error('Error fetching data:', error);
         toast({
@@ -97,6 +103,14 @@ export function AddColis() {
 
     fetchData();
   }, [toast]);
+
+  // Handle new client creation
+  const handleClientCreated = (newClient: any) => {
+    // Add the new client to the list
+    setClients(prev => [...prev, newClient]);
+    // Select the new client
+    form.setValue('client_id', newClient.id);
+  };
 
   // Form submission handler
   const onSubmit = async (values: FormValues) => {
@@ -204,9 +218,9 @@ export function AddColis() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {statuses.map((status) => (
-                          <SelectItem key={status.id} value={status.nom}>
-                            {status.nom}
+                        {statuts.map((statut) => (
+                          <SelectItem key={statut.id} value={statut.nom}>
+                            {statut.nom}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -265,60 +279,38 @@ export function AddColis() {
               />
 
               {/* Client Selection */}
-              <div className="flex items-center gap-2">
-                <FormField
-                  control={form.control}
-                  name="client_id"
-                  render={({ field }) => (
-                    <FormItem className="flex-1">
-                      <FormLabel className="text-base font-semibold">Client *</FormLabel>
-                      <div className="relative">
-                        <FormControl>
-                          <Input
-                            placeholder="Rechercher un client..."
-                            value={searchClient}
-                            onChange={(e) => setSearchClient(e.target.value)}
-                            className="bg-white"
-                          />
-                        </FormControl>
-                        {searchClient && (
-                          <div className="absolute w-full mt-1 bg-white border rounded-md shadow-lg z-50 max-h-64 overflow-auto">
-                            {clients
-                              .filter(client =>
-                                client.nom.toLowerCase().includes(searchClient.toLowerCase()) ||
-                                (client.telephone && client.telephone.includes(searchClient))
-                              )
-                              .map((client) => (
-                                <div
-                                  key={client.id}
-                                  className="p-2 hover:bg-gray-100 cursor-pointer"
-                                  onClick={() => {
-                                    field.onChange(client.id);
-                                    setSearchClient(client.nom);
-                                  }}
-                                >
-                                  <div className="font-medium">{client.nom}</div>
-                                  {client.telephone && (
-                                    <div className="text-sm text-gray-500">{client.telephone}</div>
-                                  )}
-                                </div>
-                              ))}
-                          </div>
-                        )}
-                      </div>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="mt-8"
-                  onClick={() => navigate('/clients/new')}
-                >
-                  Nouveau Client
-                </Button>
-              </div>
+              <FormField
+                control={form.control}
+                name="client_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <div className="flex justify-between items-center">
+                      <FormLabel className="text-base font-semibold">
+                        Client <span className="text-red-500">*</span>
+                      </FormLabel>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowAddClientModal(true)}
+                      >
+                        <Plus className="h-4 w-4 mr-1" />
+                        Nouveau Client
+                      </Button>
+                    </div>
+                    <FormControl>
+                      <ClientCombobox
+                        clients={clients}
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        onNewClientClick={() => setShowAddClientModal(true)}
+                        placeholder="Rechercher un client..."
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               {/* Entreprise Selection */}
               <FormField
@@ -428,6 +420,13 @@ export function AddColis() {
           </form>
         </Form>
       </Card>
+
+      {/* Add Client Modal */}
+      <AddClientModal
+        open={showAddClientModal}
+        onOpenChange={setShowAddClientModal}
+        onClientCreated={handleClientCreated}
+      />
     </div>
   );
 }

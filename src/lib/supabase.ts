@@ -58,168 +58,7 @@ export interface ApiResponse<T> {
   error: PostgrestError | null;
 }
 
-// Session recovery utility
-export const sessionUtils = {
-  // Check if error is session-related
-  isSessionError: (error: any): boolean => {
-    if (!error) return false;
-    const message = error.message?.toLowerCase() || '';
-    return (
-      message.includes('auth session missing') ||
-      message.includes('invalid refresh token') ||
-      message.includes('refresh token not found') ||
-      message.includes('jwt expired') ||
-      message.includes('invalid jwt') ||
-      message.includes('session not found') ||
-      message.includes('user not found') ||
-      error.status === 401 ||
-      error.code === 'PGRST301' // PostgREST JWT expired
-    );
-  },
 
-  // DISABLED: Attempt to refresh session - causing infinite SIGNED_IN events
-  refreshSession: async (): Promise<boolean> => {
-    console.log('sessionUtils: Session refresh is disabled to prevent infinite loops');
-    return false;
-
-    /*
-    try {
-      console.log('sessionUtils: Attempting to refresh session...');
-
-      // Try a simple refresh first without timeout
-      try {
-        const result = await supabase.auth.refreshSession();
-
-        if (!result || typeof result !== 'object') {
-          console.log('sessionUtils: Invalid refresh result structure');
-          return false;
-        }
-
-        const { data, error } = result;
-
-        if (error) {
-          console.log('sessionUtils: Session refresh failed:', error.message);
-          return false;
-        }
-
-        if (data?.session) {
-          console.log('sessionUtils: Session refreshed successfully');
-          return true;
-        }
-
-        console.log('sessionUtils: Session refresh returned no session');
-        return false;
-      } catch (refreshError: any) {
-        console.log('sessionUtils: Direct refresh failed, trying with timeout:', refreshError?.message || 'Unknown error');
-
-        // If direct refresh fails, try with timeout as fallback
-        const refreshPromise = supabase.auth.refreshSession();
-        const timeoutPromise = new Promise<never>((_, reject) => {
-          setTimeout(() => reject(new Error('Session refresh timeout')), 15000); // 15 second timeout
-        });
-
-        const result = await Promise.race([refreshPromise, timeoutPromise]);
-
-        if (!result || typeof result !== 'object') {
-          console.log('sessionUtils: Invalid timeout refresh result structure');
-          return false;
-        }
-
-        const { data, error } = result;
-
-        if (error) {
-          console.log('sessionUtils: Timeout refresh failed:', error.message);
-          return false;
-        }
-
-        if (data?.session) {
-          console.log('sessionUtils: Timeout refresh succeeded');
-          return true;
-        }
-
-        return false;
-      }
-    } catch (error: any) {
-      console.log('sessionUtils: Session refresh error:', error?.message || 'Unknown error');
-      return false;
-    }
-    */
-  },
-
-  // Get current session with retry
-  getCurrentSession: async (retryCount = 0): Promise<{ session: any; error: any }> => {
-    try {
-      // Add timeout to prevent hanging
-      const sessionPromise = supabase.auth.getSession();
-      const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => reject(new Error('Get session timeout')), 8000); // 8 second timeout
-      });
-
-      const result = await Promise.race([sessionPromise, timeoutPromise]);
-
-      // Ensure we always return the expected structure
-      if (!result || typeof result !== 'object') {
-        console.log('sessionUtils: Invalid session result structure');
-        return { session: null, error: new Error('Invalid session result') };
-      }
-
-      const { data, error } = result;
-
-      // Extract session from data if it exists
-      const session = data?.session || null;
-
-      // DISABLED: Session recovery to prevent infinite loops
-      /*
-      if (error && sessionUtils.isSessionError(error) && retryCount < 2) {
-        const refreshed = await sessionUtils.refreshSession();
-
-        if (refreshed) {
-          return sessionUtils.getCurrentSession(retryCount + 1);
-        }
-      }
-      */
-
-      return { session, error };
-    } catch (error: any) {
-      console.log('sessionUtils: getCurrentSession error:', error?.message || 'Unknown error');
-      return { session: null, error };
-    }
-  }
-};
-
-// DISABLED: Enhanced API wrapper with session recovery - causing infinite loops
-export const withSessionRecovery = async <T>(
-  apiCall: () => Promise<T>,
-  retryCount = 0
-): Promise<T> => {
-  try {
-    const result = await apiCall();
-    return result;
-  } catch (error: any) {
-    // Session recovery is disabled to prevent infinite SIGNED_IN events
-    console.log('withSessionRecovery: Session recovery is disabled, throwing error directly');
-    throw error;
-
-    /*
-    // Check if it's a session error and we haven't exceeded retry limit
-    if (sessionUtils.isSessionError(error) && retryCount < 2) {
-      const refreshed = await sessionUtils.refreshSession();
-
-      if (refreshed) {
-        return withSessionRecovery(apiCall, retryCount + 1);
-      } else {
-        // Force logout and redirect to login
-        await supabase.auth.signOut();
-        if (typeof window !== 'undefined') {
-          window.location.href = '/login';
-        }
-      }
-    }
-
-    throw error;
-    */
-  }
-};
 
 // Database types for Supabase
 export interface Database {
@@ -579,19 +418,17 @@ export const api = {
   },
 
   getColisById: async (id: string) => {
-    return withSessionRecovery(async () => {
-      const { data, error } = await supabase
-        .from('colis')
-        .select(`
-          *,
-          client:clients(*),
-          entreprise:entreprises(*),
-          livreur:utilisateurs(*)
-        `)
-        .eq('id', id)
-        .single()
-      return { data, error }
-    });
+    const { data, error } = await supabase
+      .from('colis')
+      .select(`
+        *,
+        client:clients(*),
+        entreprise:entreprises(*),
+        livreur:utilisateurs(*)
+      `)
+      .eq('id', id)
+      .single()
+    return { data, error }
   },
 
   getColisByStatus: async (status: string) => {
@@ -1098,31 +935,16 @@ export const api = {
     }
   },
 
-  // Debug: Get all users to see what's in the database
+  // Get all users
   getAllUsers: async () => {
     try {
-      console.log('API: Fetching ALL users for debugging...');
-
       const { data, error } = await supabase
         .from('utilisateurs')
         .select('id, nom, prenom, role, statut, email')
         .limit(10);
 
-      console.log('API: All users query result:', { data: data?.length, error });
-
-      if (data) {
-        console.log('API: All users found:', data.map(u => ({
-          id: u.id,
-          role: u.role,
-          statut: u.statut,
-          nom: u.nom,
-          email: u.email
-        })));
-      }
-
       return { data, error };
     } catch (error) {
-      console.error('API: Exception fetching all users:', error);
       return { data: null, error };
     }
   },

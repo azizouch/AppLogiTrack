@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Search, Filter, RefreshCw, Ban } from 'lucide-react';
+import { Search, Filter, RefreshCw, Ban, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -198,6 +198,7 @@ export function ColisAnnules() {
           {(searchTerm || delivererFilter !== 'all' || sortBy !== 'recent') && (
             <Button
               variant="outline"
+              size="sm"
               onClick={() => {
                 setSearchTerm('');
                 setDelivererFilter('all');
@@ -205,6 +206,7 @@ export function ColisAnnules() {
               }}
               className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800"
             >
+              <X className="mr-2 h-4 w-4" />
               Réinitialiser
             </Button>
           )}

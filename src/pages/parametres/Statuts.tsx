@@ -358,7 +358,7 @@ export function Statuts() {
               size="sm"
               className="text-gray-600 dark:text-gray-400 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
             >
-              <RotateCcw className="h-4 w-4 mr-2" />
+              <X className="h-4 w-4 mr-2" />
               Réinitialiser
             </Button>
           )}
