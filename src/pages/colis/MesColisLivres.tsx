@@ -1,18 +1,23 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Package, Search, Filter, RefreshCw, Phone, MessageCircle, MapPin, Building, CheckCircle, Info, Eye, Mail, House, Building2, Calendar } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { Package, Search, Filter, RefreshCw, Phone, MessageCircle, MapPin, Building, CheckCircle, Info, Eye, Mail, House, Building2, Calendar, Send, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/contexts/AuthContext';
-import { api } from '@/lib/supabase';
+import { api, supabase } from '@/lib/supabase';
+
 import { Colis } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 
 export function MesColisLivres() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { state } = useAuth();
   const { toast } = useToast();
 
@@ -27,6 +32,13 @@ export function MesColisLivres() {
   const [entriesPerPage, setEntriesPerPage] = useState(10);
   const [totalCount, setTotalCount] = useState(0);
 
+  // Modal states
+  const [selectedColis, setSelectedColis] = useState<Colis | null>(null);
+  const [showReclamationModal, setShowReclamationModal] = useState(false);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [reclamationText, setReclamationText] = useState('');
+  const [statuts, setStatuts] = useState<any[]>([]);
+
   const fetchColis = async (isRefresh = false) => {
     if (!state.user?.id) return;
 
@@ -37,32 +49,94 @@ export function MesColisLivres() {
         setLoading(true);
       }
 
-      const { data, error, count } = await api.getColis({
-        livreurId: state.user.id,
-        search: debouncedSearchTerm || undefined,
-        status: 'Livré',
-        sortBy: sortBy as 'recent' | 'oldest' | 'status',
-        dateFilter: dateFilter !== 'toutes' ? dateFilter : undefined,
-        page: currentPage,
-        limit: entriesPerPage
-      });
+      console.log('MesColisLivres: Fetching delivered colis for user:', state.user.id);
+
+      // Direct Supabase query for delivered packages only
+      let query = supabase
+        .from('colis')
+        .select(`
+          *,
+          client:clients(*),
+          entreprise:entreprises(*),
+          livreur:utilisateurs(*)
+        `, { count: 'exact' })
+        .eq('livreur_id', state.user.id)
+        .eq('statut', 'Livré'); // Only get delivered packages
+
+      // Apply search filter
+      if (debouncedSearchTerm) {
+        query = query.or(`id.ilike.%${debouncedSearchTerm}%,client.nom.ilike.%${debouncedSearchTerm}%`);
+      }
+
+      // Apply date filter
+      if (dateFilter !== 'toutes') {
+        const today = new Date();
+        let startDate: Date;
+
+        switch (dateFilter) {
+          case 'aujourd_hui':
+            startDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+            query = query.gte('date_mise_a_jour', startDate.toISOString());
+            break;
+          case 'hier':
+            const yesterday = new Date(today);
+            yesterday.setDate(yesterday.getDate() - 1);
+            startDate = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate());
+            const endDate = new Date(startDate);
+            endDate.setDate(endDate.getDate() + 1);
+            query = query.gte('date_mise_a_jour', startDate.toISOString()).lt('date_mise_a_jour', endDate.toISOString());
+            break;
+          case '7_derniers_jours':
+            startDate = new Date(today);
+            startDate.setDate(startDate.getDate() - 7);
+            query = query.gte('date_mise_a_jour', startDate.toISOString());
+            break;
+          case '30_derniers_jours':
+            startDate = new Date(today);
+            startDate.setDate(startDate.getDate() - 30);
+            query = query.gte('date_mise_a_jour', startDate.toISOString());
+            break;
+          case 'ce_mois':
+            startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+            query = query.gte('date_mise_a_jour', startDate.toISOString());
+            break;
+          case 'le_mois_dernier':
+            const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+            const endOfLastMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+            query = query.gte('date_mise_a_jour', lastMonth.toISOString()).lt('date_mise_a_jour', endOfLastMonth.toISOString());
+            break;
+        }
+      }
+
+      // Apply sorting
+      if (sortBy === 'recent') {
+        query = query.order('date_mise_a_jour', { ascending: false });
+      } else if (sortBy === 'oldest') {
+        query = query.order('date_mise_a_jour', { ascending: true });
+      }
+
+      // Apply pagination
+      const from = (currentPage - 1) * entriesPerPage;
+      const to = from + entriesPerPage - 1;
+      query = query.range(from, to);
+
+      const { data, error, count } = await query;
+
+      console.log('MesColisLivres: Direct query result:', { data: data?.length, error, count });
 
       if (error) {
-        toast({
-          title: 'Erreur',
-          description: 'Impossible de charger les colis',
-          variant: 'destructive',
-        });
+        console.error('MesColisLivres: Query error:', error);
+        setColis([]);
+        setTotalCount(0);
       } else {
+        console.log('MesColisLivres: Setting delivered colis data:', data?.length, 'items');
         setColis(data || []);
         setTotalCount(count || 0);
       }
-    } catch (error) {
-      toast({
-        title: 'Erreur',
-        description: 'Une erreur est survenue lors du chargement',
-        variant: 'destructive',
-      });
+    } catch (error: any) {
+      console.error('MesColisLivres: Error in fetchColis:', error);
+      setColis([]);
+      setTotalCount(0);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -78,14 +152,72 @@ export function MesColisLivres() {
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
+  // Initial load useEffect
   useEffect(() => {
     if (state.user?.id) {
       fetchColis();
     }
-  }, [state.user?.id, debouncedSearchTerm, sortBy, dateFilter, currentPage, entriesPerPage]);
+  }, [state.user?.id]);
+
+  // Filter changes useEffect
+  useEffect(() => {
+    if (state.user?.id) {
+      fetchColis();
+    }
+  }, [debouncedSearchTerm, sortBy, dateFilter, currentPage, entriesPerPage]);
+
+  const fetchStatuts = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('statuts')
+        .select('id, nom, couleur, type, actif')
+        .eq('type', 'colis')
+        .eq('actif', true)
+        .order('ordre', { ascending: true });
+
+      if (!error && data) {
+        setStatuts(data);
+      }
+    } catch (error) {
+      console.error('Error fetching statuts:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchStatuts();
+  }, []);
+
+  const getColorClass = (couleur: string) => {
+    const colorMap: { [key: string]: string } = {
+      'blue': 'bg-blue-500 text-white',
+      'green': 'bg-green-500 text-white',
+      'red': 'bg-red-500 text-white',
+      'yellow': 'bg-yellow-500 text-black',
+      'orange': 'bg-orange-500 text-white',
+      'purple': 'bg-purple-500 text-white',
+      'pink': 'bg-pink-500 text-white',
+      'gray': 'bg-gray-500 text-white',
+      'teal': 'bg-teal-500 text-white',
+      'indigo': 'bg-indigo-500 text-white',
+      'lime': 'bg-lime-500 text-black',
+      'cyan': 'bg-cyan-500 text-white',
+      'amber': 'bg-amber-500 text-black',
+    };
+    return colorMap[couleur] || 'bg-gray-500 text-white';
+  };
 
   const getStatusBadge = (statut: string) => {
-    return <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">Livré</Badge>;
+    const statutData = statuts.find(s => s.nom === statut);
+    if (statutData && statutData.couleur) {
+      return (
+        <Badge className={`${getColorClass(statutData.couleur)} border-0`}>
+          {statutData.nom}
+        </Badge>
+      );
+    }
+
+    // Fallback for unknown status
+    return <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">{statut}</Badge>;
   };
 
   const resetFilters = () => {
@@ -98,6 +230,81 @@ export function MesColisLivres() {
 
   const hasActiveFilters = searchTerm || sortBy !== 'recent' || dateFilter !== 'toutes';
   const totalPages = Math.ceil(totalCount / entriesPerPage);
+
+  // Modal handlers
+  const handleReclamation = (colisItem: Colis) => {
+    setSelectedColis(colisItem);
+    setShowReclamationModal(true);
+  };
+
+  const handleWhatsApp = (colisItem: Colis) => {
+    if (colisItem.client?.telephone) {
+      const phoneNumber = colisItem.client.telephone.replace(/\D/g, '');
+      const message = `Bonjour, concernant votre colis ${colisItem.id}`;
+      window.open(`https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`, '_blank');
+    }
+  };
+
+  const handleSMS = (colisItem: Colis) => {
+    if (colisItem.client?.telephone) {
+      const phoneNumber = colisItem.client.telephone.replace(/\D/g, '');
+      const message = `Bonjour, concernant votre colis ${colisItem.id}`;
+      window.open(`sms:${phoneNumber}?body=${encodeURIComponent(message)}`, '_blank');
+    }
+  };
+
+  const handleCall = (colisItem: Colis) => {
+    if (colisItem.client?.telephone) {
+      window.open(`tel:${colisItem.client.telephone}`, '_blank');
+    }
+  };
+
+  const handleViewDetails = (colisItem: Colis) => {
+    setSelectedColis(colisItem);
+    setShowDetailsModal(true);
+  };
+
+  const submitReclamation = async () => {
+    if (!selectedColis || !reclamationText.trim() || !state.user) return;
+
+    try {
+      // Get admin and gestionnaire users to notify
+      const { data: adminUsers, error: adminError } = await api.getAdminAndGestionnaireUsers();
+
+      if (adminError) {
+        console.error('Error fetching admin users:', adminError);
+      }
+
+      // Create notifications for each admin/gestionnaire
+      if (adminUsers && adminUsers.length > 0) {
+        const notificationPromises = adminUsers.map(admin =>
+          api.createNotification({
+            utilisateur_id: admin.id,
+            titre: 'Nouvelle réclamation',
+            message: `Le livreur ${state.user.prenom} ${state.user.nom} a envoyé une réclamation pour le colis ${selectedColis.id}: "${reclamationText.substring(0, 100)}${reclamationText.length > 100 ? '...' : ''}"`,
+            lu: false,
+            type: 'reclamation'
+          })
+        );
+
+        await Promise.all(notificationPromises);
+      }
+
+      toast({
+        title: 'Réclamation envoyée',
+        description: 'Votre réclamation a été envoyée avec succès',
+      });
+      setShowReclamationModal(false);
+      setReclamationText('');
+    } catch (error) {
+      console.error('Error submitting reclamation:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Impossible d\'envoyer la réclamation',
+        variant: 'destructive',
+      });
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -302,6 +509,7 @@ export function MesColisLivres() {
                         variant="ghost"
                         size="sm"
                         className="px-3 py-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/40 border border-blue-200 dark:border-blue-800"
+                        onClick={() => handleReclamation(colisItem)}
                       >
                         <Info className="h-4 w-4 text-blue-600" />
                       </Button>
@@ -309,6 +517,7 @@ export function MesColisLivres() {
                         variant="ghost"
                         size="sm"
                         className="px-3 py-2 bg-green-50 dark:bg-green-900/20 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/40 border border-green-200 dark:border-green-800"
+                        onClick={() => handleWhatsApp(colisItem)}
                       >
                         <MessageCircle className="h-4 w-4 text-green-600" />
                       </Button>
@@ -316,6 +525,7 @@ export function MesColisLivres() {
                         variant="ghost"
                         size="sm"
                         className="px-3 py-2 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg hover:bg-yellow-100 dark:hover:bg-yellow-900/40 border border-yellow-200 dark:border-yellow-800"
+                        onClick={() => handleSMS(colisItem)}
                       >
                         <Mail className="h-4 w-4 text-yellow-600" />
                       </Button>
@@ -323,6 +533,7 @@ export function MesColisLivres() {
                         variant="ghost"
                         size="sm"
                         className="px-3 py-2 bg-purple-50 dark:bg-purple-900/20 rounded-lg hover:bg-purple-100 dark:hover:bg-purple-900/40 border border-purple-200 dark:border-purple-800"
+                        onClick={() => handleCall(colisItem)}
                       >
                         <Phone className="h-4 w-4 text-purple-600" />
                       </Button>
@@ -330,6 +541,7 @@ export function MesColisLivres() {
                         variant="ghost"
                         size="sm"
                         className="px-3 py-2 bg-gray-50 dark:bg-gray-900/20 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-900/40 border border-gray-200 dark:border-gray-800"
+                        onClick={() => handleViewDetails(colisItem)}
                       >
                         <Eye className="h-4 w-4 text-gray-600" />
                       </Button>
@@ -386,6 +598,235 @@ export function MesColisLivres() {
           </div>
         </div>
       )}
+
+      {/* Réclamation Modal */}
+      <Dialog open={showReclamationModal} onOpenChange={setShowReclamationModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Envoyer une réclamation</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <p className="text-sm text-muted-foreground">
+                Colis ID: <span className="font-medium text-foreground">{selectedColis?.id}</span>
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Client: <span className="font-medium text-foreground">{selectedColis?.client?.nom}</span>
+              </p>
+            </div>
+            <Textarea
+              placeholder="Décrivez votre réclamation ici..."
+              value={reclamationText}
+              onChange={(e) => setReclamationText(e.target.value)}
+              rows={5}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowReclamationModal(false)}>
+              Annuler
+            </Button>
+            <Button onClick={submitReclamation} disabled={!reclamationText.trim()}>
+              <Send className="mr-2 h-5 w-5" />
+              Envoyer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Colis Details Modal */}
+      <Dialog open={showDetailsModal} onOpenChange={setShowDetailsModal}>
+        <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl flex items-center">
+              <Package className="mr-2 h-5 w-5" />
+              Détails du Colis
+            </DialogTitle>
+            <DialogDescription>
+              Informations complètes sur le colis et options de gestion
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedColis && (
+            <div className="space-y-4 py-3">
+              {/* Colis Information */}
+              <div>
+                <h3 className="text-base font-semibold mb-2 border-b pb-1 flex items-center">
+                  <Package className="mr-2 h-4 w-4" />
+                  Informations du Colis
+                </h3>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+                  <div>
+                    <h4 className="text-xs font-medium text-muted-foreground">ID Colis</h4>
+                    <p className="font-mono bg-muted p-1 rounded text-xs">{selectedColis.id}</p>
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-medium text-muted-foreground">Date</h4>
+                    <p>{new Date(selectedColis.date_creation).toLocaleDateString('fr-FR')}</p>
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-medium text-muted-foreground">Statut</h4>
+                    {getStatusBadge(selectedColis.statut)}
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-medium text-muted-foreground">Prix</h4>
+                    <p className="font-semibold">{selectedColis.prix || 0} DH</p>
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-medium text-muted-foreground">Frais</h4>
+                    <p>{selectedColis.frais > 0 ? `${selectedColis.frais} DH` : 'Aucun'}</p>
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-medium text-muted-foreground">Total</h4>
+                    <p className="font-bold">{(selectedColis.prix || 0) + (selectedColis.frais || 0)} DH</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Client Information */}
+                <div>
+                  <h3 className="text-base font-semibold mb-2 border-b pb-1 flex items-center">
+                    <Phone className="mr-2 h-4 w-4" />
+                    Client
+                  </h3>
+                  <div className="space-y-2 text-sm">
+                    <div>
+                      <h4 className="text-xs font-medium text-muted-foreground">Nom</h4>
+                      <p>{selectedColis.client?.nom || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-medium text-muted-foreground">Téléphone</h4>
+                      <p>{selectedColis.client?.telephone || 'Non disponible'}</p>
+                    </div>
+
+                    {selectedColis.adresse_livraison && selectedColis.adresse_livraison !== '' && (
+                      <div>
+                        <h4 className="text-xs font-medium text-muted-foreground">Adresse</h4>
+                        <p>{selectedColis.adresse_livraison}</p>
+                      </div>
+                    )}
+
+                    <div>
+                      <h4 className="text-xs font-medium text-muted-foreground">Ville</h4>
+                      <p>Casablanca</p>
+                    </div>
+
+                    {selectedColis.client?.telephone && (
+                      <div>
+                        <h4 className="text-xs font-medium text-muted-foreground">Contacts</h4>
+                        <div className="flex gap-2 mt-1">
+                          <Button variant="outline" size="icon" className="h-8 w-8 rounded-full" onClick={() => handleCall(selectedColis)} title="Appeler">
+                            <Phone className="h-4 w-4" />
+                          </Button>
+                          <Button variant="outline" size="icon" className="h-8 w-8 rounded-full" onClick={() => handleSMS(selectedColis)} title="SMS">
+                            <MessageSquare className="h-4 w-4" />
+                          </Button>
+                          <Button variant="outline" size="icon" className="h-8 w-8 rounded-full" onClick={() => handleWhatsApp(selectedColis)} title="WhatsApp">
+                            <MessageCircle className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Entreprise Information */}
+                <div>
+                  <h3 className="text-base font-semibold mb-2 border-b pb-1 flex items-center">
+                    <Building2 className="mr-2 h-4 w-4" />
+                    Entreprise
+                  </h3>
+                  <div className="space-y-2 text-sm">
+                    <div>
+                      <h4 className="text-xs font-medium text-muted-foreground">Nom</h4>
+                      <p>{selectedColis.entreprise?.nom !== 'N/A' ? selectedColis.entreprise?.nom : 'Aucune entreprise associée'}</p>
+                    </div>
+
+                    {selectedColis.entreprise?.nom !== 'N/A' && selectedColis.entreprise?.nom && (
+                      <>
+                        <div>
+                          <h4 className="text-xs font-medium text-muted-foreground">Email</h4>
+                          <p>{selectedColis.entreprise?.email || `contact@${selectedColis.entreprise?.nom.toLowerCase().replace(/\s+/g, '')}.com`}</p>
+                        </div>
+                        <div>
+                          <h4 className="text-xs font-medium text-muted-foreground">Téléphone</h4>
+                          <p>{selectedColis.entreprise?.telephone || '+212 5XX-XXXXXX'}</p>
+                        </div>
+                        <div>
+                          <h4 className="text-xs font-medium text-muted-foreground">Adresse</h4>
+                          <p>{selectedColis.entreprise?.adresse || 'Casablanca, Maroc'}</p>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Vendor Contacts */}
+              <div>
+                <h3 className="text-base font-semibold mb-2 border-b pb-1 flex items-center">
+                  <MessageCircle className="mr-2 h-4 w-4" />
+                  Contacts Vendeurs
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <h4 className="text-xs font-medium text-muted-foreground">Vendeur B</h4>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 h-7 text-xs"
+                      >
+                        <Phone className="mr-1 h-3 w-3" />
+                        Appeler
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 h-7 text-xs"
+                      >
+                        <MessageCircle className="mr-1 h-3 w-3" />
+                        WhatsApp
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <h4 className="text-xs font-medium text-muted-foreground">Vendeur P</h4>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 h-7 text-xs"
+                      >
+                        <Phone className="mr-1 h-3 w-3" />
+                        Appeler
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 h-7 text-xs"
+                      >
+                        <MessageCircle className="mr-1 h-3 w-3" />
+                        WhatsApp
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="flex justify-end gap-2 pt-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowDetailsModal(false)}
+            >
+              Fermer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

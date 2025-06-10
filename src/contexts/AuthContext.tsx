@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
 import { User } from '@/types';
-import { auth, api, supabase } from '@/lib/supabase';
+import { auth, api, supabase, sessionUtils } from '@/lib/supabase';
 
 interface AuthState {
   user: User | null;
@@ -78,6 +78,15 @@ const AuthContext = createContext<{
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [state, dispatch] = useReducer(authReducer, initialState);
   const isLoggingOutRef = React.useRef(false);
+  const sessionMonitorRef = React.useRef<NodeJS.Timeout | null>(null);
+  const currentStateRef = React.useRef(state);
+  const isProcessingSignInRef = React.useRef(false);
+  const lastProcessedEventRef = React.useRef<{ event: string; timestamp: number; email: string } | null>(null);
+
+  // Keep ref in sync with state
+  React.useEffect(() => {
+    currentStateRef.current = state;
+  }, [state]);
 
   // Helper function to detect network errors
   const isNetworkError = (error: any): boolean => {
@@ -93,7 +102,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Retry connection function
   const retryConnection = () => {
-    console.log('Retrying connection...');
     dispatch({ type: 'SET_LOADING', payload: true });
     // Trigger a re-check of the session
     window.location.reload();
@@ -101,21 +109,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Supabase login function
   const login = async (email: string, password: string) => {
-    console.log('Starting login process for:', email);
     dispatch({ type: 'LOGIN_START' });
 
     try {
       // Authenticate with Supabase
-      console.log('Authenticating with Supabase...');
       const { data: authData, error: authError } = await auth.signIn(email, password);
 
       if (authError) {
-        console.log('Supabase auth error:', authError.message);
         throw authError;
       }
 
       if (authData.user) {
-        console.log('Supabase auth successful, fetching user profile...');
 
         // Get user profile from our users table with retry logic
         let userData = null;
@@ -124,23 +128,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         for (let attempt = 1; attempt <= maxRetries; attempt++) {
           try {
-            console.log(`Login user data fetch attempt ${attempt}/${maxRetries}`);
-
             const result = await api.getUserByEmail(email);
             userData = result.data;
             userError = result.error;
 
             if (!userError && userData) {
-              console.log('User profile loaded successfully:', userData.nom, 'with role:', userData.role);
               break;
             }
 
             if (attempt < maxRetries) {
-              console.log(`Login attempt ${attempt} failed, retrying in ${attempt}s...`);
               await new Promise(resolve => setTimeout(resolve, attempt * 1000));
             }
           } catch (fetchError: any) {
-            console.log(`Login fetch attempt ${attempt} error:`, fetchError.message);
             userError = fetchError;
             if (attempt < maxRetries) {
               await new Promise(resolve => setTimeout(resolve, attempt * 1000));
@@ -149,18 +148,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
 
         if (userError || !userData) {
-          console.log('Failed to fetch user profile after all retries. User profile may not exist in database.');
-          console.log('Login error details:', userError?.message || 'No user data');
           dispatch({ type: 'LOGIN_FAILURE' });
           throw new Error('User profile not found in database. Please contact administrator.');
         }
 
-        console.log('User profile loaded successfully');
         dispatch({ type: 'LOGIN_SUCCESS', payload: userData });
-        console.log('Login process completed successfully');
       }
     } catch (error: any) {
-      console.log('Login error:', error.message);
       dispatch({ type: 'LOGIN_FAILURE' });
       throw error;
     }
@@ -169,16 +163,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = async () => {
     // Prevent multiple simultaneous logout calls
     if (isLoggingOutRef.current) {
-      console.log('Logout already in progress, skipping...');
       return;
     }
 
-    console.log('Starting logout process...');
     isLoggingOutRef.current = true;
 
     // Set a timeout to reset the flag in case something goes wrong
     const timeoutId = setTimeout(() => {
-      console.log('Logout timeout reached, resetting flag');
       isLoggingOutRef.current = false;
     }, 3000); // Reduced to 3 seconds
 
@@ -192,20 +183,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       // Dispatch logout action immediately to update UI
       dispatch({ type: 'LOGOUT' });
-      console.log('Local logout state updated');
 
       // Sign out from Supabase
       const { error } = await auth.signOut();
 
       if (error) {
-        console.log('Supabase logout error (non-critical):', error.message);
         // Don't throw error since we already logged out locally
-      } else {
-        console.log('Supabase logout successful');
       }
 
     } catch (error: any) {
-      console.log('Logout error:', error.message);
 
       // Force cleanup on error too
       if (typeof window !== 'undefined') {
@@ -219,7 +205,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } finally {
       clearTimeout(timeoutId);
       isLoggingOutRef.current = false;
-      console.log('Logout process completed');
     }
   };
 
@@ -230,7 +215,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Longer timeout to handle network issues (10 seconds max)
     const timeoutId = setTimeout(() => {
       if (mounted && isInitializing) {
-        console.log('Auth initialization timeout - likely network issue');
         isInitializing = false;
         dispatch({ type: 'CONNECTION_ERROR' });
       }
@@ -241,8 +225,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         if (!mounted) return;
 
-        console.log('Checking initial session...');
-
         // Get current session
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
@@ -250,13 +232,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         // Handle session errors
         if (sessionError) {
-          console.log('Session error:', sessionError.message);
           isInitializing = false;
           clearTimeout(timeoutId);
 
           // Check if it's a network error
           if (isNetworkError(sessionError)) {
-            console.log('Network error detected during session check');
             dispatch({ type: 'CONNECTION_ERROR' });
           } else {
             dispatch({ type: 'LOGIN_FAILURE' });
@@ -266,18 +246,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         // No session found
         if (!session || !session.user) {
-          console.log('No session found');
           isInitializing = false;
           clearTimeout(timeoutId);
           dispatch({ type: 'LOGIN_FAILURE' });
           return;
         }
 
-        console.log('Session found, fetching user data...');
-
         // Fetch user data from database with retry logic
         try {
-          console.log('Fetching user data for:', session.user.email);
 
           // Retry logic for user data fetch
           let userData = null;
@@ -286,14 +262,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
           for (let attempt = 1; attempt <= maxRetries; attempt++) {
             try {
-              console.log(`User data fetch attempt ${attempt}/${maxRetries}`);
-
               const result = await api.getUserByEmail(session.user.email!);
               userData = result.data;
               userError = result.error;
 
               if (!userError && userData) {
-                console.log('User data loaded successfully:', userData.nom, 'with role:', userData.role);
                 break;
               }
 
@@ -304,15 +277,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                                      userError?.message?.includes('Network Error');
 
                 if (isNetworkError) {
-                  console.log(`Network error detected, retrying in ${attempt * 2}s...`);
                   await new Promise(resolve => setTimeout(resolve, attempt * 2000)); // Longer delay for network issues
                 } else {
-                  console.log(`Attempt ${attempt} failed, retrying in ${attempt}s...`);
                   await new Promise(resolve => setTimeout(resolve, attempt * 1000));
                 }
               }
             } catch (fetchError: any) {
-              console.log(`Fetch attempt ${attempt} error:`, fetchError.message);
               userError = fetchError;
               if (attempt < maxRetries) {
                 await new Promise(resolve => setTimeout(resolve, attempt * 1000));
@@ -323,35 +293,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (!mounted) return;
 
           if (userError || !userData) {
-            console.log('Failed to fetch user data after all retries.');
-            console.log('Error details:', userError?.message || 'No user data');
             isInitializing = false;
             clearTimeout(timeoutId);
 
             // Check if it's a network error
             if (isNetworkError(userError)) {
-              console.log('Network error detected during user data fetch');
               dispatch({ type: 'CONNECTION_ERROR' });
             } else {
-              console.log('User profile may not exist in database');
               dispatch({ type: 'LOGIN_FAILURE' });
             }
             return;
           }
 
-          console.log('User data loaded successfully');
           isInitializing = false;
           clearTimeout(timeoutId);
           dispatch({ type: 'LOGIN_SUCCESS', payload: userData });
         } catch (error: any) {
-          console.log('Critical error fetching user data:', error.message);
           if (mounted) {
             isInitializing = false;
             clearTimeout(timeoutId);
 
             // Check if it's a network error
             if (isNetworkError(error)) {
-              console.log('Network error detected in critical error handler');
               dispatch({ type: 'CONNECTION_ERROR' });
             } else {
               dispatch({ type: 'LOGIN_FAILURE' });
@@ -359,14 +322,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
         }
       } catch (error: any) {
-        console.log('Session check error:', error.message);
         if (mounted) {
           isInitializing = false;
           clearTimeout(timeoutId);
 
           // Check if it's a network error
           if (isNetworkError(error)) {
-            console.log('Network error detected in session check');
             dispatch({ type: 'CONNECTION_ERROR' });
           } else {
             dispatch({ type: 'LOGIN_FAILURE' });
@@ -380,27 +341,101 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Listen for auth state changes
     const { data: { subscription } } = auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth state change:', event);
+      console.log('AuthContext: Auth state change event:', event, 'Session exists:', !!session);
 
       // Skip events during initialization to prevent conflicts
       if (isInitializing) {
-        console.log('Skipping auth event during initialization');
+        console.log('AuthContext: Skipping event during initialization');
         return;
       }
 
       // Ignore events during logout
       if (isLoggingOutRef.current) {
-        console.log('Skipping auth event during logout');
+        console.log('AuthContext: Skipping event during logout');
         return;
       }
 
       if (!mounted) return;
 
+      // Prevent duplicate events within a short time frame
+      const now = Date.now();
+      const userEmail = session?.user?.email || '';
+      const lastEvent = lastProcessedEventRef.current;
+
+      if (lastEvent &&
+          lastEvent.event === event &&
+          lastEvent.email === userEmail &&
+          (now - lastEvent.timestamp) < 2000) { // Increased to 2 seconds debounce
+        console.log('AuthContext: Skipping duplicate event within 2 seconds');
+        return;
+      }
+
+      // For SIGNED_IN events, aggressively filter out duplicates
+      if (event === 'SIGNED_IN' && session?.user) {
+        const currentState = currentStateRef.current;
+        if (currentState.isAuthenticated &&
+            currentState.user?.email === session.user.email) {
+          console.log('AuthContext: Already authenticated with same user, completely skipping SIGNED_IN event');
+          return;
+        }
+      }
+
+      // Update last processed event
+      lastProcessedEventRef.current = { event, timestamp: now, email: userEmail };
+
       if (event === 'SIGNED_OUT' || !session) {
-        console.log('User signed out');
+        console.log('AuthContext: User signed out or no session');
         dispatch({ type: 'LOGOUT' });
       } else if (event === 'SIGNED_IN' && session.user) {
-        console.log('User signed in, fetching user data...');
+        console.log('AuthContext: Processing sign in for user:', session.user.email);
+
+        // Prevent multiple simultaneous sign-in processing
+        if (isProcessingSignInRef.current) {
+          console.log('AuthContext: Already processing sign in, skipping');
+          return;
+        }
+
+        // Use current state ref to get the latest state
+        const currentState = currentStateRef.current;
+        console.log('AuthContext: Current state:', {
+          hasUser: !!currentState.user,
+          isAuthenticated: currentState.isAuthenticated,
+          loading: currentState.loading,
+          currentEmail: currentState.user?.email
+        });
+
+        // Check if this is the same user that's already authenticated
+        if (currentState.user && currentState.user.email === session.user.email) {
+          console.log('AuthContext: Same user detected, ensuring proper state');
+
+          // If already authenticated, always skip - no need to re-process
+          if (currentState.isAuthenticated) {
+            console.log('AuthContext: Same user already authenticated, completely skipping');
+            return;
+          }
+
+          // If we have user data but state is not properly set, fix it
+          console.log('AuthContext: Same user but state needs fixing');
+          dispatch({ type: 'LOGIN_SUCCESS', payload: currentState.user });
+          return;
+        }
+
+        console.log('AuthContext: New user or not authenticated, fetching user data');
+
+        // Set processing flag
+        isProcessingSignInRef.current = true;
+
+        // Set loading state immediately for user switching
+        dispatch({ type: 'LOGIN_START' });
+
+        // Add timeout to prevent infinite loading
+        const loadingTimeout = setTimeout(() => {
+          console.log('AuthContext: Loading timeout reached, resetting state');
+          if (mounted) {
+            dispatch({ type: 'LOGIN_FAILURE' });
+            isProcessingSignInRef.current = false;
+          }
+        }, 5000); // 5 second timeout
 
         try {
           // Retry logic for user data fetch after sign in
@@ -410,23 +445,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
           for (let attempt = 1; attempt <= maxRetries; attempt++) {
             try {
-              console.log(`Sign-in user data fetch attempt ${attempt}/${maxRetries}`);
-
               const result = await api.getUserByEmail(session.user.email!);
               userData = result.data;
               userError = result.error;
 
               if (!userError && userData) {
-                console.log('User data loaded after sign in:', userData.nom, 'with role:', userData.role);
                 break;
               }
 
               if (attempt < maxRetries) {
-                console.log(`Sign-in attempt ${attempt} failed, retrying in ${attempt}s...`);
                 await new Promise(resolve => setTimeout(resolve, attempt * 1000));
               }
             } catch (fetchError: any) {
-              console.log(`Sign-in fetch attempt ${attempt} error:`, fetchError.message);
               userError = fetchError;
               if (attempt < maxRetries) {
                 await new Promise(resolve => setTimeout(resolve, attempt * 1000));
@@ -437,31 +467,95 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (!mounted) return;
 
           if (userError || !userData) {
-            console.log('Failed to fetch user data after sign in. User profile may not exist in database.');
-            console.log('Sign-in error details:', userError?.message || 'No user data');
-            dispatch({ type: 'LOGOUT' });
+            console.log('AuthContext: Failed to fetch user data after sign in');
+            clearTimeout(loadingTimeout);
+            dispatch({ type: 'LOGIN_FAILURE' });
+            isProcessingSignInRef.current = false;
             return;
           }
 
-          console.log('User data loaded after sign in');
+          console.log('AuthContext: Successfully updated user data after sign in');
+          clearTimeout(loadingTimeout);
           dispatch({ type: 'LOGIN_SUCCESS', payload: userData });
         } catch (error: any) {
-          console.log('Critical error fetching user data after sign in:', error.message);
+          console.log('AuthContext: Error handling sign in:', error);
           if (mounted) {
-            dispatch({ type: 'LOGOUT' });
+            clearTimeout(loadingTimeout);
+            dispatch({ type: 'LOGIN_FAILURE' });
+          }
+        } finally {
+          // Always clear the processing flag
+          isProcessingSignInRef.current = false;
+        }
+      } else if (event === 'TOKEN_REFRESHED' && session.user) {
+        console.log('AuthContext: Token refreshed for user:', session.user.email);
+
+        // Use current state ref to get the latest state
+        const currentState = currentStateRef.current;
+
+        // For TOKEN_REFRESHED events, if we already have user data, just keep it
+        if (currentState.user && currentState.user.email === session.user.email) {
+          console.log('AuthContext: Token refreshed, keeping existing user data');
+          // Ensure state is properly authenticated
+          if (!currentState.isAuthenticated) {
+            dispatch({ type: 'LOGIN_SUCCESS', payload: currentState.user });
+          }
+          return;
+        }
+
+        // If we don't have user data or it's for a different user, fetch it
+        console.log('AuthContext: Token refreshed but need to fetch user data');
+        dispatch({ type: 'LOGIN_START' });
+
+        try {
+          const result = await api.getUserByEmail(session.user.email!);
+
+          if (!mounted) return;
+
+          if (result.error || !result.data) {
+            console.log('AuthContext: Failed to fetch user data after token refresh');
+            dispatch({ type: 'LOGIN_FAILURE' });
+            return;
+          }
+
+          dispatch({ type: 'LOGIN_SUCCESS', payload: result.data });
+        } catch (error: any) {
+          console.log('AuthContext: Error handling token refresh:', error);
+          if (mounted) {
+            dispatch({ type: 'LOGIN_FAILURE' });
           }
         }
       }
     });
 
     return () => {
-      console.log('Cleaning up auth context');
       mounted = false;
       isInitializing = false;
       clearTimeout(timeoutId);
       subscription.unsubscribe();
     };
   }, []); // Keep empty dependency array to avoid re-subscription
+
+  // DISABLED: Session monitoring completely to prevent infinite loops
+  // The onAuthStateChange handler should be sufficient for session management
+  /*
+  useEffect(() => {
+    if (!state.isAuthenticated || !state.user) {
+      if (sessionMonitorRef.current) {
+        console.log('AuthContext: Stopping session monitor - user not authenticated');
+        clearInterval(sessionMonitorRef.current);
+        sessionMonitorRef.current = null;
+      }
+      return;
+    }
+
+    if (sessionMonitorRef.current) {
+      return;
+    }
+
+    console.log('AuthContext: Starting session monitor for user', state.user.email);
+  }, [state.isAuthenticated, state.user?.email]);
+  */
 
   return (
     <AuthContext.Provider value={{ state, login, logout, retryConnection }}>
@@ -481,3 +575,5 @@ export const useAuth = () => {
   }
   return context;
 };
+// Reusable delay function;
+

@@ -23,16 +23,17 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { Notification } from '@/types';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
+import { api } from '@/lib/supabase';
 
 export function Notifications() {
   const { toast } = useToast();
+  const { state } = useAuth();
 
   // Data state
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-
-  // Mock data for demonstration - replace with real API calls
   const mockNotifications: Notification[] = [
     {
       id: '1',
@@ -74,6 +75,8 @@ export function Notifications() {
 
   // Fetch notifications data
   const fetchNotifications = useCallback(async (isRefresh = false) => {
+    if (!state.user?.id) return;
+
     try {
       if (isRefresh) {
         setRefreshing(true);
@@ -81,11 +84,11 @@ export function Notifications() {
         setLoading(true);
       }
 
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // For now, use mock data - replace with real API call
-      setNotifications(mockNotifications);
+      const { data, error } = await api.getNotifications(state.user.id);
+      if (error) {
+        throw error;
+      }
+      setNotifications(data || []);
 
     } catch (error) {
       console.error('Error fetching notifications:', error);
@@ -104,7 +107,11 @@ export function Notifications() {
   // Mark notification as read
   const markAsRead = async (notificationId: string) => {
     try {
-      // Simulate API call
+      const { error } = await api.markNotificationAsRead(notificationId);
+      if (error) {
+        throw error;
+      }
+
       setNotifications(prev =>
         prev.map(notif =>
           notif.id === notificationId
@@ -118,6 +125,7 @@ export function Notifications() {
         description: 'La notification a été marquée comme lue',
       });
     } catch (error) {
+      console.error('Error marking notification as read:', error);
       toast({
         title: 'Erreur',
         description: 'Impossible de marquer la notification comme lue',
@@ -128,8 +136,14 @@ export function Notifications() {
 
   // Mark all notifications as read
   const markAllAsRead = async () => {
+    if (!state.user?.id) return;
+
     try {
-      // Simulate API call
+      const { error } = await api.markAllNotificationsAsRead(state.user.id);
+      if (error) {
+        throw error;
+      }
+
       setNotifications(prev =>
         prev.map(notif => ({ ...notif, lu: true }))
       );
@@ -139,6 +153,7 @@ export function Notifications() {
         description: 'Toutes les notifications ont été marquées comme lues',
       });
     } catch (error) {
+      console.error('Error marking all notifications as read:', error);
       toast({
         title: 'Erreur',
         description: 'Impossible de marquer toutes les notifications comme lues',
@@ -150,7 +165,11 @@ export function Notifications() {
   // Delete notification
   const deleteNotification = async (notificationId: string) => {
     try {
-      // Simulate API call
+      const { error } = await api.deleteNotification(notificationId);
+      if (error) {
+        throw error;
+      }
+
       setNotifications(prev =>
         prev.filter(notif => notif.id !== notificationId)
       );
@@ -160,6 +179,7 @@ export function Notifications() {
         description: 'La notification a été supprimée avec succès',
       });
     } catch (error) {
+      console.error('Error deleting notification:', error);
       toast({
         title: 'Erreur',
         description: 'Impossible de supprimer la notification',
@@ -223,8 +243,10 @@ export function Notifications() {
 
   // Initial data fetch
   useEffect(() => {
-    fetchNotifications();
-  }, [fetchNotifications]);
+    if (state.user?.id && (state.user.role === 'admin' || state.user.role === 'gestionnaire')) {
+      fetchNotifications();
+    }
+  }, [fetchNotifications, state.user?.id, state.user?.role]);
 
   const unreadCount = notifications.filter(n => !n.lu).length;
 

@@ -21,7 +21,7 @@ import {
 } from '@/components/ui/select';
 import { TablePagination } from '@/components/ui/table-pagination';
 import { Colis, User } from '@/types';
-import { api } from '@/lib/supabase';
+import { api, supabase } from '@/lib/supabase';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -64,32 +64,68 @@ export function ColisLivres() {
         setLoading(true);
       }
 
-      // Get colis with status "livre" - filter by current livreur if user is livreur
-      const { data, error, count, totalPages: pages, hasNextPage: hasNext, hasPrevPage: hasPrev } = await api.getColis({
-        page: currentPage,
-        limit: itemsPerPage,
-        search: debouncedSearchTerm,
-        status: 'livre',
-        livreurId: isLivreur ? state.user?.id : (delivererFilter !== 'all' ? delivererFilter : undefined),
-        sortBy: sortBy
-      });
+      console.log('ColisLivres: Fetching delivered colis...');
+
+      // Direct Supabase query for delivered packages
+      let query = supabase
+        .from('colis')
+        .select(`
+          *,
+          client:clients(*),
+          entreprise:entreprises(*),
+          livreur:utilisateurs(*)
+        `, { count: 'exact' })
+        .eq('statut', 'Livré'); // Only get delivered packages
+
+      // Apply livreur filter
+      if (isLivreur && state.user?.id) {
+        query = query.eq('livreur_id', state.user.id);
+      } else if (delivererFilter !== 'all') {
+        query = query.eq('livreur_id', delivererFilter);
+      }
+
+      // Apply search filter
+      if (debouncedSearchTerm) {
+        query = query.or(`id.ilike.%${debouncedSearchTerm}%,client.nom.ilike.%${debouncedSearchTerm}%`);
+      }
+
+      // Apply sorting
+      if (sortBy === 'recent') {
+        query = query.order('date_mise_a_jour', { ascending: false });
+      } else if (sortBy === 'oldest') {
+        query = query.order('date_mise_a_jour', { ascending: true });
+      } else {
+        query = query.order('date_creation', { ascending: false });
+      }
+
+      // Apply pagination
+      const from = (currentPage - 1) * itemsPerPage;
+      const to = from + itemsPerPage - 1;
+      query = query.range(from, to);
+
+      const { data, error, count } = await query;
+
+      console.log('ColisLivres: Direct query result:', { data: data?.length, error, count });
 
       if (error) {
-        console.error('Error fetching colis:', error);
+        console.error('ColisLivres: Query error:', error);
         setColis([]);
         setTotalCount(0);
         setTotalPages(0);
         setHasNextPage(false);
         setHasPrevPage(false);
-      } else if (data) {
-        setColis(data);
-        setTotalCount(count || 0);
+      } else {
+        console.log('ColisLivres: Setting delivered colis data:', data?.length, 'items');
+        setColis(data || []);
+        const total = count || 0;
+        setTotalCount(total);
+        const pages = Math.ceil(total / itemsPerPage);
         setTotalPages(pages);
-        setHasNextPage(hasNext);
-        setHasPrevPage(hasPrev);
+        setHasNextPage(currentPage < pages);
+        setHasPrevPage(currentPage > 1);
       }
     } catch (error) {
-      console.error('Error fetching colis:', error);
+      console.error('ColisLivres: Error in fetchColis:', error);
       setColis([]);
       setTotalCount(0);
       setTotalPages(0);
@@ -99,7 +135,7 @@ export function ColisLivres() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [currentPage, debouncedSearchTerm, delivererFilter, sortBy, itemsPerPage]);
+  }, [currentPage, debouncedSearchTerm, delivererFilter, sortBy, itemsPerPage, state.user?.id, isLivreur]);
 
   // Fetch livreurs for filter dropdown
   const fetchLivreurs = useCallback(async () => {
@@ -328,14 +364,50 @@ export function ColisLivres() {
                       {getLivreurInfo(colisItem)}
                     </TableCell>
                     <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 px-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 hover:text-gray-900 dark:hover:text-white transition-colors"
-                        onClick={() => navigate(`/colis/${colisItem.id}`)}
-                      >
-                        Voir
-                      </Button>
+                      <div className="flex gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 px-2 bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-900/40 transition-colors"
+                          onClick={() => navigate(`/colis/${colisItem.id}`)}
+                          title="Voir détails du colis"
+                        >
+                          Colis
+                        </Button>
+                        {colisItem.client?.id && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 px-2 bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-900/40 transition-colors"
+                            onClick={() => navigate(`/clients/${colisItem.client.id}`)}
+                            title="Voir détails du client"
+                          >
+                            Client
+                          </Button>
+                        )}
+                        {colisItem.entreprise?.id && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 px-2 bg-purple-100 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 hover:bg-purple-200 dark:hover:bg-purple-900/40 transition-colors"
+                            onClick={() => navigate(`/entreprises/${colisItem.entreprise.id}`)}
+                            title="Voir détails de l'entreprise"
+                          >
+                            Entreprise
+                          </Button>
+                        )}
+                        {colisItem.livreur?.id && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 px-2 bg-orange-100 dark:bg-orange-900/20 text-orange-700 dark:text-orange-300 hover:bg-orange-200 dark:hover:bg-orange-900/40 transition-colors"
+                            onClick={() => navigate(`/livreurs/${colisItem.livreur.id}`)}
+                            title="Voir détails du livreur"
+                          >
+                            Livreur
+                          </Button>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))

@@ -22,7 +22,8 @@ import {
   RotateCcw,
   UserCheck,
   UserPlus,
-  UserX
+  UserX,
+  User
 } from 'lucide-react';
 import {
   Sidebar,
@@ -90,10 +91,8 @@ export function AppSidebar() {
   useEffect(() => {
     const fetchBadgeCounts = async () => {
       if (authState.user?.role?.toLowerCase() === 'livreur' && authState.user?.id) {
-        console.log('Fetching badge counts for livreur:', authState.user.id);
         try {
           const { data, error } = await api.getColisCountsByStatus(authState.user.id, ['Relancé', 'Relancé Autre Client']);
-          console.log('Badge counts response:', { data, error });
           if (data && !error) {
             setBadgeCounts(data);
           } else {
@@ -193,6 +192,16 @@ export function AppSidebar() {
       roles: ['admin', 'gestionnaire', 'livreur']
     },
     {
+      title: 'Mon Compte',
+      icon: User,
+      roles: ['admin', 'gestionnaire', 'livreur'],
+      hasDropdown: true,
+      items: [
+        { title: 'Mon Profil', url: '/profil', icon: User, roles: ['admin', 'gestionnaire', 'livreur'] },
+        { title: 'Paramètres', url: '/parametres/compte', icon: Settings, roles: ['admin', 'gestionnaire', 'livreur'] },
+      ]
+    },
+    {
       title: 'Utilisateurs',
       icon: UsersRound,
       roles: ['admin'],
@@ -208,8 +217,8 @@ export function AppSidebar() {
       roles: ['admin'],
       hasDropdown: true,
       items: [
-        { title: 'Général', url: '/parametres', icon: Settings },
-        { title: 'Statuts', url: '/parametres/statuts', icon: Package },
+        { title: 'Général', url: '/parametres', icon: Settings, roles: ['admin'] },
+        { title: 'Statuts', url: '/parametres/statuts', icon: Package, roles: ['admin'] },
       ]
     },
   ];

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Package, Search, Filter, RefreshCw, Phone, MessageCircle, MapPin, Building, Calendar, Eye, Info, CheckCircle, AlertCircle, Clock, House, Building2, Save, MessageSquare, CircleAlert, X, Send, Mail, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,17 +11,20 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/contexts/AuthContext';
 import { api, supabase } from '@/lib/supabase';
+
 import { Colis, Statut } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 
 export function MesColis() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { state } = useAuth();
   const { toast } = useToast();
 
   const [colis, setColis] = useState<Colis[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('tous');
@@ -43,11 +46,7 @@ export function MesColis() {
   const [isUpdating, setIsUpdating] = useState(false);
 
   const fetchColis = async (isRefresh = false) => {
-    if (!state.user?.id) {
-      setLoading(false);
-      setRefreshing(false);
-      return;
-    }
+    if (!state.user?.id) return;
 
     try {
       if (isRefresh) {
@@ -56,48 +55,56 @@ export function MesColis() {
         setLoading(true);
       }
 
-      console.log('Fetching colis for user:', state.user.id, 'with filters:', {
-        search: debouncedSearchTerm,
-        status: statusFilter,
-        sortBy,
-        dateFilter,
-        page: currentPage,
-        limit: entriesPerPage
-      });
+      console.log('MesColis: Fetching colis for user:', state.user.id);
 
-      const { data, error, count } = await api.getColis({
-        livreurId: state.user.id,
-        search: debouncedSearchTerm || undefined,
-        status: statusFilter !== 'tous' ? statusFilter : undefined,
-        sortBy: sortBy as 'recent' | 'oldest' | 'status',
-        dateFilter: dateFilter !== 'toutes' ? dateFilter : undefined,
-        page: currentPage,
-        limit: entriesPerPage
-      });
+      // Direct Supabase query - no complex recovery logic
+      let query = supabase
+        .from('colis')
+        .select(`
+          *,
+          client:clients(*),
+          entreprise:entreprises(*),
+          livreur:utilisateurs(*)
+        `, { count: 'exact' })
+        .eq('livreur_id', state.user.id);
 
-      console.log('API Response:', { data, error, count });
+      // Apply filters
+      if (debouncedSearchTerm) {
+        query = query.or(`id.ilike.%${debouncedSearchTerm}%,client.nom.ilike.%${debouncedSearchTerm}%`);
+      }
+      if (statusFilter !== 'tous') {
+        query = query.eq('statut', statusFilter);
+      }
+
+      // Apply sorting
+      if (sortBy === 'recent') {
+        query = query.order('date_creation', { ascending: false });
+      } else if (sortBy === 'oldest') {
+        query = query.order('date_creation', { ascending: true });
+      } else if (sortBy === 'status') {
+        query = query.order('statut');
+      }
+
+      // Apply pagination
+      const from = (currentPage - 1) * entriesPerPage;
+      const to = from + entriesPerPage - 1;
+      query = query.range(from, to);
+
+      const { data, error, count } = await query;
+
+      console.log('MesColis: Direct query result:', { data: data?.length, error, count });
 
       if (error) {
-        console.error('API Error:', error);
-        toast({
-          title: 'Erreur',
-          description: `Erreur API: ${error.message || 'Impossible de charger les colis'}`,
-          variant: 'destructive',
-        });
+        console.error('MesColis: Query error:', error);
         setColis([]);
         setTotalCount(0);
       } else {
+        console.log('MesColis: Setting colis data:', data?.length, 'items');
         setColis(data || []);
         setTotalCount(count || 0);
-        console.log('Successfully loaded', data?.length || 0, 'colis');
       }
     } catch (error: any) {
-      console.error('Fetch Error:', error);
-      toast({
-        title: 'Erreur',
-        description: `Erreur de chargement: ${error.message || 'Une erreur est survenue'}`,
-        variant: 'destructive',
-      });
+      console.error('MesColis: Error in fetchColis:', error);
       setColis([]);
       setTotalCount(0);
     } finally {
@@ -108,12 +115,21 @@ export function MesColis() {
 
   const fetchStatuts = async () => {
     try {
-      const { data, error } = await api.getStatuts('colis');
+      const { data, error } = await supabase
+        .from('statuts')
+        .select('id, nom, couleur, type, actif')
+        .eq('type', 'colis')
+        .eq('actif', true)
+        .order('ordre', { ascending: true });
+
       if (!error && data) {
+        console.log('MesColis: Fetched statuts:', data);
         setStatuts(data);
+      } else {
+        console.error('MesColis: Error fetching statuts:', error);
       }
     } catch (error) {
-      console.error('Error fetching statuts:', error);
+      console.error('MesColis: Exception fetching statuts:', error);
     }
   };
 
@@ -130,11 +146,20 @@ export function MesColis() {
     fetchStatuts();
   }, []);
 
+  // Initial load useEffect
   useEffect(() => {
-    if (state.user?.id) {
+    if (state.user?.id && !isInitialized) {
+      setIsInitialized(true);
       fetchColis();
     }
-  }, [state.user?.id, debouncedSearchTerm, statusFilter, sortBy, dateFilter, currentPage, entriesPerPage]);
+  }, [state.user?.id, isInitialized]);
+
+  // Filter changes useEffect
+  useEffect(() => {
+    if (state.user?.id && isInitialized) {
+      fetchColis();
+    }
+  }, [debouncedSearchTerm, statusFilter, sortBy, dateFilter, currentPage, entriesPerPage, isInitialized]);
 
   const getStatusColor = (statut: string) => {
     const statutData = statuts.find(s => s.nom === statut);
@@ -159,20 +184,44 @@ export function MesColis() {
     }
   };
 
+  const getColorClass = (couleur: string) => {
+    const colorMap: { [key: string]: string } = {
+      'blue': 'bg-blue-500 text-white',
+      'green': 'bg-green-500 text-white',
+      'red': 'bg-red-500 text-white',
+      'yellow': 'bg-yellow-500 text-black',
+      'orange': 'bg-orange-500 text-white',
+      'purple': 'bg-purple-500 text-white',
+      'pink': 'bg-pink-500 text-white',
+      'gray': 'bg-gray-500 text-white',
+      'teal': 'bg-teal-500 text-white',
+      'indigo': 'bg-indigo-500 text-white',
+      'lime': 'bg-lime-500 text-black',
+      'cyan': 'bg-cyan-500 text-white',
+      'amber': 'bg-amber-500 text-black',
+    };
+    return colorMap[couleur] || 'bg-gray-500 text-white';
+  };
+
   const getStatusBadge = (statut: string) => {
+    console.log('MesColis: getStatusBadge called with:', statut);
+    console.log('MesColis: Available statuts:', statuts);
+
     const statutData = statuts.find(s => s.nom === statut);
-    if (statutData) {
+    console.log('MesColis: Found statutData:', statutData);
+
+    if (statutData && statutData.couleur) {
+      const colorClass = getColorClass(statutData.couleur);
+      console.log('MesColis: Using color class:', colorClass);
       return (
-        <Badge
-          className="text-white"
-          style={{ backgroundColor: statutData.couleur }}
-        >
+        <Badge className={`${colorClass} border-0`}>
           {statutData.nom}
         </Badge>
       );
     }
 
     // Fallback for unknown status
+    console.log('MesColis: Using fallback for status:', statut);
     return <Badge className="bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300">{statut}</Badge>;
   };
 
@@ -248,9 +297,9 @@ export function MesColis() {
 
     setIsUpdating(true);
     try {
-      const { error } = await api.updateColis(selectedColis.id, {
+      const { error } = await withRecovery(() => api.updateColis(selectedColis.id, {
         statut: newStatus
-      });
+      }));
 
       if (error) {
         toast({
@@ -278,17 +327,78 @@ export function MesColis() {
   };
 
   const submitReclamation = async () => {
-    if (!selectedColis || !reclamationText.trim()) return;
+    if (!selectedColis || !reclamationText.trim() || !state.user) {
+      return;
+    }
 
     try {
-      // Here you would typically send the reclamation to your API
-      toast({
-        title: 'Réclamation envoyée',
-        description: 'Votre réclamation a été envoyée avec succès',
-      });
+      // Get admin and gestionnaire users to notify
+      const { data: adminUsers, error: adminError } = await api.getAdminAndGestionnaireUsers();
+
+      if (adminError) {
+        console.error('Error fetching admin users:', adminError);
+        toast({
+          title: 'Erreur',
+          description: 'Impossible de récupérer les administrateurs',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Create notifications for each admin/gestionnaire
+      if (adminUsers && adminUsers.length > 0) {
+        const notificationPromises = adminUsers.map(admin =>
+          api.createNotification({
+            utilisateur_id: admin.id,
+            titre: 'Nouvelle réclamation',
+            message: `Le livreur ${state.user.prenom} ${state.user.nom} a envoyé une réclamation pour le colis ${selectedColis.id}: "${reclamationText.substring(0, 100)}${reclamationText.length > 100 ? '...' : ''}"`,
+            lu: false,
+            type: 'reclamation'
+          })
+        );
+
+        const results = await Promise.all(notificationPromises);
+
+        // Check if any notifications failed
+        const failures = results.filter(r => r.error);
+        if (failures.length > 0) {
+          console.error('Some notifications failed:', failures);
+          toast({
+            title: 'Réclamation envoyée',
+            description: 'Réclamation envoyée mais certaines notifications ont échoué',
+            variant: 'destructive',
+          });
+        } else {
+          toast({
+            title: 'Réclamation envoyée',
+            description: 'Votre réclamation a été envoyée avec succès',
+          });
+        }
+      } else {
+        // No admin users found - let's check what users exist
+        const { data: allUsers } = await supabase
+          .from('utilisateurs')
+          .select('id, nom, prenom, role, statut, email')
+          .limit(10);
+
+        console.log('No admin users found. All users in database:', allUsers?.map(u => ({
+          id: u.id,
+          role: u.role,
+          statut: u.statut,
+          nom: u.nom,
+          email: u.email
+        })));
+
+        toast({
+          title: 'Réclamation envoyée',
+          description: 'Réclamation enregistrée (aucun administrateur trouvé)',
+        });
+      }
+
       setShowReclamationModal(false);
       setReclamationText('');
     } catch (error) {
+      console.error('Error submitting reclamation:', error);
       toast({
         title: 'Erreur',
         description: 'Impossible d\'envoyer la réclamation',
@@ -296,6 +406,8 @@ export function MesColis() {
       });
     }
   };
+
+
 
   const submitStatusChange = async () => {
     if (!selectedColis || !newStatus) return;
@@ -370,6 +482,7 @@ export function MesColis() {
               )}
               Actualiser
             </Button>
+
             {hasActiveFilters && (
               <Button
                 onClick={resetFilters}
@@ -535,7 +648,7 @@ export function MesColis() {
                     </div>
 
                     {/* Status Change Button - Hidden for delivered packages */}
-                    {colisItem.statut !== 'Livré' && (
+                    {colisItem.statut !== 'Livré' && colisItem.statut !== 'livre' && (
                       <div className="mt-4 mb-4">
                         <Button
                           className="w-full bg-amber-600 hover:bg-amber-700 text-white"
@@ -669,7 +782,7 @@ export function MesColis() {
             <Button variant="outline" onClick={() => setShowReclamationModal(false)}>
               Annuler
             </Button>
-            <Button onClick={submitReclamation}>
+            <Button onClick={submitReclamation} disabled={!reclamationText.trim()}>
               <Send className="mr-2 h-5 w-5" />
               Envoyer
             </Button>

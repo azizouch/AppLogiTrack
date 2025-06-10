@@ -15,11 +15,38 @@ const getSupabaseClient = (): SupabaseClient => {
   if (!supabaseInstance) {
     supabaseInstance = createClient(supabaseUrl, supabaseAnonKey, {
       auth: {
-        autoRefreshToken: true,
+        autoRefreshToken: false, // DISABLED: Causing infinite SIGNED_IN events
         persistSession: true,
-        detectSessionInUrl: true
+        detectSessionInUrl: true,
+        // Add session recovery options
+        flowType: 'pkce',
+        storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+        storageKey: 'supabase.auth.token',
+        debug: false
+      },
+      // Add global error handling
+      global: {
+        headers: {
+          'X-Client-Info': 'logitrack-web'
+        }
       }
     })
+
+    // DISABLED: Session monitoring to prevent duplicate auth state change listeners
+    // The AuthContext already handles all auth state changes
+    /*
+    if (typeof window !== 'undefined') {
+      supabaseInstance.auth.onAuthStateChange((event, session) => {
+        if (event === 'TOKEN_REFRESHED' && session) {
+          // Token refreshed successfully
+          console.log('Supabase: Token refreshed successfully');
+        } else if (event === 'SIGNED_OUT') {
+          // Clear any application-level caches here if needed
+          console.log('Supabase: User signed out');
+        }
+      });
+    }
+    */
   }
   return supabaseInstance
 }
@@ -30,6 +57,169 @@ export interface ApiResponse<T> {
   data: T | null;
   error: PostgrestError | null;
 }
+
+// Session recovery utility
+export const sessionUtils = {
+  // Check if error is session-related
+  isSessionError: (error: any): boolean => {
+    if (!error) return false;
+    const message = error.message?.toLowerCase() || '';
+    return (
+      message.includes('auth session missing') ||
+      message.includes('invalid refresh token') ||
+      message.includes('refresh token not found') ||
+      message.includes('jwt expired') ||
+      message.includes('invalid jwt') ||
+      message.includes('session not found') ||
+      message.includes('user not found') ||
+      error.status === 401 ||
+      error.code === 'PGRST301' // PostgREST JWT expired
+    );
+  },
+
+  // DISABLED: Attempt to refresh session - causing infinite SIGNED_IN events
+  refreshSession: async (): Promise<boolean> => {
+    console.log('sessionUtils: Session refresh is disabled to prevent infinite loops');
+    return false;
+
+    /*
+    try {
+      console.log('sessionUtils: Attempting to refresh session...');
+
+      // Try a simple refresh first without timeout
+      try {
+        const result = await supabase.auth.refreshSession();
+
+        if (!result || typeof result !== 'object') {
+          console.log('sessionUtils: Invalid refresh result structure');
+          return false;
+        }
+
+        const { data, error } = result;
+
+        if (error) {
+          console.log('sessionUtils: Session refresh failed:', error.message);
+          return false;
+        }
+
+        if (data?.session) {
+          console.log('sessionUtils: Session refreshed successfully');
+          return true;
+        }
+
+        console.log('sessionUtils: Session refresh returned no session');
+        return false;
+      } catch (refreshError: any) {
+        console.log('sessionUtils: Direct refresh failed, trying with timeout:', refreshError?.message || 'Unknown error');
+
+        // If direct refresh fails, try with timeout as fallback
+        const refreshPromise = supabase.auth.refreshSession();
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          setTimeout(() => reject(new Error('Session refresh timeout')), 15000); // 15 second timeout
+        });
+
+        const result = await Promise.race([refreshPromise, timeoutPromise]);
+
+        if (!result || typeof result !== 'object') {
+          console.log('sessionUtils: Invalid timeout refresh result structure');
+          return false;
+        }
+
+        const { data, error } = result;
+
+        if (error) {
+          console.log('sessionUtils: Timeout refresh failed:', error.message);
+          return false;
+        }
+
+        if (data?.session) {
+          console.log('sessionUtils: Timeout refresh succeeded');
+          return true;
+        }
+
+        return false;
+      }
+    } catch (error: any) {
+      console.log('sessionUtils: Session refresh error:', error?.message || 'Unknown error');
+      return false;
+    }
+    */
+  },
+
+  // Get current session with retry
+  getCurrentSession: async (retryCount = 0): Promise<{ session: any; error: any }> => {
+    try {
+      // Add timeout to prevent hanging
+      const sessionPromise = supabase.auth.getSession();
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('Get session timeout')), 8000); // 8 second timeout
+      });
+
+      const result = await Promise.race([sessionPromise, timeoutPromise]);
+
+      // Ensure we always return the expected structure
+      if (!result || typeof result !== 'object') {
+        console.log('sessionUtils: Invalid session result structure');
+        return { session: null, error: new Error('Invalid session result') };
+      }
+
+      const { data, error } = result;
+
+      // Extract session from data if it exists
+      const session = data?.session || null;
+
+      // DISABLED: Session recovery to prevent infinite loops
+      /*
+      if (error && sessionUtils.isSessionError(error) && retryCount < 2) {
+        const refreshed = await sessionUtils.refreshSession();
+
+        if (refreshed) {
+          return sessionUtils.getCurrentSession(retryCount + 1);
+        }
+      }
+      */
+
+      return { session, error };
+    } catch (error: any) {
+      console.log('sessionUtils: getCurrentSession error:', error?.message || 'Unknown error');
+      return { session: null, error };
+    }
+  }
+};
+
+// DISABLED: Enhanced API wrapper with session recovery - causing infinite loops
+export const withSessionRecovery = async <T>(
+  apiCall: () => Promise<T>,
+  retryCount = 0
+): Promise<T> => {
+  try {
+    const result = await apiCall();
+    return result;
+  } catch (error: any) {
+    // Session recovery is disabled to prevent infinite SIGNED_IN events
+    console.log('withSessionRecovery: Session recovery is disabled, throwing error directly');
+    throw error;
+
+    /*
+    // Check if it's a session error and we haven't exceeded retry limit
+    if (sessionUtils.isSessionError(error) && retryCount < 2) {
+      const refreshed = await sessionUtils.refreshSession();
+
+      if (refreshed) {
+        return withSessionRecovery(apiCall, retryCount + 1);
+      } else {
+        // Force logout and redirect to login
+        await supabase.auth.signOut();
+        if (typeof window !== 'undefined') {
+          window.location.href = '/login';
+        }
+      }
+    }
+
+    throw error;
+    */
+  }
+};
 
 // Database types for Supabase
 export interface Database {
@@ -201,12 +391,10 @@ export const api = {
       const { data: authUser, error: authError } = await supabase.auth.getUser();
 
       if (authError || !authUser.user) {
-        console.log('Auth error or no user:', authError?.message);
         return { data: null, error: authError };
       }
 
       const authUserId = authUser.user.id;
-      console.log('Looking for user with auth_id:', authUserId);
 
       // Find user by auth_id (correct relationship)
       const { data: userData, error: userError } = await supabase
@@ -216,7 +404,6 @@ export const api = {
         .single();
 
       if (!userError && userData) {
-        console.log('User found in database:', userData.nom, 'with role:', userData.role);
         const userWithEmail = {
           ...userData,
           email: email
@@ -224,11 +411,9 @@ export const api = {
         return { data: userWithEmail, error: null };
       }
 
-      console.log('User not found in database:', userError?.message);
       return { data: null, error: { message: 'User profile not found in database' } };
 
     } catch (err) {
-      console.log('Error in getUserByEmail:', err);
       return { data: null, error: err as any }
     }
   },
@@ -243,6 +428,7 @@ export const api = {
     sortBy?: 'recent' | 'oldest' | 'status';
     dateFilter?: string;
   } = {}) => {
+
     const {
       page = 1,
       limit = 20,
@@ -262,120 +448,120 @@ export const api = {
         livreur:utilisateurs(id, nom, prenom, telephone)
       `, { count: 'exact' });
 
-    // Apply search filter - comprehensive search across multiple fields
-    if (search) {
-      // First, get client IDs that match the search term
-      const { data: matchingClients } = await supabase
-        .from('clients')
-        .select('id')
-        .ilike('nom', `%${search}%`);
+        // Apply search filter - comprehensive search across multiple fields
+      if (search) {
+        // First, get client IDs that match the search term
+        const { data: matchingClients } = await supabase
+          .from('clients')
+          .select('id')
+          .ilike('nom', `%${search}%`);
 
-      // Get entreprise IDs that match the search term
-      const { data: matchingEntreprises } = await supabase
-        .from('entreprises')
-        .select('id')
-        .ilike('nom', `%${search}%`);
+        // Get entreprise IDs that match the search term
+        const { data: matchingEntreprises } = await supabase
+          .from('entreprises')
+          .select('id')
+          .ilike('nom', `%${search}%`);
 
-      const clientIds = matchingClients?.map(c => c.id) || [];
-      const entrepriseIds = matchingEntreprises?.map(e => e.id) || [];
+        const clientIds = matchingClients?.map(c => c.id) || [];
+        const entrepriseIds = matchingEntreprises?.map(e => e.id) || [];
 
-      // Build OR conditions for search
-      const searchConditions = [`id.ilike.%${search}%`];
+        // Build OR conditions for search
+        const searchConditions = [`id.ilike.%${search}%`];
 
-      if (clientIds.length > 0) {
-        searchConditions.push(`client_id.in.(${clientIds.join(',')})`);
+        if (clientIds.length > 0) {
+          searchConditions.push(`client_id.in.(${clientIds.join(',')})`);
+        }
+
+        if (entrepriseIds.length > 0) {
+          searchConditions.push(`entreprise_id.in.(${entrepriseIds.join(',')})`);
+        }
+
+        query = query.or(searchConditions.join(','));
       }
 
-      if (entrepriseIds.length > 0) {
-        searchConditions.push(`entreprise_id.in.(${entrepriseIds.join(',')})`);
+      // Apply status filter
+      if (status && status !== 'all') {
+        query = query.eq('statut', status);
       }
 
-      query = query.or(searchConditions.join(','));
-    }
+      // Apply date filter
+      if (dateFilter && dateFilter !== 'toutes') {
+        const now = new Date();
+        let startDate: Date;
+        let endDate: Date = now;
 
-    // Apply status filter
-    if (status && status !== 'all') {
-      query = query.eq('statut', status);
-    }
+        switch (dateFilter) {
+          case 'aujourd_hui':
+            startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            break;
+          case 'hier':
+            startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+            endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            break;
+          case '7_derniers_jours':
+            startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+            break;
+          case '30_derniers_jours':
+            startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+            break;
+          case 'ce_mois':
+            startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+            break;
+          case 'le_mois_dernier':
+            startDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+            endDate = new Date(now.getFullYear(), now.getMonth(), 0);
+            break;
+          default:
+            startDate = new Date(0); // No filter
+        }
 
-    // Apply date filter
-    if (dateFilter && dateFilter !== 'toutes') {
-      const now = new Date();
-      let startDate: Date;
-      let endDate: Date = now;
-
-      switch (dateFilter) {
-        case 'aujourd_hui':
-          startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-          break;
-        case 'hier':
-          startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
-          endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-          break;
-        case '7_derniers_jours':
-          startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-          break;
-        case '30_derniers_jours':
-          startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-          break;
-        case 'ce_mois':
-          startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-          break;
-        case 'le_mois_dernier':
-          startDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-          endDate = new Date(now.getFullYear(), now.getMonth(), 0);
-          break;
-        default:
-          startDate = new Date(0); // No filter
-      }
-
-      if (startDate) {
-        query = query.gte('date_creation', startDate.toISOString());
-        if (endDate && dateFilter !== 'aujourd_hui' && dateFilter !== '7_derniers_jours' && dateFilter !== '30_derniers_jours' && dateFilter !== 'ce_mois') {
-          query = query.lte('date_creation', endDate.toISOString());
+        if (startDate) {
+          query = query.gte('date_creation', startDate.toISOString());
+          if (endDate && dateFilter !== 'aujourd_hui' && dateFilter !== '7_derniers_jours' && dateFilter !== '30_derniers_jours' && dateFilter !== 'ce_mois') {
+            query = query.lte('date_creation', endDate.toISOString());
+          }
         }
       }
-    }
 
-    // Apply livreur filter
-    if (livreurId && livreurId !== 'all') {
-      if (livreurId === 'unassigned') {
-        query = query.is('livreur_id', null);
-      } else {
-        query = query.eq('livreur_id', livreurId);
+      // Apply livreur filter
+      if (livreurId && livreurId !== 'all') {
+        if (livreurId === 'unassigned') {
+          query = query.is('livreur_id', null);
+        } else {
+          query = query.eq('livreur_id', livreurId);
+        }
       }
-    }
 
-    // Apply sorting
-    switch (sortBy) {
-      case 'oldest':
-        query = query.order('date_creation', { ascending: true });
-        break;
-      case 'status':
-        query = query.order('statut', { ascending: true }).order('date_creation', { ascending: false });
-        break;
-      case 'recent':
-      default:
-        query = query.order('date_creation', { ascending: false });
-        break;
-    }
+      // Apply sorting
+      switch (sortBy) {
+        case 'oldest':
+          query = query.order('date_creation', { ascending: true });
+          break;
+        case 'status':
+          query = query.order('statut', { ascending: true }).order('date_creation', { ascending: false });
+          break;
+        case 'recent':
+        default:
+          query = query.order('date_creation', { ascending: false });
+          break;
+      }
 
-    // Apply pagination
-    const from = (page - 1) * limit;
-    const to = from + limit - 1;
-    query = query.range(from, to);
+      // Apply pagination
+      const from = (page - 1) * limit;
+      const to = from + limit - 1;
+      query = query.range(from, to);
 
-    const { data, error, count } = await query;
+      const { data, error, count } = await query;
 
-    return {
-      data,
-      error,
-      count,
-      totalPages: count ? Math.ceil(count / limit) : 0,
-      currentPage: page,
-      hasNextPage: count ? (page * limit) < count : false,
-      hasPrevPage: page > 1
-    };
+      return {
+        data,
+        error,
+        count,
+        totalPages: count ? Math.ceil(count / limit) : 0,
+        currentPage: page,
+        hasNextPage: count ? (page * limit) < count : false,
+        hasPrevPage: page > 1
+      };
   },
 
   // Original getColis for backward compatibility
@@ -393,17 +579,19 @@ export const api = {
   },
 
   getColisById: async (id: string) => {
-    const { data, error } = await supabase
-      .from('colis')
-      .select(`
-        *,
-        client:clients(*),
-        entreprise:entreprises(*),
-        livreur:utilisateurs(*)
-      `)
-      .eq('id', id)
-      .single()
-    return { data, error }
+    return withSessionRecovery(async () => {
+      const { data, error } = await supabase
+        .from('colis')
+        .select(`
+          *,
+          client:clients(*),
+          entreprise:entreprises(*),
+          livreur:utilisateurs(*)
+        `)
+        .eq('id', id)
+        .single()
+      return { data, error }
+    });
   },
 
   getColisByStatus: async (status: string) => {
@@ -783,5 +971,185 @@ export const api = {
       .delete()
       .eq('id', id)
     return { data, error }
+  },
+
+
+  // Notifications
+  getNotifications: async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('user_id', userId)  // Changed from 'utilisateur_id' to 'user_id'
+        .order('created_at', { ascending: false });  // Changed from 'date_creation' to 'created_at'
+
+      // Transform the data to match our interface
+      const transformedData = data?.map(notification => ({
+        id: notification.id,
+        utilisateur_id: notification.user_id,
+        titre: notification.title,
+        message: notification.message,
+        lu: notification.is_read,
+        date_creation: notification.created_at,
+        type: notification.type
+      }));
+
+      return { data: transformedData, error };
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+      return { data: null, error };
+    }
+  },
+
+  createNotification: async (notification: Omit<Notification, 'id' | 'date_creation'>) => {
+    try {
+      // Transform the notification to match database schema
+      const dbNotification = {
+        user_id: notification.utilisateur_id,  // Transform to database column name
+        title: notification.titre,             // Transform to database column name
+        message: notification.message,         // Same
+        is_read: notification.lu,              // Transform to database column name
+        type: notification.type,               // Same
+        created_at: new Date().toISOString()   // Transform to database column name
+      };
+
+      const { data, error } = await supabase
+        .from('notifications')
+        .insert([dbNotification])
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error creating notification:', error);
+        return { data: null, error };
+      }
+
+      // Transform the returned data back to our interface
+      const transformedData = data ? {
+        id: data.id,
+        utilisateur_id: data.user_id,
+        titre: data.title,
+        message: data.message,
+        lu: data.is_read,
+        date_creation: data.created_at,
+        type: data.type
+      } : null;
+
+      return { data: transformedData, error };
+    } catch (error) {
+      console.error('Exception creating notification:', error);
+      return { data: null, error };
+    }
+  },
+
+  markNotificationAsRead: async (notificationId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('notifications')
+        .update({ is_read: true })  // Changed from 'lu' to 'is_read'
+        .eq('id', notificationId)
+        .select()
+        .single();
+
+      // Transform the returned data back to our interface
+      const transformedData = data ? {
+        id: data.id,
+        utilisateur_id: data.user_id,
+        titre: data.title,
+        message: data.message,
+        lu: data.is_read,
+        date_creation: data.created_at,
+        type: data.type
+      } : null;
+
+      return { data: transformedData, error };
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+      return { data: null, error };
+    }
+  },
+
+  markAllNotificationsAsRead: async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('notifications')
+        .update({ is_read: true })  // Changed from 'lu' to 'is_read'
+        .eq('user_id', userId)      // Changed from 'utilisateur_id' to 'user_id'
+        .eq('is_read', false);      // Changed from 'lu' to 'is_read'
+
+      return { data, error };
+    } catch (error) {
+      console.error('Error marking all notifications as read:', error);
+      return { data: null, error };
+    }
+  },
+
+  deleteNotification: async (notificationId: string) => {
+    try {
+      const { error } = await supabase
+        .from('notifications')
+        .delete()
+        .eq('id', notificationId);
+
+      return { error };
+    } catch (error) {
+      console.error('Error deleting notification:', error);
+      return { error };
+    }
+  },
+
+  // Debug: Get all users to see what's in the database
+  getAllUsers: async () => {
+    try {
+      console.log('API: Fetching ALL users for debugging...');
+
+      const { data, error } = await supabase
+        .from('utilisateurs')
+        .select('id, nom, prenom, role, statut, email')
+        .limit(10);
+
+      console.log('API: All users query result:', { data: data?.length, error });
+
+      if (data) {
+        console.log('API: All users found:', data.map(u => ({
+          id: u.id,
+          role: u.role,
+          statut: u.statut,
+          nom: u.nom,
+          email: u.email
+        })));
+      }
+
+      return { data, error };
+    } catch (error) {
+      console.error('API: Exception fetching all users:', error);
+      return { data: null, error };
+    }
+  },
+
+  // Get admin and gestionnaire users for notifications
+  getAdminAndGestionnaireUsers: async () => {
+    try {
+      const { data, error } = await supabase
+        .from('utilisateurs')
+        .select('id, nom, prenom, role, statut')
+        .in('role', ['admin', 'gestionnaire'])
+        .eq('statut', 'actif');
+
+      // If no active admin users found, try without the statut filter
+      if (!error && (!data || data.length === 0)) {
+        const { data: dataNoStatus, error: errorNoStatus } = await supabase
+          .from('utilisateurs')
+          .select('id, nom, prenom, role, statut')
+          .in('role', ['admin', 'gestionnaire']);
+
+        return { data: dataNoStatus, error: errorNoStatus };
+      }
+
+      return { data, error };
+    } catch (error) {
+      console.error('Error fetching admin/gestionnaire users:', error);
+      return { data: null, error };
+    }
   }
 }

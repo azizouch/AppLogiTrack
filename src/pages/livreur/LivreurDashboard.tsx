@@ -1,8 +1,78 @@
 import { useState, useEffect } from 'react';
-import { Package, Clock, CheckCircle, RotateCcw, User, MapPin, Truck, Calendar } from 'lucide-react';
+import { Package, Clock, CheckCircle, RotateCcw, User, MapPin, Truck, Calendar, Award, LucideIcon } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@/lib/supabase';
+
+import { useToast } from '@/hooks/use-toast';
+
+// StatItem component for profile card
+interface StatItemProps {
+  icon: LucideIcon;
+  label: string;
+  value: string;
+}
+
+function StatItem({ icon: Icon, label, value }: StatItemProps) {
+  return (
+    <div className="flex items-start gap-3">
+      <div className="w-9 h-9 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
+        <Icon className="h-5 w-5 text-primary" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{label}</p>
+        <p className="text-md font-medium text-gray-900 dark:text-white">{value}</p>
+      </div>
+    </div>
+  );
+}
+
+// ActivityItem component for deliveries
+interface ActivityItemProps {
+  title: string;
+  description: string;
+  time: string;
+}
+
+function ActivityItem({ title, description, time }: ActivityItemProps) {
+  return (
+    <div className="flex items-start gap-3">
+      <div className="w-2 h-2 bg-blue-600 dark:bg-blue-400 rounded-full mt-2 flex-shrink-0"></div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium text-gray-900 dark:text-white">{title}</p>
+        <p className="text-xs text-gray-600 dark:text-gray-400 truncate">{description}</p>
+        <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">{time}</p>
+      </div>
+    </div>
+  );
+}
+
+// StatusBar component for performances
+interface StatusBarProps {
+  label: string;
+  value: number;
+  max: number;
+  color: string;
+}
+
+function StatusBar({ label, value, max, color }: StatusBarProps) {
+  const percentage = max > 0 ? (value / max) * 100 : 0;
+
+  return (
+    <div className="space-y-2">
+      <div className="flex justify-between items-center">
+        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{label}</span>
+        <span className="text-sm font-bold text-gray-900 dark:text-white">{value}</span>
+      </div>
+      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+        <div
+          className={`h-2 rounded-full transition-all duration-300 ${color}`}
+          style={{ width: `${Math.min(percentage, 100)}%` }}
+        ></div>
+      </div>
+    </div>
+  );
+}
 
 interface LivreurStats {
   aLivrerAujourdhui: number;
@@ -18,6 +88,8 @@ interface LivreurStats {
 
 export function LivreurDashboard() {
   const { state } = useAuth();
+  const { toast } = useToast();
+
   const [stats, setStats] = useState<LivreurStats>({
     aLivrerAujourdhui: 0,
     enCours: 0,
@@ -30,6 +102,13 @@ export function LivreurDashboard() {
     livraisonsCeMois: 1
   });
   const [loading, setLoading] = useState(false);
+  const [todayColisItems, setTodayColisItems] = useState<any[]>([]);
+
+  // Performance metrics
+  const completedDeliveries = stats.livresAujourdhui;
+  const inProgressDeliveries = stats.enCours;
+  const returnedDeliveries = stats.retournes;
+  const todayDeliveries = stats.aLivrerAujourdhui + stats.enCours + stats.livresAujourdhui;
 
   useEffect(() => {
     const fetchLivreurStats = async () => {
@@ -38,14 +117,16 @@ export function LivreurDashboard() {
       try {
         setLoading(true);
 
-        // Fetch livreur-specific statistics
+        // Simple, direct API call
         const { data: colisData, error } = await api.getColis({
           livreurId: state.user.id,
           limit: 1000
         });
 
+        console.log('LivreurDashboard: API result:', { data: colisData?.length, error });
+
         if (error) {
-          console.error('Error fetching livreur stats:', error);
+          console.error('LivreurDashboard: API error:', error);
           return;
         }
 
@@ -63,24 +144,34 @@ export function LivreurDashboard() {
           ).length;
 
           const livresAujourdhui = colisData.filter(colis =>
-            colis.statut === 'livre' &&
+            colis.statut === 'Livré' &&
             colis.date_mise_a_jour?.startsWith(todayStr)
           ).length;
 
           const retournes = colisData.filter(colis =>
-            colis.statut === 'retourne'
+            colis.statut === 'Retourné'
           ).length;
+
+          // Get today's colis items for the activity list
+          const todayItems = colisData.filter(colis =>
+            colis.statut === 'en_attente' ||
+            colis.statut === 'pris_en_charge' ||
+            colis.statut === 'en_cours' ||
+            (colis.statut === 'Livré' && colis.date_mise_a_jour?.startsWith(todayStr))
+          );
+
+          setTodayColisItems(todayItems);
 
           setStats({
             aLivrerAujourdhui,
             enCours,
             livresAujourdhui,
             retournes,
-            livraisonsATemps: 0, // Will be calculated based on delivery times
+            livraisonsATemps: livresAujourdhui, // Use delivered today as on-time deliveries
             colisEnCours: enCours,
             colisRetournes: retournes,
-            progressionJournaliere: 0, // Will be calculated
-            livraisonsCeMois: 1
+            progressionJournaliere: livresAujourdhui + enCours, // Progress = delivered + in progress
+            livraisonsCeMois: colisData.filter(colis => colis.statut === 'Livré').length
           });
         }
       } catch (error) {
@@ -178,85 +269,104 @@ export function LivreurDashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         {/* Left Column - Mes livraisons du jour */}
         <Card>
-          <CardHeader>
-            <CardTitle className="text-base sm:text-lg">Mes livraisons du jour</CardTitle>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg">Mes livraisons du jour</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-center py-8">
-              <p className="text-gray-500 dark:text-gray-400">
-                Aucune livraison prévue pour aujourd'hui
-              </p>
+            <div className="space-y-4">
+              {todayColisItems && todayColisItems.length > 0 ? (
+                todayColisItems.slice(0, 4).map((colis, index) => {
+                  if (!colis) {
+                    return (
+                      <ActivityItem
+                        key={`unknown-${index}`}
+                        title="Colis"
+                        description="Information non disponible"
+                        time="Statut inconnu"
+                      />
+                    );
+                  }
+
+                  return (
+                    <ActivityItem
+                      key={colis.id || `colis-${index}`}
+                      title={`Colis #${colis.id || 'N/A'}`}
+                      description={colis.client && colis.client.adresse ?
+                        `${colis.client.adresse}${colis.client.ville ? `, ${colis.client.ville}` : ''}` :
+                        "Adresse non spécifiée"}
+                      time={colis.statut || "Statut inconnu"}
+                    />
+                  );
+                })
+              ) : (
+                <p className="text-muted-foreground text-sm">Aucune livraison prévue pour aujourd'hui</p>
+              )}
             </div>
           </CardContent>
         </Card>
 
         {/* Center Column - Mes performances */}
         <Card>
-          <CardHeader>
-            <CardTitle className="text-base sm:text-lg">Mes performances</CardTitle>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg">Mes performances</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex justify-between items-center">
-              <span className="text-sm font-medium">Livraisons à temps</span>
-              <span className="text-sm font-bold">{stats.livraisonsATemps}</span>
-            </div>
-
-            <div className="flex justify-between items-center">
-              <span className="text-sm font-medium">Colis en cours</span>
-              <span className="text-sm font-bold">{stats.colisEnCours}</span>
-            </div>
-
-            <div className="flex justify-between items-center">
-              <span className="text-sm font-medium">Colis retournés</span>
-              <span className="text-sm font-bold">{stats.colisRetournes}</span>
-            </div>
-
-            <div className="flex justify-between items-center">
-              <span className="text-sm font-medium">Progression journalière</span>
-              <span className="text-sm font-bold">{stats.progressionJournaliere}</span>
+          <CardContent>
+            <div className="space-y-4">
+              <StatusBar
+                label="Livraisons à temps"
+                value={completedDeliveries}
+                max={Math.max(completedDeliveries + inProgressDeliveries, 1)}
+                color="bg-green-500"
+              />
+              <StatusBar
+                label="Colis en cours"
+                value={inProgressDeliveries}
+                max={Math.max(todayDeliveries, 1)}
+                color="bg-blue-500"
+              />
+              <StatusBar
+                label="Colis retournés"
+                value={returnedDeliveries}
+                max={Math.max(todayDeliveries, 1)}
+                color="bg-red-500"
+              />
+              <StatusBar
+                label="Progression journalière"
+                value={completedDeliveries + inProgressDeliveries}
+                max={Math.max(todayDeliveries, 1)}
+                color="bg-yellow-500"
+              />
             </div>
           </CardContent>
         </Card>
 
         {/* Right Column - Mon profil */}
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-              <User className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
-              Mon profil
-            </CardTitle>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg">Mon profil</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center gap-3">
-              <User className="h-5 w-5 text-blue-600" />
-              <div className="flex-1">
-                <p className="text-sm font-medium">Livreur</p>
-                <p className="text-lg font-bold">{state.user?.nom} {state.user?.prenom}</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <MapPin className="h-5 w-5 text-blue-600" />
-              <div className="flex-1">
-                <p className="text-sm font-medium">Zone</p>
-                <p className="text-lg font-bold">{state.user?.zone || 'Non définie'}</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <Calendar className="h-5 w-5 text-blue-600" />
-              <div className="flex-1">
-                <p className="text-sm font-medium">Ce mois</p>
-                <p className="text-lg font-bold">{stats.livraisonsCeMois} livraisons</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <Truck className="h-5 w-5 text-blue-600" />
-              <div className="flex-1">
-                <p className="text-sm font-medium">Véhicule</p>
-                <p className="text-lg font-bold">{state.user?.vehicule || 'Non défini'}</p>
-              </div>
+          <CardContent>
+            <div className="space-y-4">
+              <StatItem
+                icon={Award}
+                label="Livreur"
+                value={`${state.user?.prenom || ''} ${state.user?.nom || ''}`.trim() || "Non spécifié"}
+              />
+              <StatItem
+                icon={MapPin}
+                label="Zone"
+                value={state.user?.zone || 'Non définie'}
+              />
+              <StatItem
+                icon={Calendar}
+                label="Ce mois"
+                value={`${stats.livraisonsCeMois} livraisons`}
+              />
+              <StatItem
+                icon={Truck}
+                label="Véhicule"
+                value={state.user?.vehicule || 'Non défini'}
+              />
             </div>
           </CardContent>
         </Card>

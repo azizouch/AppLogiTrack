@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { api } from '@/lib/supabase';
 import { useDebounce } from '@/hooks/useDebounce';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Client, Colis, Entreprise } from '@/types';
 
 interface SearchResults {
@@ -37,6 +37,23 @@ export function GlobalSearch({
   const searchRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Clear search when component mounts or when location changes
+  useEffect(() => {
+    setQuery('');
+    setResults({ clients: [], colis: [], entreprises: [] });
+    setIsOpen(false);
+    setSelectedIndex(-1);
+  }, []);
+
+  // Clear search when location changes (navigation)
+  useEffect(() => {
+    setQuery('');
+    setResults({ clients: [], colis: [], entreprises: [] });
+    setIsOpen(false);
+    setSelectedIndex(-1);
+  }, [location.pathname]);
 
   // Perform search
   const performSearch = useCallback(async (searchQuery: string) => {
@@ -218,6 +235,7 @@ export function GlobalSearch({
       <div className="relative">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 h-4 w-4" />
         <Input
+          key={location.pathname} // Force re-render on navigation
           ref={inputRef}
           type="text"
           placeholder={placeholder}
@@ -226,7 +244,14 @@ export function GlobalSearch({
           onFocus={handleInputFocus}
           onKeyDown={handleKeyDown}
           className={`pl-10 ${query ? 'pr-10' : 'pr-4'} py-2 w-full bg-white dark:bg-[hsl(222.2,84%,4.9%)] border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 ${isMobile ? 'py-3' : ''}`}
-          autoComplete="off"
+          autoComplete="new-password"
+          autoCorrect="off"
+          autoCapitalize="off"
+          spellCheck="false"
+          name={`global-search-${Date.now()}`}
+          id={`global-search-${location.pathname.replace(/\//g, '-')}`}
+          data-lpignore="true"
+          data-form-type="other"
         />
         {query && (
           <Button

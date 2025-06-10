@@ -610,12 +610,14 @@ export function Livreurs() {
             {/* Colis List */}
             <div className="border rounded-lg flex-1 flex flex-col min-h-0">
               <div className="p-4 border-b bg-gray-50 dark:bg-gray-800 flex-shrink-0">
-                <h3 className="font-medium text-gray-900 dark:text-white">
-                  Colis non assignés
-                </h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  {unassignedColis.length} colis disponibles
-                </p>
+                <div className="flex items-center justify-between">
+                  <h3 className="font-medium text-gray-900 dark:text-white">
+                    Colis non assignés
+                  </h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    {unassignedColis.length} colis disponibles
+                  </p>
+                </div>
               </div>
 
               <div className="flex-1 overflow-y-auto">
@@ -658,7 +660,7 @@ export function Livreurs() {
                               {colis.entreprise?.nom || '-'}
                             </TableCell>
                             <TableCell>
-                              {colis.prix} €
+                              {colis.prix} DH
                             </TableCell>
                             <TableCell>
                               <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300">

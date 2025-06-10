@@ -1,7 +1,9 @@
 
-import { Search, Bell, User, Menu, X, LogOut, CheckCircle, XCircle } from 'lucide-react';
+import { Search, Bell, User, Menu, X, LogOut, CheckCircle, XCircle, Settings, Check, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,20 +12,135 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import { SidebarTrigger, useSidebar } from '@/components/ui/sidebar';
 import { GlobalSearch } from '@/components/ui/global-search';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { useAuth } from '@/contexts/AuthContext';
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
+import { api } from '@/lib/supabase';
+import { Notification } from '@/types';
+import { useToast } from '@/hooks/use-toast';
 
 export function Header() {
   const { toggleSidebar } = useSidebar();
   const { state, logout } = useAuth();
+  const navigate = useNavigate();
+  const { toast: showToast } = useToast();
   const [showMobileSearch, setShowMobileSearch] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
+  // Notification state
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [showNotifications, setShowNotifications] = useState(false);
 
+
+
+  // Fetch notifications
+  const fetchNotifications = async () => {
+    if (!state.user?.id) return;
+
+    try {
+      const { data, error } = await api.getNotifications(state.user.id);
+
+      if (!error && data) {
+        setNotifications(data);
+        setUnreadCount(data.filter(n => !n.lu).length);
+      }
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+    }
+  };
+
+  // Mark notification as read
+  const markAsRead = async (notificationId: string) => {
+    try {
+      const { error } = await api.markNotificationAsRead(notificationId);
+      if (!error) {
+        setNotifications(prev =>
+          prev.map(notif =>
+            notif.id === notificationId
+              ? { ...notif, lu: true }
+              : notif
+          )
+        );
+        setUnreadCount(prev => Math.max(0, prev - 1));
+      }
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+    }
+  };
+
+  // Mark all notifications as read
+  const markAllAsRead = async () => {
+    if (!state.user?.id) return;
+
+    try {
+      const { error } = await api.markAllNotificationsAsRead(state.user.id);
+      if (!error) {
+        setNotifications(prev =>
+          prev.map(notif => ({ ...notif, lu: true }))
+        );
+        setUnreadCount(0);
+        showToast({
+          title: 'Notifications marquées comme lues',
+          description: 'Toutes les notifications ont été marquées comme lues',
+        });
+      }
+    } catch (error) {
+      console.error('Error marking all notifications as read:', error);
+    }
+  };
+
+  // Delete notification
+  const deleteNotification = async (notificationId: string) => {
+    try {
+      const { error } = await api.deleteNotification(notificationId);
+      if (!error) {
+        setNotifications(prev => prev.filter(notif => notif.id !== notificationId));
+        setUnreadCount(prev => {
+          const notification = notifications.find(n => n.id === notificationId);
+          return notification && !notification.lu ? Math.max(0, prev - 1) : prev;
+        });
+      }
+    } catch (error) {
+      console.error('Error deleting notification:', error);
+    }
+  };
+
+  // Format relative time
+  const formatRelativeTime = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
+
+    if (diffInHours < 1) {
+      return 'Il y a moins d\'une heure';
+    } else if (diffInHours < 24) {
+      return `Il y a ${diffInHours} heure${diffInHours > 1 ? 's' : ''}`;
+    } else {
+      const diffInDays = Math.floor(diffInHours / 24);
+      return `Il y a ${diffInDays} jour${diffInDays > 1 ? 's' : ''}`;
+    }
+  };
+
+  // Fetch notifications on mount and when user changes
+  useEffect(() => {
+    if (state.user?.id && (state.user.role === 'admin' || state.user.role === 'gestionnaire')) {
+      fetchNotifications();
+
+      // Set up polling for new notifications every 30 seconds
+      const interval = setInterval(fetchNotifications, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [state.user?.id, state.user?.role]);
 
   // Force close logout dialog when component unmounts (during logout)
   useEffect(() => {
@@ -61,6 +178,8 @@ export function Header() {
     try {
       // Perform logout
       await logout();
+      // Redirect to home page after successful logout
+      navigate('/');
     } catch (error) {
       console.error('Logout error:', error);
       toast.error('Erreur lors de la déconnexion', {
@@ -122,9 +241,105 @@ export function Header() {
 
         {/* Right side - Notification and User */}
         <div className="flex items-center space-x-6">
-          <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full border border-gray-300 dark:border-gray-600 p-0 hover:bg-transparent">
-            <Bell className="h-4 w-4 text-gray-600 dark:text-white" />
-          </Button>
+          {(state.user?.role === 'admin' || state.user?.role === 'gestionnaire') && (
+            <Popover open={showNotifications} onOpenChange={setShowNotifications}>
+              <PopoverTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full border border-gray-300 dark:border-gray-600 p-0 hover:bg-transparent relative">
+                  <Bell className="h-4 w-4 text-gray-600 dark:text-white" />
+                  {unreadCount > 0 && (
+                    <Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 text-xs bg-red-500 text-white rounded-full flex items-center justify-center">
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </Badge>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80 p-0" align="end">
+                <div className="p-4 border-b">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-semibold">Notifications</h3>
+                    {unreadCount > 0 && (
+                      <Button variant="ghost" size="sm" onClick={markAllAsRead}>
+                        <Check className="h-4 w-4 mr-1" />
+                        Tout marquer comme lu
+                      </Button>
+                    )}
+                  </div>
+                </div>
+                <ScrollArea className="h-80">
+                  {notifications.length === 0 ? (
+                    <div className="p-4 text-center text-gray-500">
+                      Aucune notification
+                    </div>
+                  ) : (
+                    <div className="space-y-1">
+                      {notifications.map((notification) => (
+                        <div
+                          key={notification.id}
+                          className={`p-3 border-b last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-800 ${
+                            !notification.lu ? 'bg-blue-50 dark:bg-blue-900/10' : ''
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <h4 className={`text-sm font-medium ${!notification.lu ? 'text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-300'}`}>
+                                  {notification.titre}
+                                </h4>
+                                {!notification.lu && (
+                                  <div className="w-2 h-2 bg-blue-600 rounded-full flex-shrink-0"></div>
+                                )}
+                              </div>
+                              <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                                {notification.message}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                {formatRelativeTime(notification.date_creation)}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-1 flex-shrink-0">
+                              {!notification.lu && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => markAsRead(notification.id)}
+                                  className="h-6 w-6 p-0"
+                                >
+                                  <Check className="h-3 w-3" />
+                                </Button>
+                              )}
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => deleteNotification(notification.id)}
+                                className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </ScrollArea>
+                {notifications.length > 0 && (
+                  <div className="p-3 border-t">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        navigate('/notifications');
+                        setShowNotifications(false);
+                      }}
+                      className="w-full"
+                    >
+                      Voir toutes les notifications
+                    </Button>
+                  </div>
+                )}
+              </PopoverContent>
+            </Popover>
+          )}
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -144,8 +359,20 @@ export function Header() {
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator className="bg-gray-200 dark:bg-gray-700" />
-              <DropdownMenuItem className="text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">Profil</DropdownMenuItem>
-              <DropdownMenuItem className="text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">Paramètres</DropdownMenuItem>
+              <DropdownMenuItem
+                className="text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
+                onClick={() => navigate('/profil')}
+              >
+                <User className="mr-2 h-4 w-4" />
+                Mon Profil
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
+                onClick={() => navigate('/parametres/compte')}
+              >
+                <Settings className="mr-2 h-4 w-4" />
+                Paramètres
+              </DropdownMenuItem>
               <DropdownMenuSeparator className="bg-gray-200 dark:bg-gray-700" />
               <DropdownMenuItem
                 className="text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
@@ -177,9 +404,105 @@ export function Header() {
         </div>
 
         <div className="flex items-center space-x-4 ml-6">
-          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700">
-            <Bell className="h-4 w-4 text-gray-600 dark:text-gray-400" />
-          </Button>
+          {(state.user?.role === 'admin' || state.user?.role === 'gestionnaire') && (
+            <Popover open={showNotifications} onOpenChange={setShowNotifications}>
+              <PopoverTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 relative">
+                  <Bell className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+                  {unreadCount > 0 && (
+                    <Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 text-xs bg-red-500 text-white rounded-full flex items-center justify-center">
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </Badge>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80 p-0" align="end">
+                <div className="p-4 border-b">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-semibold">Notifications</h3>
+                    {unreadCount > 0 && (
+                      <Button variant="ghost" size="sm" onClick={markAllAsRead}>
+                        <Check className="h-4 w-4 mr-1" />
+                        Tout marquer comme lu
+                      </Button>
+                    )}
+                  </div>
+                </div>
+                <ScrollArea className="h-80">
+                  {notifications.length === 0 ? (
+                    <div className="p-4 text-center text-gray-500">
+                      Aucune notification
+                    </div>
+                  ) : (
+                    <div className="space-y-1">
+                      {notifications.map((notification) => (
+                        <div
+                          key={notification.id}
+                          className={`p-3 border-b last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-800 ${
+                            !notification.lu ? 'bg-blue-50 dark:bg-blue-900/10' : ''
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <h4 className={`text-sm font-medium ${!notification.lu ? 'text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-300'}`}>
+                                  {notification.titre}
+                                </h4>
+                                {!notification.lu && (
+                                  <div className="w-2 h-2 bg-blue-600 rounded-full flex-shrink-0"></div>
+                                )}
+                              </div>
+                              <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                                {notification.message}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                {formatRelativeTime(notification.date_creation)}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-1 flex-shrink-0">
+                              {!notification.lu && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => markAsRead(notification.id)}
+                                  className="h-6 w-6 p-0"
+                                >
+                                  <Check className="h-3 w-3" />
+                                </Button>
+                              )}
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => deleteNotification(notification.id)}
+                                className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </ScrollArea>
+                {notifications.length > 0 && (
+                  <div className="p-3 border-t">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        navigate('/notifications');
+                        setShowNotifications(false);
+                      }}
+                      className="w-full"
+                    >
+                      Voir toutes les notifications
+                    </Button>
+                  </div>
+                )}
+              </PopoverContent>
+            </Popover>
+          )}
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -201,8 +524,20 @@ export function Header() {
           <DropdownMenuContent align="end" className="w-56 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
             <DropdownMenuLabel className="text-gray-900 dark:text-gray-100">Mon compte</DropdownMenuLabel>
             <DropdownMenuSeparator className="bg-gray-200 dark:bg-gray-700" />
-            <DropdownMenuItem className="text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">Profil</DropdownMenuItem>
-            <DropdownMenuItem className="text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">Paramètres</DropdownMenuItem>
+            <DropdownMenuItem
+              className="text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
+              onClick={() => navigate('/profil')}
+            >
+              <User className="mr-2 h-4 w-4" />
+              Mon Profil
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              className="text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
+              onClick={() => navigate('/parametres/compte')}
+            >
+              <Settings className="mr-2 h-4 w-4" />
+              Paramètres
+            </DropdownMenuItem>
             <DropdownMenuSeparator className="bg-gray-200 dark:bg-gray-700" />
             <DropdownMenuItem
               className="text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"

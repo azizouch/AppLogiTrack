@@ -76,7 +76,7 @@ export function TablePagination(props: TablePaginationProps) {
           size="sm"
           onClick={() => onPageChange(currentPage - 1)}
           disabled={!hasPrevPage || loading}
-          className="h-9 px-3 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+          className="h-9 px-3"
         >
           <ChevronLeft className="h-4 w-4 mr-1" />
           Précédent
@@ -95,8 +95,8 @@ export function TablePagination(props: TablePaginationProps) {
                 disabled={loading}
                 className={
                   page === currentPage
-                    ? "h-9 w-9 bg-blue-600 hover:bg-blue-700 text-white border-blue-600"
-                    : "h-9 w-9 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                    ? "h-9 w-9 bg-blue-600 hover:bg-blue-700 text-white"
+                    : "h-9 w-9"
                 }
               >
                 {page}
@@ -110,7 +110,7 @@ export function TablePagination(props: TablePaginationProps) {
           size="sm"
           onClick={() => onPageChange(currentPage + 1)}
           disabled={!hasNextPage || loading}
-          className="h-9 px-3 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+          className="h-9 px-3"
         >
           Suivant
           <ChevronRight className="h-4 w-4 ml-1" />

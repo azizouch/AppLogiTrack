@@ -3,68 +3,61 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { Layout } from "@/components/layout/Layout";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { Layout } from "@/components/layout/Layout";
 import { Dashboard } from "@/pages/Dashboard";
 import { ColisList } from "@/pages/colis/ColisList";
-import { MesColis } from "@/pages/colis/MesColis";
+import { ViewColis } from "@/pages/colis/ViewColis";
+import { UpdateColis } from "@/pages/colis/UpdateColis";
 import { ColisLivres } from "@/pages/colis/ColisLivres";
 import { ColisRefuses } from "@/pages/colis/ColisRefuses";
 import { ColisAnnules } from "@/pages/colis/ColisAnnules";
+import { AddColis } from "@/pages/colis/AddColis";
+import { MesColis } from "@/pages/colis/MesColis";
 import { MesColisLivres } from "@/pages/colis/MesColisLivres";
 import { MesColisRefuses } from "@/pages/colis/MesColisRefuses";
 import { MesColisAnnules } from "@/pages/colis/MesColisAnnules";
-import { AddColis } from "@/pages/colis/AddColis";
-import { UpdateColis } from "@/pages/colis/UpdateColis";
-import { ViewColis } from "@/pages/colis/ViewColis";
+import { ColisRelance } from "@/pages/colis/ColisRelance";
+import { RelanceAutreClient } from "@/pages/colis/RelanceAutreClient";
+import { Profile } from "@/pages/profile/Profile";
+import { Settings } from "@/pages/profile/Settings";
 import { Distribution } from "@/pages/bons/Distribution";
 import { Paiement } from "@/pages/bons/Paiement";
 import { Retour } from "@/pages/bons/Retour";
 import { Clients } from "@/pages/Clients";
-import { AddClient } from "@/pages/clients/AddClient";
-import { EditClient } from "@/pages/clients/EditClient";
 import { ClientDetails } from "@/pages/clients/ClientDetails";
+import { EditClient } from "@/pages/clients/EditClient";
 import { Entreprises } from "@/pages/Entreprises";
-import { AddEntreprise } from "@/pages/entreprises/AddEntreprise";
-import { EditEntreprise } from "@/pages/entreprises/EditEntreprise";
 import { EntrepriseDetails } from "@/pages/entreprises/EntrepriseDetails";
+import { EditEntreprise } from "@/pages/entreprises/EditEntreprise";
 import { Livreurs } from "@/pages/Livreurs";
-import { AddLivreur } from "@/pages/livreurs/AddLivreur";
-import { EditLivreur } from "@/pages/livreurs/EditLivreur";
 import { LivreurDetails } from "@/pages/livreurs/LivreurDetails";
+import { EditLivreur } from "@/pages/livreurs/EditLivreur";
 import { Notifications } from "@/pages/Notifications";
 import { Gestion } from "@/pages/utilisateurs/Gestion";
 import { Suivi } from "@/pages/utilisateurs/Suivi";
 import { General } from "@/pages/parametres/General";
 import { Statuts } from "@/pages/parametres/Statuts";
-import { LoginPage } from "@/components/auth/LoginPage";
-import { ResetPasswordPage } from "@/components/auth/ResetPasswordPage";
-import ErrorBoundary from "@/components/ErrorBoundary";
 import NotFound from "./pages/NotFound";
-import { suppressExpectedAuthErrors } from "@/utils/console";
 
 const queryClient = new QueryClient();
 
-// Suppress expected auth errors in console
-suppressExpectedAuthErrors();
-
 const App = () => (
-  <ErrorBoundary>
-    <QueryClientProvider client={queryClient}>
+  <QueryClientProvider client={queryClient}>
+    <AuthProvider>
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <AuthProvider>
-          <BrowserRouter>
+        <BrowserRouter>
           <Routes>
-            <Route path="/" element={
-              <ProtectedRoute>
-                <Layout>
-                  <Dashboard />
-                </Layout>
-              </ProtectedRoute>
-            } />
+          <Route path="/" element={
+            <ProtectedRoute>
+              <Layout>
+                <Dashboard />
+              </Layout>
+            </ProtectedRoute>
+          } />
 
           {/* Colis Routes */}
           <Route path="/colis" element={
@@ -74,14 +67,7 @@ const App = () => (
               </Layout>
             </ProtectedRoute>
           } />
-          <Route path="/colis/mes-colis" element={
-            <ProtectedRoute roles={['livreur']}>
-              <Layout>
-                <MesColis />
-              </Layout>
-            </ProtectedRoute>
-          } />
-          <Route path="/colis/nouveau" element={
+          <Route path="/colis/ajouter" element={
             <ProtectedRoute>
               <Layout>
                 <AddColis />
@@ -103,44 +89,67 @@ const App = () => (
             </ProtectedRoute>
           } />
           <Route path="/colis/livres" element={
-            <ProtectedRoute roles={['admin', 'gestionnaire', 'livreur']}>
+            <ProtectedRoute>
               <Layout>
                 <ColisLivres />
               </Layout>
             </ProtectedRoute>
           } />
           <Route path="/colis/refuses" element={
-            <ProtectedRoute roles={['admin', 'gestionnaire', 'livreur']}>
+            <ProtectedRoute>
               <Layout>
                 <ColisRefuses />
               </Layout>
             </ProtectedRoute>
           } />
           <Route path="/colis/annules" element={
-            <ProtectedRoute roles={['admin', 'gestionnaire', 'livreur']}>
+            <ProtectedRoute>
               <Layout>
                 <ColisAnnules />
               </Layout>
             </ProtectedRoute>
           } />
+
+          {/* Livreur Colis Routes */}
+          <Route path="/colis/mes-colis" element={
+            <ProtectedRoute>
+              <Layout>
+                <MesColis />
+              </Layout>
+            </ProtectedRoute>
+          } />
           <Route path="/colis/mes-livres" element={
-            <ProtectedRoute roles={['livreur']}>
+            <ProtectedRoute>
               <Layout>
                 <MesColisLivres />
               </Layout>
             </ProtectedRoute>
           } />
           <Route path="/colis/mes-refuses" element={
-            <ProtectedRoute roles={['livreur']}>
+            <ProtectedRoute>
               <Layout>
                 <MesColisRefuses />
               </Layout>
             </ProtectedRoute>
           } />
           <Route path="/colis/mes-annules" element={
-            <ProtectedRoute roles={['livreur']}>
+            <ProtectedRoute>
               <Layout>
                 <MesColisAnnules />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/colis/relance" element={
+            <ProtectedRoute>
+              <Layout>
+                <ColisRelance />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/colis/relance-autre" element={
+            <ProtectedRoute>
+              <Layout>
+                <RelanceAutreClient />
               </Layout>
             </ProtectedRoute>
           } />
@@ -176,13 +185,6 @@ const App = () => (
               </Layout>
             </ProtectedRoute>
           } />
-          <Route path="/clients/nouveau" element={
-            <ProtectedRoute>
-              <Layout>
-                <AddClient />
-              </Layout>
-            </ProtectedRoute>
-          } />
           <Route path="/clients/:id" element={
             <ProtectedRoute>
               <Layout>
@@ -204,13 +206,6 @@ const App = () => (
               </Layout>
             </ProtectedRoute>
           } />
-          <Route path="/entreprises/ajouter" element={
-            <ProtectedRoute>
-              <Layout>
-                <AddEntreprise />
-              </Layout>
-            </ProtectedRoute>
-          } />
           <Route path="/entreprises/:id" element={
             <ProtectedRoute>
               <Layout>
@@ -229,13 +224,6 @@ const App = () => (
             <ProtectedRoute>
               <Layout>
                 <Livreurs />
-              </Layout>
-            </ProtectedRoute>
-          } />
-          <Route path="/livreurs/ajouter" element={
-            <ProtectedRoute>
-              <Layout>
-                <AddLivreur />
               </Layout>
             </ProtectedRoute>
           } />
@@ -293,17 +281,28 @@ const App = () => (
             </ProtectedRoute>
           } />
 
-          {/* Auth routes */}
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/reset-password" element={<ResetPasswordPage />} />
+          {/* Profile Routes */}
+          <Route path="/profil" element={
+            <ProtectedRoute>
+              <Layout>
+                <Profile />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/parametres/compte" element={
+            <ProtectedRoute>
+              <Layout>
+                <Settings />
+              </Layout>
+            </ProtectedRoute>
+          } />
 
           <Route path="*" element={<NotFound />} />
         </Routes>
-        </BrowserRouter>
-      </AuthProvider>
+      </BrowserRouter>
     </TooltipProvider>
+    </AuthProvider>
   </QueryClientProvider>
-  </ErrorBoundary>
 );
 
 export default App;
