@@ -54,25 +54,24 @@ export function ViewColis() {
         setSelectedStatus(colisData.statut);
 
         // Fetch historique with optimized query - join with users to get names
-        try {
-          const historiqueResult = await supabase
-            .from('historique_colis')
-            .select(`
-              id,
-              date,
-              statut,
-              utilisateur,
-              user:utilisateurs(nom, prenom)
-            `)
-            .eq('colis_id', id)
-            .order('date', { ascending: false })
-            .limit(20); // Limit to last 20 status changes for performance
+        const { data: historiqueData, error: historiqueError } = await supabase
+          .from('historique_colis')
+          .select(`
+            id,
+            date,
+            statut,
+            utilisateur,
+            user:utilisateurs(nom, prenom)
+          `)
+          .eq('colis_id', id)
+          .order('date', { ascending: false })
+          .limit(20); // Limit to last 20 status changes for performance
 
-          if (historiqueResult?.data) {
-            setHistorique(historiqueResult.data);
-          }
-        } catch (error) {
-          console.error('Error fetching historique:', error);
+        if (historiqueError) {
+          console.error('Error fetching historique:', historiqueError);
+        } else {
+          console.log('Initial historique data:', historiqueData);
+          setHistorique(historiqueData || []);
         }
 
         // Fetch statuses for the select dropdown
@@ -155,6 +154,10 @@ export function ViewColis() {
       const userResult = await supabase.auth.getUser();
       const currentUserId = userResult?.data?.user?.id || null;
 
+      console.log('Current user ID:', currentUserId);
+      console.log('Colis ID:', id);
+      console.log('Selected status:', selectedStatus);
+
       // Add to historique
       const historiqueEntry = {
         colis_id: id,
@@ -163,10 +166,19 @@ export function ViewColis() {
         utilisateur: currentUserId
       };
 
-      try {
-        await supabase.from('historique_colis').insert(historiqueEntry);
-      } catch (error) {
-        console.error('Error inserting historique:', error);
+      console.log('Historique entry to insert:', historiqueEntry);
+
+      // Insert historique entry with better error handling
+      const { data: insertedData, error: insertError } = await supabase
+        .from('historique_colis')
+        .insert(historiqueEntry)
+        .select();
+
+      if (insertError) {
+        console.error('Error inserting historique:', insertError);
+        throw new Error(`Failed to insert historique: ${insertError.message}`);
+      } else {
+        console.log('Successfully inserted historique:', insertedData);
       }
 
       // Update local state immediately for better UX
@@ -177,28 +189,27 @@ export function ViewColis() {
       } : null);
 
       // Small delay to ensure the historique entry is inserted before refreshing
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await new Promise(resolve => setTimeout(resolve, 300));
 
       // Refresh historique to show the new entry immediately
-      try {
-        const historiqueRefreshResult = await supabase
-          .from('historique_colis')
-          .select(`
-            id,
-            date,
-            statut,
-            utilisateur,
-            user:utilisateurs(nom, prenom)
-          `)
-          .eq('colis_id', id)
-          .order('date', { ascending: false })
-          .limit(20);
+      const { data: historiqueRefreshData, error: refreshError } = await supabase
+        .from('historique_colis')
+        .select(`
+          id,
+          date,
+          statut,
+          utilisateur,
+          user:utilisateurs(nom, prenom)
+        `)
+        .eq('colis_id', id)
+        .order('date', { ascending: false })
+        .limit(20);
 
-        if (historiqueRefreshResult?.data) {
-          setHistorique(historiqueRefreshResult.data);
-        }
-      } catch (error) {
-        console.error('Error refreshing historique:', error);
+      if (refreshError) {
+        console.error('Error refreshing historique:', refreshError);
+      } else {
+        console.log('Refreshed historique data:', historiqueRefreshData);
+        setHistorique(historiqueRefreshData || []);
       }
 
       toast({

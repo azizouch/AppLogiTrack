@@ -34,11 +34,12 @@ import {
 } from '@/components/ui/card';
 
 import { api, supabase } from '@/lib/supabase';
-import { Client, Entreprise, User, Colis, Statut } from '@/types';
+import { Client, Entreprise, User, Colis, Statut, HistoriqueColis } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 
 // Form schema
 const formSchema = z.object({
+  id: z.string({ required_error: 'L\'ID du colis est requis' }).min(1, 'L\'ID du colis ne peut pas être vide'),
   client_id: z.string({ required_error: 'Le client est requis' }),
   entreprise_id: z.string({ required_error: 'L\'entreprise est requise' }),
   livreur_id: z.string().optional(),
@@ -62,11 +63,15 @@ export function UpdateColis() {
   const [saving, setSaving] = useState(false);
   const [colis, setColis] = useState<Colis | null>(null);
   const [showAddClientModal, setShowAddClientModal] = useState(false);
+  const [historique, setHistorique] = useState<HistoriqueColis[]>([]);
+  const [selectedStatus, setSelectedStatus] = useState('');
+  const [updating, setUpdating] = useState(false);
 
   // Initialize form
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      id: '',
       client_id: '',
       entreprise_id: '',
       livreur_id: '',
@@ -111,6 +116,7 @@ export function UpdateColis() {
         
         // Set form values
         form.reset({
+          id: colisData.id,
           client_id: colisData.client_id,
           entreprise_id: colisData.entreprise_id || 'none',
           livreur_id: colisData.livreur_id || 'none',
@@ -153,6 +159,7 @@ export function UpdateColis() {
     try {
       // Prepare data for submission
       const colisData = {
+        id: values.id,
         client_id: values.client_id,
         entreprise_id: values.entreprise_id === 'none' ? null : values.entreprise_id || null,
         livreur_id: values.livreur_id === 'none' ? null : values.livreur_id || null,
@@ -163,17 +170,47 @@ export function UpdateColis() {
         date_mise_a_jour: new Date().toISOString(),
       };
 
-      // Call API to update colis
-      const { error } = await supabase.from('colis').update(colisData).eq('id', id);
+      // Check if ID has changed
+      const idChanged = values.id !== id;
 
-      if (error) {
-        throw new Error(error.message);
+      if (idChanged) {
+        // Check if new ID already exists
+        const { data: existingColis } = await supabase
+          .from('colis')
+          .select('id')
+          .eq('id', values.id)
+          .single();
+
+        if (existingColis) {
+          throw new Error(`Un colis avec l'ID "${values.id}" existe déjà`);
+        }
+
+        // Create new colis with new ID and delete old one
+        const { error: insertError } = await supabase.from('colis').insert(colisData);
+        if (insertError) {
+          throw new Error(insertError.message);
+        }
+
+        // Delete old colis
+        const { error: deleteError } = await supabase.from('colis').delete().eq('id', id);
+        if (deleteError) {
+          throw new Error(deleteError.message);
+        }
+
+        // Update historique_colis references
+        await supabase.from('historique_colis').update({ colis_id: values.id }).eq('colis_id', id);
+      } else {
+        // Normal update
+        const { error } = await supabase.from('colis').update(colisData).eq('id', id);
+        if (error) {
+          throw new Error(error.message);
+        }
       }
 
       // Add to history if status changed
       if (colis && colis.statut !== values.statut) {
         await supabase.from('historique_colis').insert({
-          colis_id: id,
+          colis_id: values.id, // Use the new ID
           date: new Date().toISOString(),
           statut: values.statut,
           utilisateur: (await supabase.auth.getUser()).data.user?.id,
@@ -185,8 +222,8 @@ export function UpdateColis() {
         description: 'Le colis a été mis à jour avec succès',
       });
 
-      // Navigate back to colis list
-      navigate('/colis');
+      // Navigate to the updated colis (with potentially new ID)
+      navigate(`/colis/${values.id}`);
     } catch (error) {
       console.error('Error updating colis:', error);
       toast({
@@ -213,13 +250,13 @@ export function UpdateColis() {
       <div className="mb-6">
         <Button
           variant="ghost"
-          onClick={() => navigate(`/colis/${id}`)}
+          onClick={() => navigate(`/colis/${form.getValues('id') || id}`)}
           className="mb-2"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
           Retour aux détails
         </Button>
-        <h1 className="text-3xl font-bold">Modifier le Colis</h1>
+        <h1 className="text-2xl font-bold">Modifier le Colis</h1>
       </div>
 
       {/* Form */}
@@ -233,17 +270,26 @@ export function UpdateColis() {
             <CardContent className="space-y-6">
               {/* ID Colis and Status Row */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70" htmlFor="id">
-                    ID Colis
-                  </label>
-                  <Input
-                    id="id"
-                    placeholder="ID du colis"
-                    value={id}
-                    disabled
-                  />
-                </div>
+                <FormField
+                  control={form.control}
+                  name="id"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel htmlFor="id">
+                        ID Colis <span className="text-red-500">*</span>
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          id="id"
+                          placeholder="ID du colis"
+                          {...field}
+                        />
+                      </FormControl>
+                      <p className="text-sm text-muted-foreground">Identifiant unique du colis</p>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
                 <FormField
                   control={form.control}
@@ -441,7 +487,7 @@ export function UpdateColis() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => navigate(`/colis/${id}`)}
+                onClick={() => navigate(`/colis/${form.getValues('id') || id}`)}
               >
                 Annuler
               </Button>

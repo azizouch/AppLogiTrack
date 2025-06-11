@@ -26,6 +26,7 @@ import { Distribution } from "@/pages/bons/Distribution";
 import { Paiement } from "@/pages/bons/Paiement";
 import { Retour } from "@/pages/bons/Retour";
 import { Clients } from "@/pages/Clients";
+import { AddClient } from "@/pages/clients/AddClient";
 import { ClientDetails } from "@/pages/clients/ClientDetails";
 import { EditClient } from "@/pages/clients/EditClient";
 import { Entreprises } from "@/pages/Entreprises";
@@ -182,6 +183,13 @@ const App = () => (
             <ProtectedRoute>
               <Layout>
                 <Clients />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/clients/nouveau" element={
+            <ProtectedRoute>
+              <Layout>
+                <AddClient />
               </Layout>
             </ProtectedRoute>
           } />

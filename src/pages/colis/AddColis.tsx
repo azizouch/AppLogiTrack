@@ -155,22 +155,21 @@ export function AddColis() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate('/colis')}
-            className="h-8 w-8"
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Ajouter un Colis</h1>
-        </div>
+    <div>
+      {/* Header */}
+      <div className="mb-6">
+        <Button
+          variant="ghost"
+          onClick={() => navigate('/colis')}
+          className="mb-2"
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Retour à la liste
+        </Button>
+        <h1 className="text-2xl font-bold">Créer un Colis</h1>
       </div>
 
-      <Card className="bg-white shadow-sm border-0">
+      <Card>
         <CardHeader className="pb-4">
           <CardTitle>Informations du colis</CardTitle>
           <CardDescription>

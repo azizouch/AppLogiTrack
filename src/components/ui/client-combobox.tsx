@@ -190,7 +190,9 @@ export function ClientCombobox({
               <div className="border-t border-gray-200 dark:border-gray-700">
                 <button
                   type="button"
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
                     onNewClientClick();
                     setOpen(false);
                   }}

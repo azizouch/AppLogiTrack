@@ -106,19 +106,9 @@ export function AddClientModal({ open, onOpenChange, onClientCreated }: AddClien
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
         <DialogHeader>
-          <div className="flex items-center justify-between">
-            <DialogTitle className="text-lg font-semibold text-gray-900 dark:text-white">
-              Nouveau Client
-            </DialogTitle>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onOpenChange(false)}
-              className="h-6 w-6 p-0 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
+          <DialogTitle className="text-lg font-semibold text-gray-900 dark:text-white">
+            Nouveau Client
+          </DialogTitle>
           <DialogDescription className="text-gray-600 dark:text-gray-400">
             Remplissez les informations pour créer un nouveau client.
           </DialogDescription>
