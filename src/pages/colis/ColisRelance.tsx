@@ -7,7 +7,10 @@ export function ColisRelance() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Colis Relancé</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
+          <RotateCcw className="h-7 w-7 text-orange-600 dark:text-orange-400" />
+          Colis Relancé
+        </h1>
         <p className="text-gray-600 dark:text-gray-400">
           Liste des colis qui nécessitent une relance
         </p>

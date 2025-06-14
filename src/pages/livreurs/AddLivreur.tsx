@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Form,
   FormControl,
@@ -22,7 +23,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { api } from '@/lib/supabase';
+import { api, auth } from '@/lib/supabase';
 import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
 
@@ -30,13 +31,22 @@ import { useToast } from '@/hooks/use-toast';
 const formSchema = z.object({
   nom: z.string().min(2, 'Le nom doit contenir au moins 2 caractères'),
   prenom: z.string().min(2, 'Le prénom doit contenir au moins 2 caractères'),
-  email: z.string().email('Email invalide'),
+  email: z.string()
+    .email('Email invalide')
+    .min(5, 'Email trop court')
+    .max(100, 'Email trop long')
+    .refine((email) => {
+      // Additional email validation
+      const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+      return emailRegex.test(email);
+    }, 'Format d\'email invalide'),
+  password: z.string().min(6, 'Le mot de passe doit contenir au moins 6 caractères'),
   telephone: z.string().optional(),
-  adre: z.string().optional(),
+  adresse: z.string().optional(),
   ville: z.string().optional(),
   vehicule: z.string().optional(),
   zone: z.string().optional(),
-  statut: z.enum(['actif', 'inactif', 'suspendu'], {
+  statut: z.enum(['Actif', 'Inactif', 'Suspendu'], {
     required_error: 'Le statut est requis',
   }),
 });
@@ -54,12 +64,13 @@ export function AddLivreur() {
       nom: '',
       prenom: '',
       email: '',
+      password: '',
       telephone: '',
-      adre: '',
+      adresse: '',
       ville: '',
       vehicule: '',
       zone: '',
-      statut: 'actif',
+      statut: 'Actif',
     },
   });
 
@@ -67,31 +78,96 @@ export function AddLivreur() {
   const onSubmit = async (values: FormValues) => {
     setLoading(true);
     try {
-      // Prepare data for submission
-      const livreurData = {
-        nom: values.nom,
-        prenom: values.prenom,
-        email: values.email,
-        telephone: values.telephone || null,
-        adre: values.adre || null,
-        ville: values.ville || null,
-        vehicule: values.vehicule || null,
-        zone: values.zone || null,
-        role: 'livreur' as const,
-        statut: values.statut,
-        mot_de_passe: '', // Will be set by auth system
-      };
+      // Normalize email before sending
+      const normalizedEmail = values.email.toLowerCase().trim();
 
-      // Call API to create livreur
-      const { error } = await api.createUser(livreurData);
-
-      if (error) {
-        throw new Error(error.message);
+      // Additional email validation
+      const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+      if (!emailRegex.test(normalizedEmail)) {
+        throw new Error(`Format d'email invalide: ${normalizedEmail}`);
       }
 
+      // Try to create user in Supabase Auth first
+      console.log('Attempting to create auth user...');
+
+      const { data, error } = await auth.signUp(
+        normalizedEmail,
+        values.password,
+        {
+          nom: values.nom,
+          prenom: values.prenom,
+          role: 'Livreur'
+        }
+      );
+
+      if (error) {
+        console.error('Auth signup failed:', error);
+
+        // If auth signup fails, try creating user directly in database
+        console.log('Auth signup failed, trying direct database creation...');
+
+        const { data: directData, error: directError } = await auth.createUserDirectly({
+          nom: values.nom,
+          prenom: values.prenom,
+          email: normalizedEmail,
+          role: 'Livreur',
+          telephone: values.telephone || undefined,
+          adresse: values.adresse || undefined,
+          ville: values.ville || undefined,
+          vehicule: values.vehicule || undefined,
+          zone: values.zone || undefined,
+          statut: values.statut,
+        });
+
+        if (directError) {
+          console.error('Direct creation also failed:', directError);
+
+          // Provide more specific error messages
+          if (directError.message.includes('duplicate') || directError.message.includes('already exists')) {
+            throw new Error(`Un utilisateur avec ces informations existe déjà`);
+          } else if (directError.message.includes('constraint')) {
+            throw new Error(`Erreur de validation des données. Vérifiez que tous les champs sont corrects.`);
+          } else {
+            throw new Error(`Erreur lors de la création: ${directError.message}`);
+          }
+        }
+
+        // Direct creation succeeded
+        toast({
+          title: 'Succès',
+          description: 'Le livreur a été créé avec succès. Note: Les identifiants de connexion devront être configurés manuellement.',
+        });
+
+        // Navigate back to livreurs list
+        navigate('/livreurs');
+        return;
+      }
+
+      if (data.user) {
+        console.log('Auth user created successfully, updating profile...');
+
+        // Update the user profile with additional livreur-specific data
+        const updateData = {
+          telephone: values.telephone || null,
+          adresse: values.adresse || null,
+          ville: values.ville || null,
+          vehicule: values.vehicule || null,
+          zone: values.zone || null,
+          statut: values.statut,
+        };
+
+        const { error: updateError } = await api.updateUser(data.user.id, updateData);
+
+        if (updateError) {
+          console.warn('Error updating user profile:', updateError);
+          // Don't throw here as the main user creation was successful
+        }
+      }
+
+      // Auth creation succeeded
       toast({
         title: 'Succès',
-        description: 'Le livreur a été créé avec succès',
+        description: 'Le livreur a été créé avec succès avec identifiants de connexion.',
       });
 
       // Navigate back to livreurs list
@@ -100,7 +176,7 @@ export function AddLivreur() {
       console.error('Error creating livreur:', error);
       toast({
         title: 'Erreur',
-        description: 'Une erreur est survenue lors de la création du livreur',
+        description: error instanceof Error ? error.message : 'Une erreur est survenue lors de la création du livreur',
         variant: 'destructive',
       });
     } finally {
@@ -128,131 +204,136 @@ export function AddLivreur() {
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
         <div className="mb-6">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Informations du livreur</h2>
-          <p className="text-gray-600 dark:text-gray-400">Remplissez les informations pour créer un nouveau livreur</p>
+          <p className="text-gray-600 dark:text-gray-400">
+            Remplissez les informations pour créer un nouveau livreur. L'email et le mot de passe permettront au livreur de se connecter à l'application.
+          </p>
         </div>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Nom */}
-              <FormField
-                control={form.control}
-                name="nom"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Nom *</FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        placeholder="Nom du livreur"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+            <div className="space-y-6">
+              {/* Nom et Prénom */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <FormField
+                  control={form.control}
+                  name="nom"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nom *</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          placeholder="Nom du livreur"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              {/* Prénom */}
-              <FormField
-                control={form.control}
-                name="prenom"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Prénom *</FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        placeholder="Prénom du livreur"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                <FormField
+                  control={form.control}
+                  name="prenom"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Prénom *</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          placeholder="Prénom du livreur"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
-              {/* Email */}
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email *</FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        type="email"
-                        placeholder="Adresse email"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {/* Téléphone et Ville */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <FormField
+                  control={form.control}
+                  name="telephone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Téléphone</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          placeholder="Numéro de téléphone"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              {/* Téléphone */}
-              <FormField
-                control={form.control}
-                name="telephone"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Téléphone</FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        placeholder="Numéro de téléphone"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                <FormField
+                  control={form.control}
+                  name="ville"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Ville</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          placeholder="Ville"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
-              {/* Zone */}
-              <FormField
-                control={form.control}
-                name="zone"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Zone de livraison</FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        placeholder="Zone de livraison assignée"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {/* Véhicule et Zone */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <FormField
+                  control={form.control}
+                  name="vehicule"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Véhicule</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          placeholder="Type de véhicule"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              {/* Véhicule */}
-              <FormField
-                control={form.control}
-                name="vehicule"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Véhicule</FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        placeholder="Type de véhicule"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                <FormField
+                  control={form.control}
+                  name="zone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Zone de livraison</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          placeholder="Zone de livraison assignée"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
               {/* Adresse */}
               <FormField
                 control={form.control}
-                name="adre"
+                name="adresse"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Adresse</FormLabel>
                     <FormControl>
-                      <Input
+                      <Textarea
                         {...field}
                         placeholder="Adresse complète"
+                        rows={3}
                       />
                     </FormControl>
                     <FormMessage />
@@ -260,30 +341,51 @@ export function AddLivreur() {
                 )}
               />
 
-              {/* Ville */}
-              <FormField
-                control={form.control}
-                name="ville"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Ville</FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        placeholder="Ville"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {/* Email et Mot de passe */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email *</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          type="email"
+                          placeholder="Adresse email"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Mot de passe *</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          type="password"
+                          placeholder="Mot de passe (min. 6 caractères)"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
               {/* Statut */}
               <FormField
                 control={form.control}
                 name="statut"
                 render={({ field }) => (
-                  <FormItem className="md:col-span-2">
+                  <FormItem>
                     <FormLabel>Statut *</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
@@ -292,9 +394,9 @@ export function AddLivreur() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="actif">Actif</SelectItem>
-                        <SelectItem value="inactif">Inactif</SelectItem>
-                        <SelectItem value="suspendu">Suspendu</SelectItem>
+                        <SelectItem value="Actif">Actif</SelectItem>
+                        <SelectItem value="Inactif">Inactif</SelectItem>
+                        <SelectItem value="Suspendu">Suspendu</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormDescription>

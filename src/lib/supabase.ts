@@ -1,3 +1,17 @@
+/*
+  SQL Function to create in Supabase Database:
+
+  CREATE OR REPLACE FUNCTION get_user_email_by_auth_id(auth_user_id uuid)
+  RETURNS text
+  LANGUAGE sql
+  SECURITY DEFINER
+  AS $$
+    SELECT email FROM auth.users WHERE id = auth_user_id;
+  $$;
+
+  This function allows us to get the email from auth.users table using the auth_id.
+*/
+
 import { createClient, SupabaseClient, PostgrestError } from '@supabase/supabase-js'
 import { User, Client, Entreprise, Colis, Statut, HistoriqueColis, Notification, Bon } from '@/types'
 
@@ -119,32 +133,58 @@ export const auth = {
   },
 
   signUp: async (email: string, password: string, userData: { nom: string; prenom: string; role: string }) => {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-    })
+    try {
+      // First, try to create the auth user
+      const { data, error } = await supabase.auth.signUp({
+        email: email.toLowerCase().trim(), // Normalize email
+        password,
+        options: {
+          emailRedirectTo: undefined, // Disable email confirmation
+          data: {
+            nom: userData.nom,
+            prenom: userData.prenom,
+            role: userData.role
+          }
+        }
+      })
 
-    if (data.user && !error) {
-      // Create user profile in our utilisateurs table
-      const { error: profileError } = await supabase
-        .from('utilisateurs')
-        .insert({
-          id: data.user.id,
-          nom: userData.nom,
-          prenom: userData.prenom,
-          email: email, // Store email in our table too
-          role: userData.role,
-          statut: 'actif',
-          mot_de_passe: '', // We don't store passwords in our table
-          date_creation: new Date().toISOString(),
-        })
+      // If there's an auth error, try to handle it gracefully
+      if (error) {
+        console.error('Auth signup error:', error);
 
-      if (profileError) {
-        return { data, error: profileError }
+        // If it's an email validation error, we might need to use a different approach
+        if (error.message.includes('invalid') || error.message.includes('Invalid')) {
+          throw new Error(`Erreur de validation de l'email: ${error.message}`);
+        }
+
+        throw error;
       }
-    }
 
-    return { data, error }
+      if (data.user) {
+        // Create user profile in our utilisateurs table
+        const { error: profileError } = await supabase
+          .from('utilisateurs')
+          .insert({
+            auth_id: data.user.id,
+            nom: userData.nom,
+            prenom: userData.prenom,
+            email: email, // Store email in utilisateurs table too
+            role: userData.role,
+            statut: 'Actif',
+            date_creation: new Date().toISOString(),
+          })
+
+        if (profileError) {
+          console.error('Profile creation error:', profileError);
+          return { data, error: profileError }
+        }
+      }
+
+      return { data, error }
+    } catch (err: any) {
+      console.error('SignUp function error:', err);
+      return { data: null, error: err }
+    }
   },
 
   signOut: async () => {
@@ -201,6 +241,49 @@ export const auth = {
       password: newPassword
     })
     return { data, error }
+  },
+
+  // Alternative method for creating users when auth signup fails
+  createUserDirectly: async (userData: {
+    nom: string;
+    prenom: string;
+    email: string;
+    role: string;
+    telephone?: string;
+    adresse?: string;
+    ville?: string;
+    vehicule?: string;
+    zone?: string;
+    statut: string;
+  }) => {
+    try {
+      // Generate a unique ID for the user
+      const userId = crypto.randomUUID();
+
+      const { data, error } = await supabase
+        .from('utilisateurs')
+        .insert({
+          id: userId,
+          nom: userData.nom,
+          prenom: userData.prenom,
+          role: userData.role,
+          statut: userData.statut,
+          telephone: userData.telephone || null,
+          adresse: userData.adresse || null,
+          ville: userData.ville || null,
+          vehicule: userData.vehicule || null,
+          zone: userData.zone || null,
+          date_creation: new Date().toISOString(),
+          // Note: Email is not stored in utilisateurs table
+          // This user won't have auth capabilities until manually set up
+        })
+        .select()
+        .single();
+
+      return { data, error };
+    } catch (err: any) {
+      return { data: null, error: err };
+    }
   }
 }
 
@@ -216,11 +299,31 @@ export const api = {
   },
 
   getUserById: async (id: string) => {
+    // Get the user profile (email should already be stored in utilisateurs table)
     const { data, error } = await supabase
       .from('utilisateurs')
       .select('*')
       .eq('id', id)
       .single()
+
+    // If email is missing but user has auth_id, try to get it from current user
+    if (data && !data.email && data.auth_id) {
+      try {
+        const { data: currentUser } = await supabase.auth.getUser()
+        if (currentUser.user && currentUser.user.id === data.auth_id) {
+          return {
+            data: {
+              ...data,
+              email: currentUser.user.email
+            },
+            error: null
+          }
+        }
+      } catch (authError) {
+        console.warn('Could not fetch current user email:', authError)
+      }
+    }
+
     return { data, error }
   },
 
@@ -495,9 +598,35 @@ export const api = {
   getLivreurs: async () => {
     const { data, error } = await supabase
       .from('utilisateurs')
-      .select('id, nom, prenom, statut, role')
-      .ilike('role', '%livreur%') // More flexible matching
+      .select('id, nom, prenom, statut, role, auth_id')
+      .eq('role', 'Livreur') // Use exact match with correct capitalization
       .order('nom', { ascending: true })
+
+    // For now, return without emails until RPC function is created
+    // TODO: Uncomment when RPC function is created
+    /*
+    if (data && !error) {
+      const livreursWithEmails = await Promise.all(
+        data.map(async (livreur) => {
+          if (livreur.auth_id) {
+            try {
+              const { data: emailData } = await supabase
+                .rpc('get_user_email_by_auth_id', { auth_user_id: livreur.auth_id })
+
+              if (emailData) {
+                return { ...livreur, email: emailData }
+              }
+            } catch (rpcError) {
+              // RPC not available, continue without email
+            }
+          }
+          return livreur
+        })
+      )
+      return { data: livreursWithEmails as Pick<User, 'id' | 'nom' | 'prenom' | 'statut' | 'email'>[], error }
+    }
+    */
+
     return { data: data as Pick<User, 'id' | 'nom' | 'prenom' | 'statut'>[], error }
   },
 
@@ -591,7 +720,7 @@ export const api = {
   getDashboardStats: async () => {
     const [colisResult, usersResult] = await Promise.all([
       supabase.from('colis').select('statut'),
-      supabase.from('utilisateurs').select('role').eq('role', 'livreur').eq('statut', 'actif')
+      supabase.from('utilisateurs').select('role').eq('role', 'Livreur').eq('statut', 'actif')
     ])
 
     const colis = colisResult.data || []
@@ -709,7 +838,7 @@ export const api = {
   },
 
   // CRUD operations for Clients
-  createClient: async (client: Omit<Client, 'id' | 'created_at'>) => {
+  createClient: async (client: Omit<Client, 'created_at'>) => {
     const { data, error } = await supabase
       .from('clients')
       .insert(client)
@@ -746,7 +875,7 @@ export const api = {
   },
 
   // CRUD operations for Entreprises
-  createEntreprise: async (entreprise: Omit<Entreprise, 'id' | 'created_at'>) => {
+  createEntreprise: async (entreprise: Omit<Entreprise, 'created_at'>) => {
     const { data, error } = await supabase
       .from('entreprises')
       .insert(entreprise)
@@ -796,7 +925,7 @@ export const api = {
     const { data, error } = await supabase
       .from('utilisateurs')
       .update(updates)
-      .eq('id', id)
+      .eq('auth_id', id)
       .select()
       .single()
     return { data, error }
@@ -955,15 +1084,15 @@ export const api = {
       const { data, error } = await supabase
         .from('utilisateurs')
         .select('id, nom, prenom, role, statut')
-        .in('role', ['admin', 'gestionnaire'])
-        .eq('statut', 'actif');
+        .in('role', ['Admin', 'Gestionnaire'])
+        .eq('statut', 'Actif');
 
       // If no active admin users found, try without the statut filter
       if (!error && (!data || data.length === 0)) {
         const { data: dataNoStatus, error: errorNoStatus } = await supabase
           .from('utilisateurs')
           .select('id, nom, prenom, role, statut')
-          .in('role', ['admin', 'gestionnaire']);
+          .in('role', ['Admin', 'Gestionnaire']);
 
         return { data: dataNoStatus, error: errorNoStatus };
       }

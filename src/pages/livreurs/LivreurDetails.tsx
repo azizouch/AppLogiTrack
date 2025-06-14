@@ -34,6 +34,7 @@ import { api } from '@/lib/supabase';
 import { User as UserType, Colis } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { useDebounce } from '@/hooks/useDebounce';
+import { AddColisModal } from '@/components/modals/AddColisModal';
 
 export function LivreurDetails() {
   const { id } = useParams<{ id: string }>();
@@ -52,6 +53,9 @@ export function LivreurDetails() {
   const [colisSearchTerm, setColisSearchTerm] = useState('');
   const [loadingColis, setLoadingColis] = useState(false);
   const debouncedColisSearch = useDebounce(colisSearchTerm, 300);
+
+  // Add colis modal state
+  const [showAddColisModal, setShowAddColisModal] = useState(false);
 
   // Fetch livreur details
   const fetchLivreur = async (isRefresh = false) => {
@@ -211,6 +215,18 @@ export function LivreurDetails() {
         variant: 'destructive',
       });
     }
+  };
+
+  // Handle new colis creation
+  const handleColisCreated = (newColis: any) => {
+    toast({
+      title: 'Succès',
+      description: 'Colis créé et assigné avec succès',
+    });
+    // Close the add colis modal
+    setShowAddColisModal(false);
+    // Refresh livreur data to update colis list
+    fetchLivreur(true);
   };
 
   // Get status color
@@ -595,7 +611,7 @@ export function LivreurDetails() {
                 />
               </div>
               <Button
-                onClick={() => navigate('/colis/nouveau')}
+                onClick={() => setShowAddColisModal(true)}
                 className="bg-blue-600 hover:bg-blue-700"
               >
                 <Plus className="h-4 w-4 mr-2" />
@@ -702,6 +718,17 @@ export function LivreurDetails() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Add Colis Modal */}
+      {livreur && (
+        <AddColisModal
+          open={showAddColisModal}
+          onOpenChange={setShowAddColisModal}
+          livreurId={livreur.id}
+          livreurName={`${livreur.nom} ${livreur.prenom} (LIV-${livreur.id.slice(-3).toUpperCase()})`}
+          onColisCreated={handleColisCreated}
+        />
+      )}
     </div>
   );
 }

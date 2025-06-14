@@ -7,7 +7,10 @@ export function RelanceAutreClient() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Relancé Autre Client</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
+          <UserX className="h-7 w-7 text-purple-600 dark:text-purple-400" />
+          Relancé Autre Client
+        </h1>
         <p className="text-gray-600 dark:text-gray-400">
           Liste des colis à relancer avec un autre client
         </p>

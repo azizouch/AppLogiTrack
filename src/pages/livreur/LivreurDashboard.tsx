@@ -123,10 +123,8 @@ export function LivreurDashboard() {
           limit: 1000
         });
 
-        console.log('LivreurDashboard: API result:', { data: colisData?.length, error });
-
         if (error) {
-          console.error('LivreurDashboard: API error:', error);
+          console.error('API error:', error);
           return;
         }
 

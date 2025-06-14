@@ -55,8 +55,6 @@ export function MesColis() {
         setLoading(true);
       }
 
-      console.log('MesColis: Fetching colis for user:', state.user.id);
-
       // Direct Supabase query - no complex recovery logic
       let query = supabase
         .from('colis')
@@ -92,19 +90,16 @@ export function MesColis() {
 
       const { data, error, count } = await query;
 
-      console.log('MesColis: Direct query result:', { data: data?.length, error, count });
-
       if (error) {
         console.error('MesColis: Query error:', error);
         setColis([]);
         setTotalCount(0);
       } else {
-        console.log('MesColis: Setting colis data:', data?.length, 'items');
         setColis(data || []);
         setTotalCount(count || 0);
       }
     } catch (error: any) {
-      console.error('MesColis: Error in fetchColis:', error);
+      console.error('Error in fetchColis:', error);
       setColis([]);
       setTotalCount(0);
     } finally {
@@ -123,10 +118,9 @@ export function MesColis() {
         .order('ordre', { ascending: true });
 
       if (!error && data) {
-        console.log('MesColis: Fetched statuts:', data);
         setStatuts(data);
       } else {
-        console.error('MesColis: Error fetching statuts:', error);
+        console.error('Error fetching statuts:', error);
       }
     } catch (error) {
       console.error('MesColis: Exception fetching statuts:', error);
@@ -204,15 +198,10 @@ export function MesColis() {
   };
 
   const getStatusBadge = (statut: string) => {
-    console.log('MesColis: getStatusBadge called with:', statut);
-    console.log('MesColis: Available statuts:', statuts);
-
     const statutData = statuts.find(s => s.nom === statut);
-    console.log('MesColis: Found statutData:', statutData);
 
     if (statutData && statutData.couleur) {
       const colorClass = getColorClass(statutData.couleur);
-      console.log('MesColis: Using color class:', colorClass);
       return (
         <Badge className={`${colorClass} border-0`}>
           {statutData.nom}
@@ -221,7 +210,6 @@ export function MesColis() {
     }
 
     // Fallback for unknown status
-    console.log('MesColis: Using fallback for status:', statut);
     return <Badge className="bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300">{statut}</Badge>;
   };
 
@@ -380,14 +368,6 @@ export function MesColis() {
           .from('utilisateurs')
           .select('id, nom, prenom, role, statut, email')
           .limit(10);
-
-        console.log('No admin users found. All users in database:', allUsers?.map(u => ({
-          id: u.id,
-          role: u.role,
-          statut: u.statut,
-          nom: u.nom,
-          email: u.email
-        })));
 
         toast({
           title: 'Réclamation envoyée',

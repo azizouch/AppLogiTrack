@@ -18,7 +18,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { TablePagination } from '@/components/ui/table-pagination';
-import { Filter, Search, Eye, UserCheck, UserX, MessageCircle, X } from 'lucide-react';
+import { Filter, Search, Eye, UserCheck, UserX, MessageCircle, X, Activity } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { api } from '@/lib/supabase';
 
@@ -183,7 +183,10 @@ export function Suivi() {
     <div className="space-y-6 bg-white dark:bg-gray-900 min-h-screen text-gray-900 dark:text-white">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Suivi des utilisateurs</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
+          <Activity className="h-7 w-7 text-blue-600 dark:text-blue-400" />
+          Suivi des utilisateurs
+        </h1>
         <p className="text-gray-600 dark:text-gray-400">Suivez et gérez l'activité des utilisateurs de la plateforme</p>
       </div>
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Filter, Search, Edit, Trash2, X, RotateCcw } from 'lucide-react';
+import { Plus, Filter, Search, Edit, Trash2, X, RotateCcw, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -333,7 +333,10 @@ export function Statuts() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Gestion des Statuts</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
+            <Settings className="h-7 w-7 text-blue-600 dark:text-blue-400" />
+            Gestion des Statuts
+          </h1>
         </div>
         <Button
           onClick={() => setIsAddModalOpen(true)}

@@ -11,17 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
+import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { TablePagination } from '@/components/ui/table-pagination';
 import {
   Select,
@@ -42,12 +32,18 @@ export function Clients() {
 
   // Data state
   const [clients, setClients] = useState<Client[]>([]);
+  const [allClients, setAllClients] = useState<Client[]>([]);
+  const [entreprises, setEntreprises] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
 
   // Filter state
   const [searchTerm, setSearchTerm] = useState('');
+  const [cityFilter, setCityFilter] = useState('all');
+  const [entrepriseFilter, setEntrepriseFilter] = useState('all');
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
   // Pagination state
@@ -67,7 +63,18 @@ export function Clients() {
         setLoading(true);
       }
 
-      const { data, error } = await api.getClients();
+      // Fetch both clients and entreprises
+      const [clientsResponse, entreprisesResponse] = await Promise.all([
+        api.getClients(),
+        api.getEntreprises()
+      ]);
+
+      const { data, error } = clientsResponse;
+
+      // Set entreprises data
+      if (entreprisesResponse.data) {
+        setEntreprises(entreprisesResponse.data);
+      }
 
       if (error) {
         console.error('Error fetching clients:', error);
@@ -77,17 +84,47 @@ export function Clients() {
           variant: 'destructive',
         });
         setClients([]);
+        setAllClients([]);
         setTotalCount(0);
       } else if (data) {
+        // Store all clients for filtering
+        setAllClients(data);
+
         // Filter clients based on search term
         let filteredClients = data;
         if (debouncedSearchTerm) {
-          filteredClients = data.filter(client =>
+          filteredClients = filteredClients.filter(client =>
             client.nom.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
             client.email?.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
             client.telephone?.includes(debouncedSearchTerm) ||
             client.entreprise?.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
           );
+        }
+
+        // City filter - ONLY use ville field from database
+        if (cityFilter && cityFilter !== 'all') {
+          filteredClients = filteredClients.filter(client => {
+            if (cityFilter === 'sans_ville') {
+              // Show clients without ville
+              return !client.ville || client.ville.trim() === '' || client.ville.toLowerCase() === 'null';
+            } else {
+              // Only use the ville field, no fallback to address
+              return client.ville?.toLowerCase() === cityFilter.toLowerCase();
+            }
+          });
+        }
+
+        // Entreprise filter
+        if (entrepriseFilter && entrepriseFilter !== 'all') {
+          filteredClients = filteredClients.filter(client => {
+            if (entrepriseFilter === 'sans_entreprise') {
+              // Show clients without entreprise
+              return !client.entreprise || client.entreprise.trim() === '';
+            } else {
+              // Show clients with specific entreprise
+              return client.entreprise?.toLowerCase() === entrepriseFilter.toLowerCase();
+            }
+          });
         }
 
         // Apply pagination
@@ -114,13 +151,21 @@ export function Clients() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [currentPage, debouncedSearchTerm, itemsPerPage, toast]);
+  }, [currentPage, debouncedSearchTerm, cityFilter, entrepriseFilter, itemsPerPage, toast]);
+
+  // Show delete confirmation
+  const showDeleteConfirmation = (client: Client) => {
+    setClientToDelete(client);
+    setShowDeleteDialog(true);
+  };
 
   // Delete client
-  const handleDelete = async (clientId: string) => {
-    setDeleting(clientId);
+  const handleDelete = async () => {
+    if (!clientToDelete) return;
+
+    setDeleting(clientToDelete.id);
     try {
-      const { error } = await api.deleteClient(clientId);
+      const { error } = await api.deleteClient(clientToDelete.id);
 
       if (error) {
         toast({
@@ -143,6 +188,7 @@ export function Clients() {
       });
     } finally {
       setDeleting(null);
+      setClientToDelete(null);
     }
   };
 
@@ -151,10 +197,46 @@ export function Clients() {
     fetchClients(true);
   };
 
+  // Reset filters function
+  const resetFilters = () => {
+    setSearchTerm('');
+    setCityFilter('all');
+    setEntrepriseFilter('all');
+    setCurrentPage(1);
+  };
+
+  // Check if any filters are active
+  const hasActiveFilters = searchTerm || cityFilter !== 'all' || entrepriseFilter !== 'all';
+
+
+
+  // Get unique cities from all clients - ONLY use ville field from database
+  const uniqueCities = Array.from(new Set(
+    allClients
+      .map(client => client.ville) // Only use the ville field
+      .filter(Boolean) // Remove null/undefined/empty values
+      .filter(city => city.trim() !== '') // Remove empty strings
+      .filter(city => city.toLowerCase() !== 'null') // Remove 'NULL' values
+      .map(city => city.trim()) // Clean whitespace
+  )).sort();
+
+  // Check if there are clients without ville
+  const hasClientsWithoutVille = allClients.some(client =>
+    !client.ville || client.ville.trim() === '' || client.ville.toLowerCase() === 'null'
+  );
+
+  // Check if there are clients without entreprise
+  const hasClientsWithoutEntreprise = allClients.some(client =>
+    !client.entreprise || client.entreprise.trim() === ''
+  );
+
+  // Get all entreprises from the entreprises table
+  const allEntrepriseNames = entreprises.map(entreprise => entreprise.nom).sort();
+
   // Reset to first page when search changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [debouncedSearchTerm]);
+  }, [debouncedSearchTerm, cityFilter, entrepriseFilter]);
 
   // Initial data fetch and when dependencies change
   useEffect(() => {
@@ -166,7 +248,10 @@ export function Clients() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Gestion des Clients</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
+            <Users className="h-7 w-7 text-blue-600 dark:text-blue-400" />
+            Gestion des Clients
+          </h1>
         </div>
         <Button
           className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800"
@@ -186,11 +271,11 @@ export function Clients() {
             </svg>
             <span className="font-medium text-gray-700 dark:text-gray-300">Filtres</span>
           </div>
-          {searchTerm && (
+          {hasActiveFilters && (
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setSearchTerm('')}
+              onClick={resetFilters}
               className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
             >
               <X className="mr-2 h-4 w-4" />
@@ -208,20 +293,40 @@ export function Clients() {
               className="pl-10 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400"
             />
           </div>
-          <Select value="all" onValueChange={() => {}}>
+          <Select value={cityFilter} onValueChange={setCityFilter}>
             <SelectTrigger className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white">
               <SelectValue placeholder="Toutes les villes" />
             </SelectTrigger>
             <SelectContent className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600">
               <SelectItem value="all" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600">Toutes les villes</SelectItem>
+              {hasClientsWithoutVille && (
+                <SelectItem value="sans_ville" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600">
+                  <span className="text-orange-600 dark:text-orange-400">Sans ville</span>
+                </SelectItem>
+              )}
+              {uniqueCities.map((city) => (
+                <SelectItem key={city} value={city} className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600">
+                  {city}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
-          <Select value="all" onValueChange={() => {}}>
+          <Select value={entrepriseFilter} onValueChange={setEntrepriseFilter}>
             <SelectTrigger className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white">
               <SelectValue placeholder="Toutes les entreprises" />
             </SelectTrigger>
             <SelectContent className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600">
               <SelectItem value="all" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600">Toutes les entreprises</SelectItem>
+              {hasClientsWithoutEntreprise && (
+                <SelectItem value="sans_entreprise" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600">
+                  <span className="text-orange-600 dark:text-orange-400">Sans entreprise</span>
+                </SelectItem>
+              )}
+              {allEntrepriseNames.map((entreprise) => (
+                <SelectItem key={entreprise} value={entreprise} className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600">
+                  {entreprise}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -281,8 +386,8 @@ export function Clients() {
                     <Users className="h-12 w-12 mb-4 text-gray-300 dark:text-gray-600" />
                     <p className="text-lg font-medium mb-2">Aucun client trouvé</p>
                     <p className="text-sm">
-                      {debouncedSearchTerm
-                        ? 'Aucun client ne correspond à votre recherche'
+                      {hasActiveFilters
+                        ? 'Aucun client ne correspond aux filtres sélectionnés'
                         : 'Commencez par ajouter votre premier client'
                       }
                     </p>
@@ -343,14 +448,25 @@ export function Clients() {
                     )}
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => navigate(`/clients/${client.id}`)}
-                      className="h-8 px-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 hover:text-gray-900 dark:hover:text-white transition-colors"
-                    >
-                      Détails
-                    </Button>
+                    <div className="flex items-center gap-2 justify-end">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => navigate(`/clients/${client.id}`)}
+                        className="h-8 px-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 hover:text-gray-900 dark:hover:text-white transition-colors"
+                      >
+                        Détails
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => showDeleteConfirmation(client)}
+                        disabled={deleting === client.id}
+                        className="h-8 px-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))
@@ -372,6 +488,18 @@ export function Clients() {
           itemsPerPage={itemsPerPage}
         />
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmationDialog
+        open={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
+        title="Supprimer le client"
+        description={`Êtes-vous sûr de vouloir supprimer le client "${clientToDelete?.nom}" ? Cette action est irréversible et supprimera également tous les colis associés.`}
+        confirmText="Supprimer"
+        cancelText="Annuler"
+        variant="destructive"
+        onConfirm={handleDelete}
+      />
     </div>
   );
 }

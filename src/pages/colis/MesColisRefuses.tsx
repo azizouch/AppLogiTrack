@@ -80,10 +80,9 @@ export function MesColisRefuses() {
       const result = await query;
 
       const { data, error, count } = result;
-      console.log('MesColisRefuses: Direct query result:', { data: data?.length, error, count });
 
       if (error) {
-        console.error('MesColisRefuses: API error:', error);
+        console.error('API error:', error);
         toast({
           title: 'Erreur',
           description: `Erreur API: ${error.message || 'Impossible de charger les colis'}`,
@@ -92,12 +91,11 @@ export function MesColisRefuses() {
         setColis([]);
         setTotalCount(0);
       } else {
-        console.log('MesColisRefuses: Setting colis data:', data?.length, 'items');
         setColis(data || []);
         setTotalCount(count || 0);
       }
     } catch (error) {
-      console.error('MesColisRefuses: Unexpected error:', error);
+      console.error('Unexpected error:', error);
       toast({
         title: 'Erreur',
         description: 'Une erreur est survenue lors du chargement',
@@ -472,7 +470,7 @@ export function MesColisRefuses() {
                         <Button
                           className="w-full bg-amber-600 hover:bg-amber-700 text-white"
                           onClick={() => {
-                            console.log('Change status for:', colisItem.id);
+                            // TODO: Implement status change functionality
                           }}
                         >
                           <Save className="mr-2 h-4 w-4" />

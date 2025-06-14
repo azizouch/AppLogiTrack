@@ -30,9 +30,11 @@ import { AddClient } from "@/pages/clients/AddClient";
 import { ClientDetails } from "@/pages/clients/ClientDetails";
 import { EditClient } from "@/pages/clients/EditClient";
 import { Entreprises } from "@/pages/Entreprises";
+import { AddEntreprise } from "@/pages/entreprises/AddEntreprise";
 import { EntrepriseDetails } from "@/pages/entreprises/EntrepriseDetails";
 import { EditEntreprise } from "@/pages/entreprises/EditEntreprise";
 import { Livreurs } from "@/pages/Livreurs";
+import { AddLivreur } from "@/pages/livreurs/AddLivreur";
 import { LivreurDetails } from "@/pages/livreurs/LivreurDetails";
 import { EditLivreur } from "@/pages/livreurs/EditLivreur";
 import { Notifications } from "@/pages/Notifications";
@@ -214,6 +216,13 @@ const App = () => (
               </Layout>
             </ProtectedRoute>
           } />
+          <Route path="/entreprises/ajouter" element={
+            <ProtectedRoute>
+              <Layout>
+                <AddEntreprise />
+              </Layout>
+            </ProtectedRoute>
+          } />
           <Route path="/entreprises/:id" element={
             <ProtectedRoute>
               <Layout>
@@ -232,6 +241,13 @@ const App = () => (
             <ProtectedRoute>
               <Layout>
                 <Livreurs />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/livreurs/ajouter" element={
+            <ProtectedRoute>
+              <Layout>
+                <AddLivreur />
               </Layout>
             </ProtectedRoute>
           } />

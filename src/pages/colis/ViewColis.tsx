@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Edit, Package, User, Building, Truck, Calendar, MapPin, Phone, Mail, Clock, DollarSign } from 'lucide-react';
+import { ArrowLeft, Edit, Package, User, Building, Truck, Calendar, MapPin, Phone, Mail, Clock, DollarSign, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -10,7 +10,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { api, supabase } from '@/lib/supabase';
+import { useAuth } from '@/contexts/AuthContext';
 
 import { Colis, HistoriqueColis, Statut } from '@/types';
 import { useToast } from '@/hooks/use-toast';
@@ -19,6 +21,7 @@ export function ViewColis() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { state } = useAuth();
 
 
   const [colis, setColis] = useState<Colis | null>(null);
@@ -27,6 +30,8 @@ export function ViewColis() {
   const [loading, setLoading] = useState(true);
   const [selectedStatus, setSelectedStatus] = useState<string>('');
   const [updating, setUpdating] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -70,7 +75,6 @@ export function ViewColis() {
         if (historiqueError) {
           console.error('Error fetching historique:', historiqueError);
         } else {
-          console.log('Initial historique data:', historiqueData);
           setHistorique(historiqueData || []);
         }
 
@@ -150,35 +154,37 @@ export function ViewColis() {
         throw new Error(updateResult?.error?.message || 'Erreur lors de la mise à jour');
       }
 
-      // Get current user for historique
-      const userResult = await supabase.auth.getUser();
-      const currentUserId = userResult?.data?.user?.id || null;
+      // Get the Supabase auth user ID
+      const { data: authUser } = await supabase.auth.getUser();
+      const supabaseAuthId = authUser?.user?.id;
 
-      console.log('Current user ID:', currentUserId);
-      console.log('Colis ID:', id);
-      console.log('Selected status:', selectedStatus);
+      // Find the corresponding utilisateur record using the auth_id field
+      const { data: utilisateur, error: userError } = await supabase
+        .from('utilisateurs')
+        .select('id, nom, prenom, auth_id')
+        .eq('auth_id', supabaseAuthId)
+        .single();
 
-      // Add to historique
+      if (userError || !utilisateur) {
+        throw new Error('Current user not found in utilisateurs table. Please contact administrator to create your user profile.');
+      }
+
+      // Add to historique using the utilisateur ID (not the auth_id)
       const historiqueEntry = {
         colis_id: id,
         statut: selectedStatus,
         date: new Date().toISOString(),
-        utilisateur: currentUserId
+        utilisateur: utilisateur.id
       };
 
-      console.log('Historique entry to insert:', historiqueEntry);
-
       // Insert historique entry with better error handling
-      const { data: insertedData, error: insertError } = await supabase
+      const { error: insertError } = await supabase
         .from('historique_colis')
-        .insert(historiqueEntry)
-        .select();
+        .insert(historiqueEntry);
 
       if (insertError) {
         console.error('Error inserting historique:', insertError);
         throw new Error(`Failed to insert historique: ${insertError.message}`);
-      } else {
-        console.log('Successfully inserted historique:', insertedData);
       }
 
       // Update local state immediately for better UX
@@ -208,7 +214,6 @@ export function ViewColis() {
       if (refreshError) {
         console.error('Error refreshing historique:', refreshError);
       } else {
-        console.log('Refreshed historique data:', historiqueRefreshData);
         setHistorique(historiqueRefreshData || []);
       }
 
@@ -227,6 +232,55 @@ export function ViewColis() {
       setSelectedStatus(colis.statut);
     } finally {
       setUpdating(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!colis || !id) {
+      return;
+    }
+
+    setDeleting(true);
+    try {
+      // First, delete all related historique entries
+      const { error: historiqueError } = await supabase
+        .from('historique_colis')
+        .delete()
+        .eq('colis_id', id);
+
+      if (historiqueError) {
+        console.error('Error deleting historique:', historiqueError);
+        throw new Error('Erreur lors de la suppression de l\'historique');
+      }
+
+      // Then delete the colis
+      const { error: colisError } = await supabase
+        .from('colis')
+        .delete()
+        .eq('id', id);
+
+      if (colisError) {
+        console.error('Error deleting colis:', colisError);
+        throw new Error('Erreur lors de la suppression du colis');
+      }
+
+      toast({
+        title: 'Succès',
+        description: 'Le colis a été supprimé avec succès',
+      });
+
+      // Navigate back to colis list
+      navigate('/colis');
+    } catch (error) {
+      console.error('Error deleting colis:', error);
+      toast({
+        title: 'Erreur',
+        description: error instanceof Error ? error.message : 'Impossible de supprimer le colis',
+        variant: 'destructive',
+      });
+    } finally {
+      setDeleting(false);
+      setShowDeleteModal(false);
     }
   };
 
@@ -294,8 +348,10 @@ export function ViewColis() {
           </Button>
           <Button
             variant="destructive"
-            className="bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700"
+            onClick={() => setShowDeleteModal(true)}
+            className="flex items-center gap-2 bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700"
           >
+            <Trash2 className="h-4 w-4" />
             Supprimer
           </Button>
           <Select value={selectedStatus} onValueChange={setSelectedStatus}>
@@ -542,6 +598,17 @@ export function ViewColis() {
         </div>
       </div>
 
+      {/* Delete Confirmation Modal */}
+      <ConfirmationDialog
+        open={showDeleteModal}
+        onOpenChange={setShowDeleteModal}
+        title="Confirmer la suppression"
+        description={`Êtes-vous sûr de vouloir supprimer le colis ${colis.id} ? Cette action est irréversible et supprimera également tout l'historique associé.`}
+        confirmText={deleting ? 'Suppression...' : 'Supprimer'}
+        cancelText="Annuler"
+        onConfirm={handleDelete}
+        variant="destructive"
+      />
     </div>
   );
 }

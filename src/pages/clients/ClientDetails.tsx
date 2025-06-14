@@ -4,6 +4,7 @@ import { ArrowLeft, Edit, User, Mail, Phone, MapPin, RefreshCw, Trash2, Package 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { api } from '@/lib/supabase';
 import { Client, Colis } from '@/types';
 import { useToast } from '@/hooks/use-toast';
@@ -14,6 +15,8 @@ export function ClientDetails() {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [client, setClient] = useState<Client | null>(null);
   const [clientColis, setClientColis] = useState<Colis[]>([]);
   const [colisLoading, setColisLoading] = useState(true);
@@ -128,6 +131,39 @@ export function ClientDetails() {
     }
   };
 
+  // Delete client
+  const handleDelete = async () => {
+    if (!id || !client) return;
+
+    setDeleting(true);
+    try {
+      const { error } = await api.deleteClient(id);
+
+      if (error) {
+        toast({
+          title: 'Erreur',
+          description: 'Impossible de supprimer le client',
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: 'Succès',
+          description: 'Client supprimé avec succès',
+        });
+        navigate('/clients');
+      }
+    } catch (error) {
+      console.error('Error deleting client:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Une erreur est survenue lors de la suppression',
+        variant: 'destructive',
+      });
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -195,10 +231,11 @@ export function ClientDetails() {
             </Button>
             <Button
               variant="destructive"
-              disabled={refreshing}
+              disabled={refreshing || deleting}
+              onClick={() => setShowDeleteDialog(true)}
             >
               <Trash2 className="mr-2 h-4 w-4" />
-              Supprimer
+              {deleting ? 'Suppression...' : 'Supprimer'}
             </Button>
           </div>
         </div>
@@ -255,11 +292,29 @@ export function ClientDetails() {
                 </div>
               )}
 
-              {/* Entreprise section - Hidden until the feature is implemented */}
-              <div className="bg-muted p-3 rounded-md">
-                <p className="text-sm text-muted-foreground">
-                  La fonctionnalité d'association d'entreprise sera disponible dans une future mise à jour.
-                </p>
+              {/* Entreprise and Ville section */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {client.ville && (
+                  <div>
+                    <h3 className="text-sm font-medium text-muted-foreground">Ville</h3>
+                    <p className="text-lg font-medium flex items-center">
+                      <MapPin className="mr-2 h-4 w-4 text-muted-foreground" />
+                      {client.ville}
+                    </p>
+                  </div>
+                )}
+
+                {client.entreprise && (
+                  <div>
+                    <h3 className="text-sm font-medium text-muted-foreground">Entreprise</h3>
+                    <p className="text-lg font-medium flex items-center">
+                      <svg className="mr-2 h-4 w-4 text-muted-foreground" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a1 1 0 110 2h-3a1 1 0 01-1-1v-2a1 1 0 00-1-1H9a1 1 0 00-1 1v2a1 1 0 01-1 1H4a1 1 0 110-2V4zm3 1h2v2H7V5zm2 4H7v2h2V9zm2-4h2v2h-2V5zm2 4h-2v2h2V9z" clipRule="evenodd" />
+                      </svg>
+                      {client.entreprise}
+                    </p>
+                  </div>
+                )}
               </div>
 
               <div>
@@ -284,7 +339,7 @@ export function ClientDetails() {
                     Liste des colis associés à ce client
                   </CardDescription>
                 </div>
-                <Button onClick={() => navigate(`/colis/nouveau?client=${id}`)}>
+                <Button onClick={() => navigate(`/colis/ajouter?client=${id}`)}>
                   Créer un nouveau colis
                 </Button>
               </div>
@@ -361,6 +416,17 @@ export function ClientDetails() {
         </div>
       </div>
 
+      {/* Delete Confirmation Dialog */}
+      <ConfirmationDialog
+        open={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
+        title="Supprimer le client"
+        description={`Êtes-vous sûr de vouloir supprimer le client "${client?.nom}" ? Cette action est irréversible et supprimera également tous les colis associés.`}
+        confirmText="Supprimer"
+        cancelText="Annuler"
+        variant="destructive"
+        onConfirm={handleDelete}
+      />
     </div>
   );
 }

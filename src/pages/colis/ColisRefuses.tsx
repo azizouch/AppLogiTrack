@@ -165,7 +165,8 @@ export function ColisRefuses() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
+            <XCircle className="h-7 w-7 text-red-600 dark:text-red-400" />
             {isLivreur ? 'Mes Colis Refusés' : 'Colis Refusés'}
           </h1>
           <p className="text-gray-600 dark:text-gray-400">
@@ -260,8 +261,7 @@ export function ColisRefuses() {
       {/* Colis Table */}
       <div className="space-y-4">
         <div className="flex justify-between items-center">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-            <XCircle className="h-5 w-5 text-red-600" />
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
             <span>Colis Refusés</span>
           </h2>
           <div className="flex items-center gap-4">

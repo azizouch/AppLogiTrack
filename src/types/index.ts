@@ -1,17 +1,17 @@
 
 export interface User {
   id: string;
+  auth_id?: string;
   nom: string;
   prenom?: string;
   email?: string;
   telephone?: string;
-  role: 'admin' | 'gestionnaire' | 'livreur';
-  mot_de_passe: string;
+  role: 'Admin' | 'Gestionnaire' | 'Livreur';
   statut: string;
   derniere_connexion?: string;
   date_creation: string;
   date_modification?: string;
-  adre?: string;
+  adresse?: string;
   ville?: string;
   vehicule?: string;
   zone?: string;

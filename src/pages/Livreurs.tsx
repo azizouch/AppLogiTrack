@@ -42,6 +42,7 @@ import { api } from '@/lib/supabase';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
+import { AddColisModal } from '@/components/modals/AddColisModal';
 
 export function Livreurs() {
   const navigate = useNavigate();
@@ -71,6 +72,9 @@ export function Livreurs() {
   const [colisSearchTerm, setColisSearchTerm] = useState('');
   const [loadingColis, setLoadingColis] = useState(false);
   const debouncedColisSearch = useDebounce(colisSearchTerm, 300);
+
+  // Add colis modal state
+  const [showAddColisModal, setShowAddColisModal] = useState(false);
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -285,6 +289,18 @@ export function Livreurs() {
     }
   };
 
+  // Handle new colis creation
+  const handleColisCreated = (newColis: any) => {
+    toast({
+      title: 'Succès',
+      description: 'Colis créé et assigné avec succès',
+    });
+    // Close the add colis modal
+    setShowAddColisModal(false);
+    // Optionally refresh the unassigned colis list if needed
+    // fetchUnassignedColis();
+  };
+
   // Get status color
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
@@ -313,7 +329,10 @@ export function Livreurs() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Livreurs</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
+            <Truck className="h-7 w-7 text-blue-600 dark:text-blue-400" />
+            Livreurs
+          </h1>
           <p className="text-gray-600 dark:text-gray-400">Gestion des livreurs</p>
         </div>
         <div className="flex items-center gap-2 w-full sm:w-auto">
@@ -601,7 +620,7 @@ export function Livreurs() {
                 />
               </div>
               <Button
-                onClick={() => navigate('/colis/nouveau')}
+                onClick={() => setShowAddColisModal(true)}
                 className="bg-blue-600 hover:bg-blue-700"
               >
                 <Plus className="h-4 w-4 mr-2" />
@@ -708,6 +727,17 @@ export function Livreurs() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Add Colis Modal */}
+      {selectedLivreur && (
+        <AddColisModal
+          open={showAddColisModal}
+          onOpenChange={setShowAddColisModal}
+          livreurId={selectedLivreur.id}
+          livreurName={`${selectedLivreur.nom} ${selectedLivreur.prenom} (LIV-${selectedLivreur.id.slice(-3).toUpperCase()})`}
+          onColisCreated={handleColisCreated}
+        />
+      )}
     </div>
   );
 }

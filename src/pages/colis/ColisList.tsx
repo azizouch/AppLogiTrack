@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Plus, Search, Filter, RefreshCw, X } from 'lucide-react';
+import { Plus, Search, Filter, RefreshCw, X, Package } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -192,7 +192,10 @@ export function ColisList() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Liste des Colis</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
+          <Package className="h-7 w-7 text-blue-600 dark:text-blue-400" />
+          Liste des Colis
+        </h1>
         <div className="flex items-center gap-2 w-full sm:w-auto">
           <Button
             variant="outline"

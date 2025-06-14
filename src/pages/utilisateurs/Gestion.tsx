@@ -27,7 +27,7 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { TablePagination } from '@/components/ui/table-pagination';
-import { Filter, Search, UserPlus, ShieldCheck, Edit, Trash2, X } from 'lucide-react';
+import { Filter, Search, UserPlus, ShieldCheck, Edit, Trash2, X, UserCog } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { api } from '@/lib/supabase';
 
@@ -349,7 +349,10 @@ export function Gestion() {
       {/* Header */}
       <div className="flex justify-between items-start">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Gestion des Utilisateurs</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
+            <UserCog className="h-7 w-7 text-blue-600 dark:text-blue-400" />
+            Gestion des Utilisateurs
+          </h1>
           <p className="text-gray-600 dark:text-gray-400">Gérez les utilisateurs de la plateforme</p>
         </div>
         <div className="flex space-x-3">

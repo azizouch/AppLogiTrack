@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ArrowUp } from 'lucide-react';
 import { Button } from './button';
 
 interface TablePaginationProps {
@@ -61,22 +61,24 @@ export function TablePagination(props: TablePaginationProps) {
   const endItem = Math.min(currentPage * (itemsPerPage || 10), totalItems || 0);
 
   return (
-    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-4">
-      {/* Items info */}
-      {totalItems && itemsPerPage && (
-        <div className="text-sm text-gray-500 dark:text-gray-400">
-          Affichage de {startItem} à {endItem} sur {totalItems} résultats
-        </div>
-      )}
+    <div className="flex items-center justify-between py-4 px-2">
+      {/* Left: Items info */}
+      <div className="text-sm text-gray-500 dark:text-gray-400">
+        {totalItems && itemsPerPage ? (
+          `Affichage de ${startItem} à ${endItem} sur ${totalItems} résultats`
+        ) : (
+          ''
+        )}
+      </div>
 
-      {/* Pagination controls */}
-      <div className="flex items-center space-x-2">
+      {/* Center: Pagination controls */}
+      <div className="flex items-center space-x-1">
         <Button
-          variant="outline"
+          variant="ghost"
           size="sm"
           onClick={() => onPageChange(currentPage - 1)}
           disabled={!hasPrevPage || loading}
-          className="h-9 px-3"
+          className="h-9 px-3 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
         >
           <ChevronLeft className="h-4 w-4 mr-1" />
           Précédent
@@ -89,14 +91,14 @@ export function TablePagination(props: TablePaginationProps) {
             ) : (
               <Button
                 key={`page-${page}`}
-                variant={page === currentPage ? "default" : "outline"}
+                variant={page === currentPage ? "default" : "ghost"}
                 size="sm"
                 onClick={() => onPageChange(page as number)}
                 disabled={loading}
                 className={
                   page === currentPage
-                    ? "h-9 w-9 bg-blue-600 hover:bg-blue-700 text-white"
-                    : "h-9 w-9"
+                    ? "h-9 w-9 bg-blue-600 hover:bg-blue-700 text-white border-0"
+                    : "h-9 w-9 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800"
                 }
               >
                 {page}
@@ -106,20 +108,29 @@ export function TablePagination(props: TablePaginationProps) {
         </div>
 
         <Button
-          variant="outline"
+          variant="ghost"
           size="sm"
           onClick={() => onPageChange(currentPage + 1)}
           disabled={!hasNextPage || loading}
-          className="h-9 px-3"
+          className="h-9 px-3 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
         >
           Suivant
           <ChevronRight className="h-4 w-4 ml-1" />
         </Button>
       </div>
 
-      {/* Page info */}
-      <div className="text-sm text-gray-500 dark:text-gray-400">
-        Page {currentPage} sur {totalPages}
+      {/* Right: Page info with up arrow */}
+      <div className="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
+        <span>Page {currentPage} sur {totalPages}</span>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          className="h-6 w-6 p-0 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+          title="Retour en haut"
+        >
+          <ArrowUp className="h-4 w-4" />
+        </Button>
       </div>
     </div>
   );

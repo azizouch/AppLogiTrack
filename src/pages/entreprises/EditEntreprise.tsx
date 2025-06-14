@@ -27,7 +27,7 @@ const formSchema = z.object({
   nom: z.string().min(2, 'Le nom doit contenir au moins 2 caractères'),
   telephone: z.string().optional(),
   email: z.string().email('Email invalide').optional().or(z.literal('')),
-  adre: z.string().optional(),
+  adresse: z.string().optional(),
   contact: z.string().optional(),
   description: z.string().optional(),
 });
@@ -48,7 +48,7 @@ export function EditEntreprise() {
       nom: '',
       telephone: '',
       email: '',
-      adre: '',
+      adresse: '',
       contact: '',
       description: '',
     },
@@ -82,7 +82,7 @@ export function EditEntreprise() {
             nom: data.nom || '',
             telephone: data.telephone || '',
             email: data.email || '',
-            adre: data.adre || '',
+            adresse: data.adresse || '',
             contact: data.contact || '',
             description: data.description || '',
           });
@@ -114,7 +114,7 @@ export function EditEntreprise() {
         nom: values.nom,
         telephone: values.telephone || null,
         email: values.email || null,
-        adre: values.adre || null,
+        adresse: values.adresse || null,
         contact: values.contact || null,
         description: values.description || null,
       };
@@ -299,7 +299,7 @@ export function EditEntreprise() {
               {/* Adresse */}
               <FormField
                 control={form.control}
-                name="adre"
+                name="adresse"
                 render={({ field }) => (
                   <FormItem className="md:col-span-2">
                     <FormLabel className="text-base font-semibold">Adresse</FormLabel>

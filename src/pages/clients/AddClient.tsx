@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -8,11 +8,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { api } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
+import { Entreprise } from '@/types';
 
 export function AddClient() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [entreprises, setEntreprises] = useState<Entreprise[]>([]);
 
   // Generate client ID
   const generateClientId = () => {
@@ -26,7 +28,8 @@ export function AddClient() {
     email: '',
     telephone: '',
     adresse: '',
-    entreprise: ''
+    entreprise: '',
+    ville: ''
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -36,6 +39,31 @@ export function AddClient() {
       [name]: value
     }));
   };
+
+  const handleSelectChange = (name: string, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  // Fetch entreprises on component mount
+  useEffect(() => {
+    const fetchEntreprises = async () => {
+      try {
+        const { data, error } = await api.getEntreprises();
+        if (error) {
+          console.error('Error fetching entreprises:', error);
+        } else if (data) {
+          setEntreprises(data);
+        }
+      } catch (error) {
+        console.error('Error fetching entreprises:', error);
+      }
+    };
+
+    fetchEntreprises();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -151,17 +179,34 @@ export function AddClient() {
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="entreprise">Entreprise (fonctionnalité future)</Label>
-            <Select disabled>
-              <SelectTrigger>
-                <SelectValue placeholder="Aucune" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Aucune</SelectItem>
-              </SelectContent>
-            </Select>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Note: Cette fonctionnalité sera disponible dans une future mise à jour.</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <Label htmlFor="ville">Ville</Label>
+              <Input
+                id="ville"
+                name="ville"
+                value={formData.ville}
+                onChange={handleInputChange}
+                placeholder="Ville"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="entreprise">Entreprise</Label>
+              <Select value={formData.entreprise || "none"} onValueChange={(value) => handleSelectChange('entreprise', value === "none" ? "" : value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionner une entreprise" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Aucune</SelectItem>
+                  {entreprises.map((entreprise) => (
+                    <SelectItem key={entreprise.id} value={entreprise.nom}>
+                      {entreprise.nom}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           <div className="space-y-2">

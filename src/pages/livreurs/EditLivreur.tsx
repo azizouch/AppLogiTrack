@@ -34,9 +34,13 @@ const formSchema = z.object({
   prenom: z.string().min(2, 'Le prénom doit contenir au moins 2 caractères'),
   email: z.string().email('Email invalide'),
   telephone: z.string().optional(),
+  adresse: z.string().optional(),
+  ville: z.string().optional(),
   vehicule: z.string().optional(),
   zone: z.string().optional(),
-  notes: z.string().optional(),
+  statut: z.enum(['Actif', 'Inactif', 'Suspendu'], {
+    required_error: 'Le statut est requis',
+  }),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -56,9 +60,11 @@ export function EditLivreur() {
       prenom: '',
       email: '',
       telephone: '',
+      adresse: '',
+      ville: '',
       vehicule: '',
       zone: '',
-      notes: '',
+      statut: 'Actif',
     },
   });
 
@@ -83,7 +89,7 @@ export function EditLivreur() {
           return;
         }
 
-        if (data && (data.role?.toLowerCase() === 'livreur' || data.role === 'Livreur')) {
+        if (data && data.role === 'Livreur') {
           setLivreur(data);
           // Update form with livreur data
           form.reset({
@@ -91,9 +97,11 @@ export function EditLivreur() {
             prenom: data.prenom || '',
             email: data.email || '',
             telephone: data.telephone || '',
+            adresse: data.adresse || '',
+            ville: data.ville || '',
             vehicule: data.vehicule || '',
             zone: data.zone || '',
-            notes: data.notes || '',
+            statut: data.statut || 'Actif',
           });
         } else {
           navigate('/livreurs');
@@ -126,9 +134,11 @@ export function EditLivreur() {
         prenom: values.prenom,
         email: values.email,
         telephone: values.telephone || null,
+        adresse: values.adresse || null,
+        ville: values.ville || null,
         vehicule: values.vehicule || null,
         zone: values.zone || null,
-        notes: values.notes || null,
+        statut: values.statut,
       };
 
       // Call API to update livreur
@@ -230,33 +240,142 @@ export function EditLivreur() {
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* ID Livreur */}
+            <div className="space-y-6">
+              {/* ID Livreur (Read-only) */}
               <div>
                 <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
                   ID Livreur
                 </label>
                 <Input
-                  value={livreur?.id || ''}
+                  value={`LIV-${livreur?.id.slice(-3).toUpperCase()}`}
                   disabled
                   className="bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400 mt-1"
                 />
               </div>
 
-              {/* Nom */}
+              {/* Nom et Prénom */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <FormField
+                  control={form.control}
+                  name="nom"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nom *</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          placeholder="Nom du livreur"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="prenom"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Prénom *</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          placeholder="Prénom du livreur"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {/* Téléphone et Ville */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <FormField
+                  control={form.control}
+                  name="telephone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Téléphone</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          placeholder="Numéro de téléphone"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="ville"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Ville</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          placeholder="Ville"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {/* Véhicule et Zone */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <FormField
+                  control={form.control}
+                  name="vehicule"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Véhicule</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          placeholder="Type de véhicule"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="zone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Zone de livraison</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          placeholder="Zone de livraison assignée"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {/* Adresse */}
               <FormField
                 control={form.control}
-                name="nom"
+                name="adresse"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Nom *
-                    </FormLabel>
+                    <FormLabel>Adresse</FormLabel>
                     <FormControl>
-                      <Input
+                      <Textarea
                         {...field}
-                        className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 mt-1"
-                        placeholder={`${livreur?.nom} ${livreur?.prenom} (LIV-${livreur?.id.slice(-3).toUpperCase()})`}
+                        placeholder="Adresse complète"
+                        rows={3}
                       />
                     </FormControl>
                     <FormMessage />
@@ -264,112 +383,55 @@ export function EditLivreur() {
                 )}
               />
 
-              {/* Téléphone */}
-              <FormField
-                control={form.control}
-                name="telephone"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Téléphone
-                    </FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 mt-1"
-                        placeholder="07 22 33 44 55"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {/* Email et Statut */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email *</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          type="email"
+                          placeholder="Adresse email"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              {/* Email */}
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Email
-                    </FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        type="email"
-                        className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 mt-1"
-                        placeholder="martin.dupont@example.com"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* Véhicule */}
-              <FormField
-                control={form.control}
-                name="vehicule"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Véhicule
-                    </FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 mt-1"
-                        placeholder="Scooter"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* Zone de livraison */}
-              <FormField
-                control={form.control}
-                name="zone"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Zone de livraison
-                    </FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 mt-1"
-                        placeholder="Centre"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                <FormField
+                  control={form.control}
+                  name="statut"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Statut *</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Sélectionner le statut" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="Actif">Actif</SelectItem>
+                          <SelectItem value="Inactif">Inactif</SelectItem>
+                          <SelectItem value="Suspendu">Suspendu</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormDescription>
+                        Statut du livreur dans le système
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
             </div>
 
-            {/* Notes */}
-            <FormField
-              control={form.control}
-              name="notes"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Notes
-                  </FormLabel>
-                  <FormControl>
-                    <Textarea
-                      {...field}
-                      className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 mt-1 min-h-[100px]"
-                      placeholder="Informations supplémentaires"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+
             {/* Footer */}
             <div className="flex gap-4 pt-6 border-t border-gray-200 dark:border-gray-700">
               <Button

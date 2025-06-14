@@ -22,10 +22,11 @@ import { useToast } from '@/hooks/use-toast';
 
 // Form schema
 const formSchema = z.object({
+  id: z.string().min(1, 'ID requis'),
   nom: z.string().min(2, 'Le nom doit contenir au moins 2 caractères'),
   telephone: z.string().optional(),
   email: z.string().email('Email invalide').optional().or(z.literal('')),
-  adre: z.string().optional(),
+  adresse: z.string().optional(),
   contact: z.string().optional(),
   description: z.string().optional(),
 });
@@ -37,13 +38,20 @@ export function AddEntreprise() {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
 
+  // Generate entreprise ID
+  const generateEntrepriseId = () => {
+    const randomNum = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+    return `ENT-${randomNum}`;
+  };
+
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      id: generateEntrepriseId(),
       nom: '',
       telephone: '',
       email: '',
-      adre: '',
+      adresse: '',
       contact: '',
       description: '',
     },
@@ -55,10 +63,11 @@ export function AddEntreprise() {
     try {
       // Prepare data for submission
       const entrepriseData = {
+        id: values.id,
         nom: values.nom,
         telephone: values.telephone || null,
         email: values.email || null,
-        adre: values.adre || null,
+        adresse: values.adresse || null,
         contact: values.contact || null,
         description: values.description || null,
       };
@@ -114,6 +123,28 @@ export function AddEntreprise() {
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* ID */}
+              <FormField
+                control={form.control}
+                name="id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>ID Entreprise</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        placeholder="ID de l'entreprise"
+                        className="bg-gray-50 dark:bg-gray-700"
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      ID généré automatiquement (vous pouvez le modifier)
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
               {/* Nom */}
               <FormField
                 control={form.control}
@@ -190,7 +221,7 @@ export function AddEntreprise() {
               {/* Adresse */}
               <FormField
                 control={form.control}
-                name="adre"
+                name="adresse"
                 render={({ field }) => (
                   <FormItem className="md:col-span-2">
                     <FormLabel>Adresse</FormLabel>

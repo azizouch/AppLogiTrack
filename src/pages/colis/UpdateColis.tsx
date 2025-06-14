@@ -209,12 +209,27 @@ export function UpdateColis() {
 
       // Add to history if status changed
       if (colis && colis.statut !== values.statut) {
-        await supabase.from('historique_colis').insert({
-          colis_id: values.id, // Use the new ID
-          date: new Date().toISOString(),
-          statut: values.statut,
-          utilisateur: (await supabase.auth.getUser()).data.user?.id,
-        });
+        // Get the Supabase auth user ID
+        const { data: authUser } = await supabase.auth.getUser();
+        const supabaseAuthId = authUser?.user?.id;
+
+        // Find the corresponding utilisateur record using the auth_id field
+        const { data: utilisateur, error: userError } = await supabase
+          .from('utilisateurs')
+          .select('id')
+          .eq('auth_id', supabaseAuthId)
+          .single();
+
+        if (userError || !utilisateur) {
+          console.error('Current user not found in utilisateurs table:', userError);
+        } else {
+          await supabase.from('historique_colis').insert({
+            colis_id: values.id, // Use the new ID
+            date: new Date().toISOString(),
+            statut: values.statut,
+            utilisateur: utilisateur.id,
+          });
+        }
       }
 
       toast({
@@ -334,7 +349,8 @@ export function UpdateColis() {
                           type="number"
                           min="0"
                           step="0.01"
-                          {...field}
+                          value={field.value || ''}
+                          onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
                         />
                       </FormControl>
                       <p className="text-sm text-muted-foreground">Montant à payer par le client</p>
@@ -355,7 +371,8 @@ export function UpdateColis() {
                           type="number"
                           min="0"
                           step="0.01"
-                          {...field}
+                          value={field.value || ''}
+                          onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
                         />
                       </FormControl>
                       <p className="text-sm text-muted-foreground">Frais supplémentaires de livraison</p>

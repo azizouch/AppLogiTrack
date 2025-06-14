@@ -78,10 +78,9 @@ export function MesColisAnnules() {
       query = query.range(from, to);
 
       const { data, error, count } = await query;
-      console.log('MesColisAnnules: Direct query result:', { data: data?.length, error, count });
 
       if (error) {
-        console.error('MesColisAnnules: API error:', error);
+        console.error('API error:', error);
         toast({
           title: 'Erreur',
           description: `Erreur API: ${error.message || 'Impossible de charger les colis'}`,
@@ -90,12 +89,11 @@ export function MesColisAnnules() {
         setColis([]);
         setTotalCount(0);
       } else {
-        console.log('MesColisAnnules: Setting colis data:', data?.length, 'items');
         setColis(data || []);
         setTotalCount(count || 0);
       }
     } catch (error) {
-      console.error('MesColisAnnules: Unexpected error:', error);
+      console.error('Unexpected error:', error);
       toast({
         title: 'Erreur',
         description: 'Une erreur est survenue lors du chargement',

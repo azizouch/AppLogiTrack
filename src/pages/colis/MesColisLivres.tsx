@@ -49,8 +49,6 @@ export function MesColisLivres() {
         setLoading(true);
       }
 
-      console.log('MesColisLivres: Fetching delivered colis for user:', state.user.id);
-
       // Direct Supabase query for delivered packages only
       let query = supabase
         .from('colis')
@@ -122,14 +120,11 @@ export function MesColisLivres() {
 
       const { data, error, count } = await query;
 
-      console.log('MesColisLivres: Direct query result:', { data: data?.length, error, count });
-
       if (error) {
-        console.error('MesColisLivres: Query error:', error);
+        console.error('Query error:', error);
         setColis([]);
         setTotalCount(0);
       } else {
-        console.log('MesColisLivres: Setting delivered colis data:', data?.length, 'items');
         setColis(data || []);
         setTotalCount(count || 0);
       }

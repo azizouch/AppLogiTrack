@@ -26,6 +26,9 @@ import { useDebounce } from '@/hooks/useDebounce';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 
+// Type for livreur dropdown items
+type LivreurOption = Pick<User, 'id' | 'nom' | 'prenom' | 'statut'>;
+
 export function ColisLivres() {
   const navigate = useNavigate();
   const { state } = useAuth();
@@ -35,7 +38,7 @@ export function ColisLivres() {
 
   // Data state
   const [colis, setColis] = useState<Colis[]>([]);
-  const [livreurs, setLivreurs] = useState<User[]>([]);
+  const [livreurs, setLivreurs] = useState<LivreurOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -63,8 +66,6 @@ export function ColisLivres() {
       } else {
         setLoading(true);
       }
-
-      console.log('ColisLivres: Fetching delivered colis...');
 
       // Direct Supabase query for delivered packages
       let query = supabase
@@ -105,8 +106,6 @@ export function ColisLivres() {
 
       const { data, error, count } = await query;
 
-      console.log('ColisLivres: Direct query result:', { data: data?.length, error, count });
-
       if (error) {
         console.error('ColisLivres: Query error:', error);
         setColis([]);
@@ -115,7 +114,6 @@ export function ColisLivres() {
         setHasNextPage(false);
         setHasPrevPage(false);
       } else {
-        console.log('ColisLivres: Setting delivered colis data:', data?.length, 'items');
         setColis(data || []);
         const total = count || 0;
         setTotalCount(total);
@@ -125,7 +123,7 @@ export function ColisLivres() {
         setHasPrevPage(currentPage > 1);
       }
     } catch (error) {
-      console.error('ColisLivres: Error in fetchColis:', error);
+      console.error('Error in fetchColis:', error);
       setColis([]);
       setTotalCount(0);
       setTotalPages(0);
@@ -200,7 +198,8 @@ export function ColisLivres() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-3 dark:text-white ">
+            <CheckCircle className="h-7 w-7 text-green-600" />
             {isLivreur ? 'Mes Colis Livrés' : 'Colis Livrés'}
           </h1>
           <p className="text-gray-600 dark:text-gray-400">
@@ -296,7 +295,6 @@ export function ColisLivres() {
       <div className="space-y-4">
         <div className="flex justify-between items-center">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-            <CheckCircle className="h-5 w-5 text-green-600" />
             <span>Colis Livrés</span>
           </h2>
           <div className="flex items-center gap-4">

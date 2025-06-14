@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Edit, Building, Mail, Phone, MapPin, User, Calendar, Package, Trash2, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Edit, Building2, Mail, Phone, MapPin, User, Calendar, Package, Trash2, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -19,6 +19,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Separator } from '@/components/ui/separator';
+import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { api } from '@/lib/supabase';
 import { Entreprise, Colis } from '@/types';
 import { useToast } from '@/hooks/use-toast';
@@ -32,6 +33,8 @@ export function EntrepriseDetails() {
   const [loading, setLoading] = useState(true);
   const [colisLoading, setColisLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   // Fetch entreprise data
   useEffect(() => {
@@ -139,6 +142,44 @@ export function EntrepriseDetails() {
     }
   };
 
+  // Show delete confirmation
+  const showDeleteConfirmation = () => {
+    setShowDeleteDialog(true);
+  };
+
+  // Delete entreprise
+  const handleDelete = async () => {
+    if (!entreprise) return;
+
+    setDeleting(true);
+    try {
+      const { error } = await api.deleteEntreprise(entreprise.id);
+
+      if (error) {
+        toast({
+          title: 'Erreur',
+          description: 'Impossible de supprimer l\'entreprise',
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: 'Succès',
+          description: 'Entreprise supprimée avec succès',
+        });
+        navigate('/entreprises');
+      }
+    } catch (error) {
+      toast({
+        title: 'Erreur',
+        description: 'Une erreur est survenue',
+        variant: 'destructive',
+      });
+    } finally {
+      setDeleting(false);
+      setShowDeleteDialog(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -204,6 +245,8 @@ export function EntrepriseDetails() {
           </Button>
           <Button
             variant="destructive"
+            onClick={showDeleteConfirmation}
+            disabled={deleting}
             className="bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800"
           >
             <Trash2 className="mr-2 h-4 w-4" />
@@ -221,7 +264,7 @@ export function EntrepriseDetails() {
             <div className="space-y-6">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
-                  <Building className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                  <Building2 className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                 </div>
                 <div>
                   <h3 className="text-xl font-semibold text-gray-900 dark:text-white">{entreprise.nom}</h3>
@@ -358,6 +401,18 @@ export function EntrepriseDetails() {
           )}
         </div>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmationDialog
+        open={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
+        title="Supprimer l'entreprise"
+        description={`Êtes-vous sûr de vouloir supprimer l'entreprise "${entreprise?.nom}" ? Cette action est irréversible et supprimera également tous les colis associés.`}
+        confirmText="Supprimer"
+        cancelText="Annuler"
+        variant="destructive"
+        onConfirm={handleDelete}
+      />
     </div>
   );
 }

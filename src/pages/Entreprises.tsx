@@ -11,17 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
+import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { TablePagination } from '@/components/ui/table-pagination';
 import {
   Select,
@@ -47,11 +37,13 @@ export function Entreprises() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [entrepriseToDelete, setEntrepriseToDelete] = useState<Entreprise | null>(null);
 
   // Filter state
   const [searchTerm, setSearchTerm] = useState('');
   const [cityFilter, setCityFilter] = useState('all');
-  const [colisCountFilter, setColisCountFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
   // Pagination state
@@ -120,15 +112,18 @@ export function Entreprises() {
           });
         }
 
-        // Colis count filter
-        if (colisCountFilter && colisCountFilter !== 'all' && colisCountFilter !== '') {
+        // Status filter (based on whether they have contact info)
+        if (statusFilter && statusFilter !== 'all' && statusFilter !== '') {
           filteredEntreprises = filteredEntreprises.filter(entreprise => {
-            const count = colisCountMap[entreprise.id] || 0;
-            switch (colisCountFilter) {
-              case '0': return count === 0;
-              case '1-5': return count >= 1 && count <= 5;
-              case '6-10': return count >= 6 && count <= 10;
-              case '10+': return count > 10;
+            switch (statusFilter) {
+              case 'complete':
+                return entreprise.telephone && entreprise.email && entreprise.contact;
+              case 'incomplete':
+                return !entreprise.telephone || !entreprise.email || !entreprise.contact;
+              case 'no_contact':
+                return !entreprise.contact;
+              case 'no_phone':
+                return !entreprise.telephone;
               default: return true;
             }
           });
@@ -159,13 +154,21 @@ export function Entreprises() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [currentPage, debouncedSearchTerm, itemsPerPage, cityFilter, colisCountFilter, toast]);
+  }, [currentPage, debouncedSearchTerm, itemsPerPage, cityFilter, statusFilter, toast]);
+
+  // Show delete confirmation
+  const showDeleteConfirmation = (entreprise: Entreprise) => {
+    setEntrepriseToDelete(entreprise);
+    setShowDeleteDialog(true);
+  };
 
   // Delete entreprise
-  const handleDelete = async (entrepriseId: string) => {
-    setDeleting(entrepriseId);
+  const handleDelete = async () => {
+    if (!entrepriseToDelete) return;
+
+    setDeleting(entrepriseToDelete.id);
     try {
-      const { error } = await api.deleteEntreprise(entrepriseId);
+      const { error } = await api.deleteEntreprise(entrepriseToDelete.id);
 
       if (error) {
         toast({
@@ -188,6 +191,7 @@ export function Entreprises() {
       });
     } finally {
       setDeleting(null);
+      setEntrepriseToDelete(null);
     }
   };
 
@@ -200,12 +204,12 @@ export function Entreprises() {
   const resetFilters = () => {
     setSearchTerm('');
     setCityFilter('all');
-    setColisCountFilter('all');
+    setStatusFilter('all');
     setCurrentPage(1);
   };
 
   // Check if any filters are active
-  const hasActiveFilters = searchTerm || (cityFilter && cityFilter !== 'all') || (colisCountFilter && colisCountFilter !== 'all');
+  const hasActiveFilters = searchTerm || (cityFilter && cityFilter !== 'all') || (statusFilter && statusFilter !== 'all');
 
   // Get unique cities from all entreprises
   const uniqueCities = Array.from(new Set(
@@ -217,7 +221,7 @@ export function Entreprises() {
   // Reset to first page when search changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [debouncedSearchTerm, cityFilter, colisCountFilter]);
+  }, [debouncedSearchTerm, cityFilter, statusFilter]);
 
   // Initial data fetch and when dependencies change
   useEffect(() => {
@@ -228,7 +232,10 @@ export function Entreprises() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Gestion des Entreprises</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
+            <Building2 className="h-7 w-7 text-blue-600 dark:text-blue-400" />
+            Gestion des Entreprises
+          </h1>
           <p className="text-gray-600 dark:text-gray-400">Gestion des entreprises partenaires</p>
         </div>
         <div className="flex items-center gap-2 w-full sm:w-auto">
@@ -284,16 +291,16 @@ export function Entreprises() {
               ))}
             </SelectContent>
           </Select>
-          <Select value={colisCountFilter} onValueChange={setColisCountFilter}>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
-              <SelectValue placeholder="Tous les nombres" />
+              <SelectValue placeholder="Tous les statuts" />
             </SelectTrigger>
             <SelectContent className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
-              <SelectItem value="all" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">Tous les nombres</SelectItem>
-              <SelectItem value="0" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">0 colis</SelectItem>
-              <SelectItem value="1-5" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">1-5 colis</SelectItem>
-              <SelectItem value="6-10" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">6-10 colis</SelectItem>
-              <SelectItem value="10+" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">10+ colis</SelectItem>
+              <SelectItem value="all" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">Tous les statuts</SelectItem>
+              <SelectItem value="complete" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">Informations complètes</SelectItem>
+              <SelectItem value="incomplete" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">Informations incomplètes</SelectItem>
+              <SelectItem value="no_contact" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">Sans contact</SelectItem>
+              <SelectItem value="no_phone" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">Sans téléphone</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -404,14 +411,25 @@ export function Entreprises() {
                     </div>
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => navigate(`/entreprises/${entreprise.id}`)}
-                      className="h-8 px-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 hover:text-gray-900 dark:hover:text-white transition-colors"
-                    >
-                      Détails
-                    </Button>
+                    <div className="flex items-center gap-2 justify-end">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => navigate(`/entreprises/${entreprise.id}`)}
+                        className="h-8 px-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 hover:text-gray-900 dark:hover:text-white transition-colors"
+                      >
+                        Détails
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => showDeleteConfirmation(entreprise)}
+                        disabled={deleting === entreprise.id}
+                        className="h-8 px-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))
@@ -425,13 +443,25 @@ export function Entreprises() {
         <TablePagination
           currentPage={currentPage}
           totalPages={totalPages}
-          totalCount={totalCount}
+          totalItems={totalCount}
           itemsPerPage={itemsPerPage}
           hasNextPage={hasNextPage}
           hasPrevPage={hasPrevPage}
           onPageChange={setCurrentPage}
         />
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmationDialog
+        open={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
+        title="Supprimer l'entreprise"
+        description={`Êtes-vous sûr de vouloir supprimer l'entreprise "${entrepriseToDelete?.nom}" ? Cette action est irréversible et supprimera également tous les colis associés.`}
+        confirmText="Supprimer"
+        cancelText="Annuler"
+        variant="destructive"
+        onConfirm={handleDelete}
+      />
     </div>
   );
 }
