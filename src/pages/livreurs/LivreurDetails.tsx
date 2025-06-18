@@ -120,20 +120,20 @@ export function LivreurDetails() {
       if (error) {
         toast({
           title: 'Erreur',
-          description: 'Impossible de supprimer le livreur',
+          description: error.message || 'Impossible de supprimer le livreur',
           variant: 'destructive',
         });
       } else {
         toast({
           title: 'Succès',
-          description: 'Livreur supprimé avec succès',
+          description: 'Livreur et compte d\'authentification supprimés avec succès',
         });
         navigate('/livreurs');
       }
     } catch (error) {
       toast({
         title: 'Erreur',
-        description: 'Une erreur est survenue',
+        description: 'Une erreur est survenue lors de la suppression',
         variant: 'destructive',
       });
     } finally {
@@ -429,11 +429,11 @@ export function LivreurDetails() {
                     Email
                   </label>
                   <div className="flex items-center gap-2 mt-1">
-                    <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                    <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                       <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
                       <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
                     </svg>
-                    <span className="text-gray-900 dark:text-white">
+                    <span className="text-gray-900 dark:text-white break-all">
                       {livreur.email || '-'}
                     </span>
                   </div>
@@ -471,6 +471,38 @@ export function LivreurDetails() {
                       {livreur.zone || '-'}
                     </span>
                   </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Address Information */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+              <div>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Ville
+                </label>
+                <div className="flex items-center gap-2 mt-1">
+                  <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                  </svg>
+                  <span className="text-gray-900 dark:text-white">
+                    {livreur.ville || '-'}
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Adresse
+                </label>
+                <div className="flex items-start gap-2 mt-1">
+                  <svg className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 0v12h8V4H6z" clipRule="evenodd" />
+                    <path d="M8 6h4v2H8V6zM8 10h4v2H8v-2z" />
+                  </svg>
+                  <span className="text-gray-900 dark:text-white break-words">
+                    {livreur.adresse || '-'}
+                  </span>
                 </div>
               </div>
             </div>

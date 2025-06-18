@@ -1,17 +1,3 @@
-/*
-  SQL Function to create in Supabase Database:
-
-  CREATE OR REPLACE FUNCTION get_user_email_by_auth_id(auth_user_id uuid)
-  RETURNS text
-  LANGUAGE sql
-  SECURITY DEFINER
-  AS $$
-    SELECT email FROM auth.users WHERE id = auth_user_id;
-  $$;
-
-  This function allows us to get the email from auth.users table using the auth_id.
-*/
-
 import { createClient, SupabaseClient, PostgrestError } from '@supabase/supabase-js'
 import { User, Client, Entreprise, Colis, Statut, HistoriqueColis, Notification, Bon } from '@/types'
 
@@ -22,57 +8,12 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables')
 }
 
-// Singleton pattern to prevent multiple instances
-let supabaseInstance: SupabaseClient | null = null
-
-const getSupabaseClient = (): SupabaseClient => {
-  if (!supabaseInstance) {
-    supabaseInstance = createClient(supabaseUrl, supabaseAnonKey, {
-      auth: {
-        autoRefreshToken: false, // DISABLED: Causing infinite SIGNED_IN events
-        persistSession: true,
-        detectSessionInUrl: true,
-        // Add session recovery options
-        flowType: 'pkce',
-        storage: typeof window !== 'undefined' ? window.localStorage : undefined,
-        storageKey: 'supabase.auth.token',
-        debug: false
-      },
-      // Add global error handling
-      global: {
-        headers: {
-          'X-Client-Info': 'logitrack-web'
-        }
-      }
-    })
-
-    // DISABLED: Session monitoring to prevent duplicate auth state change listeners
-    // The AuthContext already handles all auth state changes
-    /*
-    if (typeof window !== 'undefined') {
-      supabaseInstance.auth.onAuthStateChange((event, session) => {
-        if (event === 'TOKEN_REFRESHED' && session) {
-          // Token refreshed successfully
-          console.log('Supabase: Token refreshed successfully');
-        } else if (event === 'SIGNED_OUT') {
-          // Clear any application-level caches here if needed
-          console.log('Supabase: User signed out');
-        }
-      });
-    }
-    */
-  }
-  return supabaseInstance
-}
-
-export const supabase: SupabaseClient = getSupabaseClient()
+const supabase: SupabaseClient = createClient(supabaseUrl, supabaseAnonKey)
 
 export interface ApiResponse<T> {
   data: T | null;
   error: PostgrestError | null;
 }
-
-
 
 // Database types for Supabase
 export interface Database {
@@ -133,157 +74,45 @@ export const auth = {
   },
 
   signUp: async (email: string, password: string, userData: { nom: string; prenom: string; role: string }) => {
-    try {
-      // First, try to create the auth user
-      const { data, error } = await supabase.auth.signUp({
-        email: email.toLowerCase().trim(), // Normalize email
-        password,
-        options: {
-          emailRedirectTo: undefined, // Disable email confirmation
-          data: {
-            nom: userData.nom,
-            prenom: userData.prenom,
-            role: userData.role
-          }
-        }
-      })
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+    })
 
-      // If there's an auth error, try to handle it gracefully
-      if (error) {
-        console.error('Auth signup error:', error);
+    if (data.user && !error) {
+      // Create user profile in our utilisateurs table
+      const { error: profileError } = await supabase
+        .from('utilisateurs')
+        .insert({
+          id: data.user.id,
+          email: email,
+          nom: userData.nom,
+          prenom: userData.prenom,
+          role: userData.role,
+          statut: 'actif',
+          mot_de_passe: '', // We don't store passwords in our table
+        })
 
-        // If it's an email validation error, we might need to use a different approach
-        if (error.message.includes('invalid') || error.message.includes('Invalid')) {
-          throw new Error(`Erreur de validation de l'email: ${error.message}`);
-        }
-
-        throw error;
+      if (profileError) {
+        console.error('Error creating user profile:', profileError)
       }
-
-      if (data.user) {
-        // Create user profile in our utilisateurs table
-        const { error: profileError } = await supabase
-          .from('utilisateurs')
-          .insert({
-            auth_id: data.user.id,
-            nom: userData.nom,
-            prenom: userData.prenom,
-            email: email, // Store email in utilisateurs table too
-            role: userData.role,
-            statut: 'Actif',
-            date_creation: new Date().toISOString(),
-          })
-
-        if (profileError) {
-          console.error('Profile creation error:', profileError);
-          return { data, error: profileError }
-        }
-      }
-
-      return { data, error }
-    } catch (err: any) {
-      console.error('SignUp function error:', err);
-      return { data: null, error: err }
     }
+
+    return { data, error }
   },
 
   signOut: async () => {
-    try {
-      const { error } = await supabase.auth.signOut()
-
-      // Clear any stored auth data from localStorage
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('supabase.auth.token')
-        localStorage.removeItem('sb-' + supabaseUrl.split('//')[1].split('.')[0] + '-auth-token')
-      }
-
-      return { error }
-    } catch (error: any) {
-      return { error }
-    }
+    const { error } = await supabase.auth.signOut()
+    return { error }
   },
 
   getCurrentUser: async () => {
-    try {
-      const { data: { user }, error } = await supabase.auth.getUser()
-
-      // Handle specific auth errors gracefully
-      if (error) {
-        // These errors are expected when no session exists
-        if (error.message.includes('Auth session missing') ||
-            error.message.includes('Invalid Refresh Token') ||
-            error.message.includes('Refresh Token Not Found')) {
-          return { user: null, error: null } // Treat as no user logged in
-        }
-        return { user, error }
-      }
-
-      return { user, error }
-    } catch (error: any) {
-      return { user: null, error: null }
-    }
+    const { data: { user }, error } = await supabase.auth.getUser()
+    return { user, error }
   },
 
   onAuthStateChange: (callback: (event: string, session: any) => void) => {
     return supabase.auth.onAuthStateChange(callback)
-  },
-
-  // Password reset functionality
-  resetPassword: async (email: string) => {
-    const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
-    })
-    return { data, error }
-  },
-
-  updatePassword: async (newPassword: string) => {
-    const { data, error } = await supabase.auth.updateUser({
-      password: newPassword
-    })
-    return { data, error }
-  },
-
-  // Alternative method for creating users when auth signup fails
-  createUserDirectly: async (userData: {
-    nom: string;
-    prenom: string;
-    email: string;
-    role: string;
-    telephone?: string;
-    adresse?: string;
-    ville?: string;
-    vehicule?: string;
-    zone?: string;
-    statut: string;
-  }) => {
-    try {
-      // Generate a unique ID for the user
-      const userId = crypto.randomUUID();
-
-      const { data, error } = await supabase
-        .from('utilisateurs')
-        .insert({
-          id: userId,
-          nom: userData.nom,
-          prenom: userData.prenom,
-          role: userData.role,
-          statut: userData.statut,
-          telephone: userData.telephone || null,
-          adresse: userData.adresse || null,
-          ville: userData.ville || null,
-          vehicule: userData.vehicule || null,
-          zone: userData.zone || null,
-          date_creation: new Date().toISOString(),
-          // Note: Email is not stored in utilisateurs table
-          // This user won't have auth capabilities until manually set up
-        })
-        .select()
-        .single();
-
-      return { data, error };
-    } catch (err: any) {
-      return { data: null, error: err };
-    }
   }
 }
 
@@ -299,65 +128,21 @@ export const api = {
   },
 
   getUserById: async (id: string) => {
-    // Get the user profile (email should already be stored in utilisateurs table)
     const { data, error } = await supabase
       .from('utilisateurs')
       .select('*')
       .eq('id', id)
       .single()
-
-    // If email is missing but user has auth_id, try to get it from current user
-    if (data && !data.email && data.auth_id) {
-      try {
-        const { data: currentUser } = await supabase.auth.getUser()
-        if (currentUser.user && currentUser.user.id === data.auth_id) {
-          return {
-            data: {
-              ...data,
-              email: currentUser.user.email
-            },
-            error: null
-          }
-        }
-      } catch (authError) {
-        console.warn('Could not fetch current user email:', authError)
-      }
-    }
-
     return { data, error }
   },
 
   getUserByEmail: async (email: string) => {
-    try {
-      // Get the current authenticated user
-      const { data: authUser, error: authError } = await supabase.auth.getUser();
-
-      if (authError || !authUser.user) {
-        return { data: null, error: authError };
-      }
-
-      const authUserId = authUser.user.id;
-
-      // Find user by auth_id (correct relationship)
-      const { data: userData, error: userError } = await supabase
-        .from('utilisateurs')
-        .select('*')
-        .eq('auth_id', authUserId)
-        .single();
-
-      if (!userError && userData) {
-        const userWithEmail = {
-          ...userData,
-          email: email
-        };
-        return { data: userWithEmail, error: null };
-      }
-
-      return { data: null, error: { message: 'User profile not found in database' } };
-
-    } catch (err) {
-      return { data: null, error: err as any }
-    }
+    const { data, error } = await supabase
+      .from('utilisateurs')
+      .select('*')
+      .eq('email', email)
+      .single()
+    return { data, error }
   },
 
   // Colis with pagination and filtering
@@ -368,17 +153,14 @@ export const api = {
     status?: string;
     livreurId?: string;
     sortBy?: 'recent' | 'oldest' | 'status';
-    dateFilter?: string;
   } = {}) => {
-
     const {
       page = 1,
       limit = 20,
       search = '',
       status = '',
       livreurId = '',
-      sortBy = 'recent',
-      dateFilter = ''
+      sortBy = 'recent'
     } = options;
 
     let query = supabase
@@ -390,120 +172,55 @@ export const api = {
         livreur:utilisateurs(id, nom, prenom, telephone)
       `, { count: 'exact' });
 
-        // Apply search filter - comprehensive search across multiple fields
-      if (search) {
-        // First, get client IDs that match the search term
-        const { data: matchingClients } = await supabase
-          .from('clients')
-          .select('id')
-          .ilike('nom', `%${search}%`);
+    // Apply search filter
+    if (search) {
+      query = query.or(`id.ilike.%${search}%,clients.nom.ilike.%${search}%,entreprises.nom.ilike.%${search}%`);
+    }
 
-        // Get entreprise IDs that match the search term
-        const { data: matchingEntreprises } = await supabase
-          .from('entreprises')
-          .select('id')
-          .ilike('nom', `%${search}%`);
+    // Apply status filter
+    if (status && status !== 'all') {
+      query = query.eq('statut', status);
+    }
 
-        const clientIds = matchingClients?.map(c => c.id) || [];
-        const entrepriseIds = matchingEntreprises?.map(e => e.id) || [];
-
-        // Build OR conditions for search
-        const searchConditions = [`id.ilike.%${search}%`];
-
-        if (clientIds.length > 0) {
-          searchConditions.push(`client_id.in.(${clientIds.join(',')})`);
-        }
-
-        if (entrepriseIds.length > 0) {
-          searchConditions.push(`entreprise_id.in.(${entrepriseIds.join(',')})`);
-        }
-
-        query = query.or(searchConditions.join(','));
+    // Apply livreur filter
+    if (livreurId && livreurId !== 'all') {
+      if (livreurId === 'unassigned') {
+        query = query.is('livreur_id', null);
+      } else {
+        query = query.eq('livreur_id', livreurId);
       }
+    }
 
-      // Apply status filter
-      if (status && status !== 'all') {
-        query = query.eq('statut', status);
-      }
+    // Apply sorting
+    switch (sortBy) {
+      case 'oldest':
+        query = query.order('date_creation', { ascending: true });
+        break;
+      case 'status':
+        query = query.order('statut', { ascending: true }).order('date_creation', { ascending: false });
+        break;
+      case 'recent':
+      default:
+        query = query.order('date_creation', { ascending: false });
+        break;
+    }
 
-      // Apply date filter
-      if (dateFilter && dateFilter !== 'toutes') {
-        const now = new Date();
-        let startDate: Date;
-        let endDate: Date = now;
+    // Apply pagination
+    const from = (page - 1) * limit;
+    const to = from + limit - 1;
+    query = query.range(from, to);
 
-        switch (dateFilter) {
-          case 'aujourd_hui':
-            startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-            break;
-          case 'hier':
-            startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
-            endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-            break;
-          case '7_derniers_jours':
-            startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-            break;
-          case '30_derniers_jours':
-            startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-            break;
-          case 'ce_mois':
-            startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-            break;
-          case 'le_mois_dernier':
-            startDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-            endDate = new Date(now.getFullYear(), now.getMonth(), 0);
-            break;
-          default:
-            startDate = new Date(0); // No filter
-        }
+    const { data, error, count } = await query;
 
-        if (startDate) {
-          query = query.gte('date_creation', startDate.toISOString());
-          if (endDate && dateFilter !== 'aujourd_hui' && dateFilter !== '7_derniers_jours' && dateFilter !== '30_derniers_jours' && dateFilter !== 'ce_mois') {
-            query = query.lte('date_creation', endDate.toISOString());
-          }
-        }
-      }
-
-      // Apply livreur filter
-      if (livreurId && livreurId !== 'all') {
-        if (livreurId === 'unassigned') {
-          query = query.is('livreur_id', null);
-        } else {
-          query = query.eq('livreur_id', livreurId);
-        }
-      }
-
-      // Apply sorting
-      switch (sortBy) {
-        case 'oldest':
-          query = query.order('date_creation', { ascending: true });
-          break;
-        case 'status':
-          query = query.order('statut', { ascending: true }).order('date_creation', { ascending: false });
-          break;
-        case 'recent':
-        default:
-          query = query.order('date_creation', { ascending: false });
-          break;
-      }
-
-      // Apply pagination
-      const from = (page - 1) * limit;
-      const to = from + limit - 1;
-      query = query.range(from, to);
-
-      const { data, error, count } = await query;
-
-      return {
-        data,
-        error,
-        count,
-        totalPages: count ? Math.ceil(count / limit) : 0,
-        currentPage: page,
-        hasNextPage: count ? (page * limit) < count : false,
-        hasPrevPage: page > 1
-      };
+    return {
+      data,
+      error,
+      count,
+      totalPages: count ? Math.ceil(count / limit) : 0,
+      currentPage: page,
+      hasNextPage: count ? (page * limit) < count : false,
+      hasPrevPage: page > 1
+    };
   },
 
   // Original getColis for backward compatibility
@@ -548,34 +265,6 @@ export const api = {
     return { data, error }
   },
 
-  getColisByClientId: async (clientId: string) => {
-    const { data, error } = await supabase
-      .from('colis')
-      .select(`
-        *,
-        client:clients(*),
-        entreprise:entreprises(*),
-        livreur:utilisateurs(*)
-      `)
-      .eq('client_id', clientId)
-      .order('date_creation', { ascending: false })
-    return { data, error }
-  },
-
-  getColisByEntrepriseId: async (entrepriseId: string) => {
-    const { data, error } = await supabase
-      .from('colis')
-      .select(`
-        *,
-        client:clients(*),
-        entreprise:entreprises(*),
-        livreur:utilisateurs(*)
-      `)
-      .eq('entreprise_id', entrepriseId)
-      .order('date_creation', { ascending: false })
-    return { data, error }
-  },
-
   // Clients
   getClients: async () => {
     const { data, error } = await supabase
@@ -598,35 +287,10 @@ export const api = {
   getLivreurs: async () => {
     const { data, error } = await supabase
       .from('utilisateurs')
-      .select('id, nom, prenom, statut, role, auth_id')
-      .eq('role', 'Livreur') // Use exact match with correct capitalization
+      .select('id, nom, prenom, statut')
+      .eq('role', 'livreur')
+      .eq('statut', 'actif')
       .order('nom', { ascending: true })
-
-    // For now, return without emails until RPC function is created
-    // TODO: Uncomment when RPC function is created
-    /*
-    if (data && !error) {
-      const livreursWithEmails = await Promise.all(
-        data.map(async (livreur) => {
-          if (livreur.auth_id) {
-            try {
-              const { data: emailData } = await supabase
-                .rpc('get_user_email_by_auth_id', { auth_user_id: livreur.auth_id })
-
-              if (emailData) {
-                return { ...livreur, email: emailData }
-              }
-            } catch (rpcError) {
-              // RPC not available, continue without email
-            }
-          }
-          return livreur
-        })
-      )
-      return { data: livreursWithEmails as Pick<User, 'id' | 'nom' | 'prenom' | 'statut' | 'email'>[], error }
-    }
-    */
-
     return { data: data as Pick<User, 'id' | 'nom' | 'prenom' | 'statut'>[], error }
   },
 
@@ -646,81 +310,11 @@ export const api = {
     return { data, error }
   },
 
-  // Get all statuts (including inactive ones) for management
-  getAllStatuts: async (type?: string) => {
-    let query = supabase
-      .from('statuts')
-      .select('*')
-      .order('ordre', { ascending: true })
-
-    if (type) {
-      query = query.eq('type', type)
-    }
-
-    const { data, error } = await query
-    return { data, error }
-  },
-
-  // CRUD operations for Statuts
-  createStatut: async (statut: Omit<Statut, 'id' | 'created_at'>) => {
-    const { data, error } = await supabase
-      .from('statuts')
-      .insert(statut)
-      .select()
-      .single()
-    return { data, error }
-  },
-
-  updateStatut: async (id: string, updates: Partial<Omit<Statut, 'id'>>) => {
-    const { data, error } = await supabase
-      .from('statuts')
-      .update(updates)
-      .eq('id', id)
-      .select()
-      .single()
-    return { data, error }
-  },
-
-  deleteStatut: async (id: string) => {
-    const { data, error } = await supabase
-      .from('statuts')
-      .delete()
-      .eq('id', id)
-    return { data, error }
-  },
-
-  getStatutById: async (id: string) => {
-    const { data, error } = await supabase
-      .from('statuts')
-      .select('*')
-      .eq('id', id)
-      .single()
-    return { data, error }
-  },
-
-  // Get colis counts by status for a specific livreur
-  getColisCountsByStatus: async (livreurId: string, statuses: string[]) => {
-    const { data, error } = await supabase
-      .from('colis')
-      .select('statut')
-      .eq('livreur_id', livreurId)
-      .in('statut', statuses);
-
-    if (error) return { data: null, error };
-
-    const counts: Record<string, number> = {};
-    statuses.forEach(status => {
-      counts[status] = data?.filter(c => c.statut === status).length || 0;
-    });
-
-    return { data: counts, error: null };
-  },
-
   // Dashboard stats
   getDashboardStats: async () => {
     const [colisResult, usersResult] = await Promise.all([
       supabase.from('colis').select('statut'),
-      supabase.from('utilisateurs').select('role').eq('role', 'Livreur').eq('statut', 'actif')
+      supabase.from('utilisateurs').select('role').eq('role', 'livreur').eq('statut', 'actif')
     ])
 
     const colis = colisResult.data || []
@@ -748,65 +342,6 @@ export const api = {
       .order('date_creation', { ascending: false })
       .limit(limit)
     return { data, error }
-  },
-
-  // Global search functionality
-  globalSearch: async (query: string, limit: number = 10) => {
-    if (!query || query.trim().length < 2) {
-      return {
-        clients: [],
-        colis: [],
-        entreprises: [],
-        error: null
-      };
-    }
-
-    const searchTerm = query.trim();
-
-    try {
-      // Search clients with OR query
-      const { data: clients, error: clientsError } = await supabase
-        .from('clients')
-        .select('id, nom, email, telephone, adresse')
-        .or(`nom.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,telephone.ilike.%${searchTerm}%`)
-        .limit(limit);
-
-      // Search colis by ID
-      const { data: colisByID, error: colisIDError } = await supabase
-        .from('colis')
-        .select(`
-          id,
-          statut,
-          prix,
-          client:clients(nom),
-          entreprise:entreprises(nom)
-        `)
-        .ilike('id', `%${searchTerm}%`)
-        .limit(limit);
-
-      const colis = colisByID;
-
-      // Search entreprises with OR query
-      const { data: entreprises, error: entreprisesError } = await supabase
-        .from('entreprises')
-        .select('id, nom, contact, telephone, email, adresse')
-        .or(`nom.ilike.%${searchTerm}%,contact.ilike.%${searchTerm}%,telephone.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%`)
-        .limit(limit);
-
-      return {
-        clients: clients || [],
-        colis: colis || [],
-        entreprises: entreprises || [],
-        error: clientsError || colisIDError || entreprisesError
-      };
-    } catch (error) {
-      return {
-        clients: [],
-        colis: [],
-        entreprises: [],
-        error: error as PostgrestError
-      };
-    }
   },
 
   // CRUD operations for Colis
@@ -838,7 +373,7 @@ export const api = {
   },
 
   // CRUD operations for Clients
-  createClient: async (client: Omit<Client, 'created_at'>) => {
+  createClient: async (client: Omit<Client, 'id' | 'created_at'>) => {
     const { data, error } = await supabase
       .from('clients')
       .insert(client)
@@ -875,7 +410,7 @@ export const api = {
   },
 
   // CRUD operations for Entreprises
-  createEntreprise: async (entreprise: Omit<Entreprise, 'created_at'>) => {
+  createEntreprise: async (entreprise: Omit<Entreprise, 'id' | 'created_at'>) => {
     const { data, error } = await supabase
       .from('entreprises')
       .insert(entreprise)
@@ -925,7 +460,7 @@ export const api = {
     const { data, error } = await supabase
       .from('utilisateurs')
       .update(updates)
-      .eq('auth_id', id)
+      .eq('id', id)
       .select()
       .single()
     return { data, error }
@@ -937,170 +472,5 @@ export const api = {
       .delete()
       .eq('id', id)
     return { data, error }
-  },
-
-
-  // Notifications
-  getNotifications: async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('notifications')
-        .select('*')
-        .eq('user_id', userId)  // Changed from 'utilisateur_id' to 'user_id'
-        .order('created_at', { ascending: false });  // Changed from 'date_creation' to 'created_at'
-
-      // Transform the data to match our interface
-      const transformedData = data?.map(notification => ({
-        id: notification.id,
-        utilisateur_id: notification.user_id,
-        titre: notification.title,
-        message: notification.message,
-        lu: notification.is_read,
-        date_creation: notification.created_at,
-        type: notification.type
-      }));
-
-      return { data: transformedData, error };
-    } catch (error) {
-      console.error('Error fetching notifications:', error);
-      return { data: null, error };
-    }
-  },
-
-  createNotification: async (notification: Omit<Notification, 'id' | 'date_creation'>) => {
-    try {
-      // Transform the notification to match database schema
-      const dbNotification = {
-        user_id: notification.utilisateur_id,  // Transform to database column name
-        title: notification.titre,             // Transform to database column name
-        message: notification.message,         // Same
-        is_read: notification.lu,              // Transform to database column name
-        type: notification.type,               // Same
-        created_at: new Date().toISOString()   // Transform to database column name
-      };
-
-      const { data, error } = await supabase
-        .from('notifications')
-        .insert([dbNotification])
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Error creating notification:', error);
-        return { data: null, error };
-      }
-
-      // Transform the returned data back to our interface
-      const transformedData = data ? {
-        id: data.id,
-        utilisateur_id: data.user_id,
-        titre: data.title,
-        message: data.message,
-        lu: data.is_read,
-        date_creation: data.created_at,
-        type: data.type
-      } : null;
-
-      return { data: transformedData, error };
-    } catch (error) {
-      console.error('Exception creating notification:', error);
-      return { data: null, error };
-    }
-  },
-
-  markNotificationAsRead: async (notificationId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('notifications')
-        .update({ is_read: true })  // Changed from 'lu' to 'is_read'
-        .eq('id', notificationId)
-        .select()
-        .single();
-
-      // Transform the returned data back to our interface
-      const transformedData = data ? {
-        id: data.id,
-        utilisateur_id: data.user_id,
-        titre: data.title,
-        message: data.message,
-        lu: data.is_read,
-        date_creation: data.created_at,
-        type: data.type
-      } : null;
-
-      return { data: transformedData, error };
-    } catch (error) {
-      console.error('Error marking notification as read:', error);
-      return { data: null, error };
-    }
-  },
-
-  markAllNotificationsAsRead: async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('notifications')
-        .update({ is_read: true })  // Changed from 'lu' to 'is_read'
-        .eq('user_id', userId)      // Changed from 'utilisateur_id' to 'user_id'
-        .eq('is_read', false);      // Changed from 'lu' to 'is_read'
-
-      return { data, error };
-    } catch (error) {
-      console.error('Error marking all notifications as read:', error);
-      return { data: null, error };
-    }
-  },
-
-  deleteNotification: async (notificationId: string) => {
-    try {
-      const { error } = await supabase
-        .from('notifications')
-        .delete()
-        .eq('id', notificationId);
-
-      return { error };
-    } catch (error) {
-      console.error('Error deleting notification:', error);
-      return { error };
-    }
-  },
-
-  // Get all users
-  getAllUsers: async () => {
-    try {
-      const { data, error } = await supabase
-        .from('utilisateurs')
-        .select('id, nom, prenom, role, statut, email')
-        .limit(10);
-
-      return { data, error };
-    } catch (error) {
-      return { data: null, error };
-    }
-  },
-
-  // Get admin and gestionnaire users for notifications
-  getAdminAndGestionnaireUsers: async () => {
-    try {
-      const { data, error } = await supabase
-        .from('utilisateurs')
-        .select('id, nom, prenom, role, statut')
-        .in('role', ['Admin', 'Gestionnaire'])
-        .eq('statut', 'Actif');
-
-      // If no active admin users found, try without the statut filter
-      if (!error && (!data || data.length === 0)) {
-        const { data: dataNoStatus, error: errorNoStatus } = await supabase
-          .from('utilisateurs')
-          .select('id, nom, prenom, role, statut')
-          .in('role', ['Admin', 'Gestionnaire']);
-
-        return { data: dataNoStatus, error: errorNoStatus };
-      }
-
-      return { data, error };
-    } catch (error) {
-      console.error('Error fetching admin/gestionnaire users:', error);
-      return { data: null, error };
-    }
   }
 }

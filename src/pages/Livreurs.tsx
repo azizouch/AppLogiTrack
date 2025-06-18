@@ -184,20 +184,20 @@ export function Livreurs() {
       if (error) {
         toast({
           title: 'Erreur',
-          description: 'Impossible de supprimer le livreur',
+          description: error.message || 'Impossible de supprimer le livreur',
           variant: 'destructive',
         });
       } else {
         toast({
           title: 'Succès',
-          description: 'Livreur supprimé avec succès',
+          description: 'Livreur et compte d\'authentification supprimés avec succès',
         });
         fetchLivreurs(true);
       }
     } catch (error) {
       toast({
         title: 'Erreur',
-        description: 'Une erreur est survenue',
+        description: 'Une erreur est survenue lors de la suppression',
         variant: 'destructive',
       });
     } finally {

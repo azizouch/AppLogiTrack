@@ -27,9 +27,9 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { TablePagination } from '@/components/ui/table-pagination';
-import { Filter, Search, UserPlus, ShieldCheck, Edit, Trash2, X, UserCog } from 'lucide-react';
+import { Filter, Search, UserPlus, ShieldCheck, Edit, Trash2, X, UserCog, Eye, EyeOff } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { api } from '@/lib/supabase';
+import { api, auth } from '@/lib/supabase';
 
 interface User {
   id: string;
@@ -42,6 +42,8 @@ interface User {
   derniere_connexion: string;
   adresse: string;
   ville: string;
+  zone?: string;
+  vehicule?: string;
 }
 
 export function Gestion() {
@@ -59,6 +61,8 @@ export function Gestion() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -75,6 +79,8 @@ export function Gestion() {
     statut: 'Actif',
     adresse: '',
     ville: '',
+    zone: '',
+    vehicule: '',
     password: '',
     confirmPassword: '',
   });
@@ -152,10 +158,32 @@ export function Gestion() {
   }, [filteredUsers, currentPage, itemsPerPage]);
 
   const handleAddUser = async () => {
+    // Basic validation
     if (!newUser.nom || !newUser.prenom || !newUser.email || !newUser.password) {
       toast({
         title: 'Erreur',
         description: 'Veuillez remplir tous les champs obligatoires',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(newUser.email.trim())) {
+      toast({
+        title: 'Erreur',
+        description: 'Veuillez saisir une adresse email valide',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Password validation
+    if (newUser.password.length < 6) {
+      toast({
+        title: 'Erreur',
+        description: 'Le mot de passe doit contenir au moins 6 caractères',
         variant: 'destructive',
       });
       return;
@@ -170,26 +198,131 @@ export function Gestion() {
       return;
     }
 
+    // Additional validation for Livreur role
+    if (newUser.role === 'Livreur') {
+      if (!newUser.zone || !newUser.vehicule) {
+        toast({
+          title: 'Erreur',
+          description: 'Veuillez remplir la zone et le véhicule pour les livreurs',
+          variant: 'destructive',
+        });
+        return;
+      }
+    }
+
     try {
+      // Normalize email before sending
+      const normalizedEmail = newUser.email.toLowerCase().trim();
+
       const userData = {
-        nom: newUser.nom,
-        prenom: newUser.prenom,
-        email: newUser.email,
-        telephone: newUser.telephone,
+        nom: newUser.nom.trim(),
+        prenom: newUser.prenom.trim(),
+        email: normalizedEmail,
+        telephone: newUser.telephone.trim(),
         role: newUser.role,
         statut: newUser.statut,
-        adresse: newUser.adresse,
-        ville: newUser.ville,
-        mot_de_passe: '', // We don't store passwords in our table
-        derniere_connexion: null,
-        date_creation: new Date().toISOString(),
-        date_mise_a_jour: new Date().toISOString(),
+        adresse: newUser.adresse.trim(),
+        ville: newUser.ville.trim(),
+        zone: newUser.role === 'Livreur' ? newUser.zone.trim() : undefined,
+        vehicule: newUser.role === 'Livreur' ? newUser.vehicule.trim() : undefined,
+        password: newUser.password,
       };
 
-      const { data, error } = await api.createUser(userData);
+      // Additional email validation
+      const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+      if (!emailRegex.test(normalizedEmail)) {
+        throw new Error(`Format d'email invalide: ${normalizedEmail}`);
+      }
+
+      // Try to create user in Supabase Auth first
+      let data = null;
+      let error = null;
+
+      try {
+        const result = await auth.signUp(
+          normalizedEmail,
+          userData.password,
+          {
+            nom: userData.nom,
+            prenom: userData.prenom,
+            role: userData.role
+          }
+        );
+        data = result.data;
+        error = result.error;
+      } catch (authError) {
+        error = authError;
+      }
 
       if (error) {
-        throw new Error(error.message);
+        // If auth signup fails, try creating user directly in database
+
+        const { data: directData, error: directError } = await auth.createUserDirectly({
+          nom: userData.nom,
+          prenom: userData.prenom,
+          email: normalizedEmail,
+          role: userData.role,
+          telephone: userData.telephone || undefined,
+          adresse: userData.adresse || undefined,
+          ville: userData.ville || undefined,
+          vehicule: userData.vehicule || undefined,
+          zone: userData.zone || undefined,
+          statut: userData.statut,
+        });
+
+        if (directError) {
+          // Provide more specific error messages
+          if (directError.message.includes('duplicate') || directError.message.includes('already exists')) {
+            throw new Error(`Un utilisateur avec ces informations existe déjà`);
+          } else if (directError.message.includes('constraint')) {
+            throw new Error(`Erreur de validation des données. Vérifiez que tous les champs sont corrects.`);
+          } else {
+            throw new Error(`Erreur lors de la création: ${directError.message}`);
+          }
+        }
+
+        // Direct creation succeeded
+        toast({
+          title: 'Succès',
+          description: 'L\'utilisateur a été créé avec succès. Note: Les identifiants de connexion devront être configurés manuellement.',
+        });
+
+        // Navigate back to users list
+        await fetchUsers();
+        setShowAddModal(false);
+        setNewUser({
+          nom: '',
+          prenom: '',
+          email: '',
+          telephone: '',
+          role: 'Gestionnaire',
+          statut: 'Actif',
+          adresse: '',
+          ville: '',
+          zone: '',
+          vehicule: '',
+          password: '',
+          confirmPassword: '',
+        });
+        return;
+      }
+
+      if (data.user) {
+        // Update the user profile with additional data
+        const updateData = {
+          telephone: userData.telephone || null,
+          adresse: userData.adresse || null,
+          ville: userData.ville || null,
+          vehicule: userData.vehicule || null,
+          zone: userData.zone || null,
+          statut: userData.statut,
+        };
+
+        const { error: updateError } = await api.updateUser(data.user.id, updateData);
+
+        if (updateError) {
+          // Don't throw here as the main user creation was successful
+        }
       }
 
       // Refresh the users list
@@ -205,19 +338,21 @@ export function Gestion() {
         statut: 'Actif',
         adresse: '',
         ville: '',
+        zone: '',
+        vehicule: '',
         password: '',
         confirmPassword: '',
       });
 
       toast({
         title: 'Succès',
-        description: 'Utilisateur ajouté avec succès',
+        description: 'Utilisateur créé avec succès',
       });
     } catch (error) {
       console.error('Error creating user:', error);
       toast({
         title: 'Erreur',
-        description: 'Impossible d\'ajouter l\'utilisateur',
+        description: error instanceof Error ? error.message : 'Impossible d\'ajouter l\'utilisateur',
         variant: 'destructive',
       });
     }
@@ -234,6 +369,8 @@ export function Gestion() {
       statut: user.statut,
       adresse: user.adresse,
       ville: user.ville,
+      zone: user.zone || '',
+      vehicule: user.vehicule || '',
       password: '',
       confirmPassword: '',
     });
@@ -250,23 +387,80 @@ export function Gestion() {
       return;
     }
 
+    // Validate password if provided
+    if (newUser.password && newUser.password.trim() !== '') {
+      if (newUser.password.length < 6) {
+        toast({
+          title: 'Erreur',
+          description: 'Le mot de passe doit contenir au moins 6 caractères',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      if (newUser.password !== newUser.confirmPassword) {
+        toast({
+          title: 'Erreur',
+          description: 'Les mots de passe ne correspondent pas',
+          variant: 'destructive',
+        });
+        return;
+      }
+    }
+
     try {
+      // Prepare data for submission (excluding email since it's in auth.users)
       const userData = {
         nom: newUser.nom,
         prenom: newUser.prenom,
-        email: newUser.email,
         telephone: newUser.telephone,
         role: newUser.role,
         statut: newUser.statut,
         adresse: newUser.adresse,
         ville: newUser.ville,
-        date_mise_a_jour: new Date().toISOString(),
+        zone: newUser.role === 'Livreur' ? newUser.zone : undefined,
+        vehicule: newUser.role === 'Livreur' ? newUser.vehicule : undefined,
       };
 
-      const { data, error } = await api.updateUser(editingUser.id, userData);
+      // Update user profile in utilisateurs table
+      const { error: updateError } = await api.updateUserById(editingUser.id, userData);
 
-      if (error) {
-        throw new Error(error.message);
+      if (updateError) {
+        throw new Error(updateError.message);
+      }
+
+      // Handle email update if changed
+      if (newUser.email !== editingUser.email) {
+        // Find the auth_id for this user
+        const { data: userWithAuth } = await api.getUserById(editingUser.id);
+        if (userWithAuth?.auth_id) {
+          const { error: emailError } = await api.updateUserEmail(userWithAuth.auth_id, newUser.email);
+          if (emailError) {
+            console.warn('Email update failed:', emailError);
+            toast({
+              title: 'Attention',
+              description: 'Profil mis à jour mais l\'email n\'a pas pu être modifié. Veuillez créer la fonction RPC dans Supabase.',
+              variant: 'destructive',
+            });
+          }
+        }
+      }
+
+      // Handle password update if provided
+      if (newUser.password && newUser.password.trim() !== '') {
+        // Find the auth_id for this user
+        const { data: userWithAuth } = await api.getUserById(editingUser.id);
+        if (userWithAuth?.auth_id) {
+          const { error: passwordError } = await api.updateUserPassword(userWithAuth.auth_id, newUser.password);
+          if (passwordError) {
+            console.warn('Password update failed:', passwordError);
+            toast({
+              title: 'Attention',
+              description: 'Profil mis à jour mais le mot de passe n\'a pas pu être modifié. Veuillez créer la fonction RPC dans Supabase.',
+              variant: 'destructive',
+            });
+          }
+        }
       }
 
       // Refresh the users list
@@ -283,6 +477,8 @@ export function Gestion() {
         statut: 'Actif',
         adresse: '',
         ville: '',
+        zone: '',
+        vehicule: '',
         password: '',
         confirmPassword: '',
       });
@@ -324,13 +520,12 @@ export function Gestion() {
 
       toast({
         title: 'Succès',
-        description: 'Utilisateur supprimé avec succès',
+        description: 'Utilisateur et compte d\'authentification supprimés avec succès',
       });
     } catch (error) {
-      console.error('Error deleting user:', error);
       toast({
         title: 'Erreur',
-        description: 'Impossible de supprimer l\'utilisateur',
+        description: error instanceof Error ? error.message : 'Impossible de supprimer l\'utilisateur',
         variant: 'destructive',
       });
     }
@@ -566,158 +761,256 @@ export function Gestion() {
 
       {/* Add User Modal */}
       <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
-        <DialogContent className="max-w-md bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
         <DialogHeader>
-          <div className="flex items-center justify-between">
-            <DialogTitle className="text-lg font-semibold text-gray-900 dark:text-white">
-              Ajouter un nouvel utilisateur
-            </DialogTitle>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowAddModal(false)}
-              className="h-6 w-6 p-0 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
+          <DialogTitle className="text-lg font-semibold text-gray-900 dark:text-white">
+            Ajouter un nouvel utilisateur
+          </DialogTitle>
           <DialogDescription className="text-gray-600 dark:text-gray-400">
             Remplissez les informations pour créer un nouvel utilisateur.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="nom" className="text-sm font-medium text-gray-900 dark:text-white">
-                Nom
-              </Label>
-              <Input
-                id="nom"
-                value={newUser.nom}
-                onChange={(e) => setNewUser({ ...newUser, nom: e.target.value })}
-                className="mt-1 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
-              />
-            </div>
-            <div>
-              <Label htmlFor="prenom" className="text-sm font-medium text-gray-900 dark:text-white">
-                Prénom
-              </Label>
-              <Input
-                id="prenom"
-                value={newUser.prenom}
-                onChange={(e) => setNewUser({ ...newUser, prenom: e.target.value })}
-                className="mt-1 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
-              />
-            </div>
-          </div>
+        <div className="space-y-6 py-4">
+          {/* Personal Information */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">
+              Informations personnelles
+            </h3>
 
-          <div>
-            <Label htmlFor="email" className="text-sm font-medium text-gray-900 dark:text-white">
-              Email
-            </Label>
-            <Input
-              id="email"
-              type="email"
-              value={newUser.email}
-              onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
-              className="mt-1 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="telephone" className="text-sm font-medium text-gray-900 dark:text-white">
-              Téléphone
-            </Label>
-            <Input
-              id="telephone"
-              value={newUser.telephone}
-              onChange={(e) => setNewUser({ ...newUser, telephone: e.target.value })}
-              className="mt-1 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="role" className="text-sm font-medium text-gray-900 dark:text-white">
-                Rôle
-              </Label>
-              <Select value={newUser.role} onValueChange={(value) => setNewUser({ ...newUser, role: value })}>
-                <SelectTrigger className="mt-1 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Gestionnaire">Gestionnaire</SelectItem>
-                  <SelectItem value="Livreur">Livreur</SelectItem>
-                  <SelectItem value="Admin">Admin</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="nom" className="text-sm font-medium text-gray-900 dark:text-white">
+                  Nom *
+                </Label>
+                <Input
+                  id="nom"
+                  value={newUser.nom}
+                  onChange={(e) => setNewUser({ ...newUser, nom: e.target.value })}
+                  className="mt-1 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
+                  placeholder="Nom de famille"
+                />
+              </div>
+              <div>
+                <Label htmlFor="prenom" className="text-sm font-medium text-gray-900 dark:text-white">
+                  Prénom *
+                </Label>
+                <Input
+                  id="prenom"
+                  value={newUser.prenom}
+                  onChange={(e) => setNewUser({ ...newUser, prenom: e.target.value })}
+                  className="mt-1 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
+                  placeholder="Prénom"
+                />
+              </div>
             </div>
-            <div>
-              <Label htmlFor="statut" className="text-sm font-medium text-gray-900 dark:text-white">
-                Statut
-              </Label>
-              <Select value={newUser.statut} onValueChange={(value) => setNewUser({ ...newUser, statut: value })}>
-                <SelectTrigger className="mt-1 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Actif">Actif</SelectItem>
-                  <SelectItem value="Inactif">Inactif</SelectItem>
-                </SelectContent>
-              </Select>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="email" className="text-sm font-medium text-gray-900 dark:text-white">
+                  Email *
+                </Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={newUser.email}
+                  onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                  className="mt-1 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
+                  placeholder="email@exemple.com"
+                />
+              </div>
+              <div>
+                <Label htmlFor="telephone" className="text-sm font-medium text-gray-900 dark:text-white">
+                  Téléphone
+                </Label>
+                <Input
+                  id="telephone"
+                  value={newUser.telephone}
+                  onChange={(e) => setNewUser({ ...newUser, telephone: e.target.value })}
+                  className="mt-1 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
+                  placeholder="06 12 34 56 78"
+                />
+              </div>
             </div>
           </div>
 
-          <div>
-            <Label htmlFor="adresse" className="text-sm font-medium text-gray-900 dark:text-white">
+          {/* Role and Status */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">
+              Rôle et statut
+            </h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="role" className="text-sm font-medium text-gray-900 dark:text-white">
+                  Rôle *
+                </Label>
+                <Select value={newUser.role} onValueChange={(value) => setNewUser({ ...newUser, role: value })}>
+                  <SelectTrigger className="mt-1 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Gestionnaire">Gestionnaire</SelectItem>
+                    <SelectItem value="Livreur">Livreur</SelectItem>
+                    <SelectItem value="Admin">Admin</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="statut" className="text-sm font-medium text-gray-900 dark:text-white">
+                  Statut *
+                </Label>
+                <Select value={newUser.statut} onValueChange={(value) => setNewUser({ ...newUser, statut: value })}>
+                  <SelectTrigger className="mt-1 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Actif">Actif</SelectItem>
+                    <SelectItem value="Inactif">Inactif</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+
+          {/* Livreur-specific fields */}
+          {newUser.role === 'Livreur' && (
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">
+                Informations de livraison
+              </h3>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="vehicule" className="text-sm font-medium text-gray-900 dark:text-white">
+                    Véhicule
+                  </Label>
+                  <Input
+                    id="vehicule"
+                    value={newUser.vehicule}
+                    onChange={(e) => setNewUser({ ...newUser, vehicule: e.target.value })}
+                    className="mt-1 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
+                    placeholder="Moto, Voiture, Vélo..."
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="zone" className="text-sm font-medium text-gray-900 dark:text-white">
+                    Zone de livraison
+                  </Label>
+                  <Input
+                    id="zone"
+                    value={newUser.zone}
+                    onChange={(e) => setNewUser({ ...newUser, zone: e.target.value })}
+                    className="mt-1 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
+                    placeholder="Centre-ville, Banlieue, Zone industrielle..."
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Address Information */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">
               Adresse
-            </Label>
-            <Input
-              id="adresse"
-              placeholder="Adresse complète"
-              value={newUser.adresse}
-              onChange={(e) => setNewUser({ ...newUser, adresse: e.target.value })}
-              className="mt-1 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
-            />
+            </h3>
+
+            <div>
+              <Label htmlFor="adresse" className="text-sm font-medium text-gray-900 dark:text-white">
+                Adresse complète
+              </Label>
+              <Input
+                id="adresse"
+                placeholder="123 Rue de la Paix, Quartier..."
+                value={newUser.adresse}
+                onChange={(e) => setNewUser({ ...newUser, adresse: e.target.value })}
+                className="mt-1 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="ville" className="text-sm font-medium text-gray-900 dark:text-white">
+                Ville
+              </Label>
+              <Input
+                id="ville"
+                value={newUser.ville}
+                onChange={(e) => setNewUser({ ...newUser, ville: e.target.value })}
+                className="mt-1 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
+                placeholder="Casablanca, Rabat, Marrakech..."
+              />
+            </div>
           </div>
 
-          <div>
-            <Label htmlFor="ville" className="text-sm font-medium text-gray-900 dark:text-white">
-              Ville
-            </Label>
-            <Input
-              id="ville"
-              value={newUser.ville}
-              onChange={(e) => setNewUser({ ...newUser, ville: e.target.value })}
-              className="mt-1 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="password" className="text-sm font-medium text-gray-900 dark:text-white">
+          {/* Password Section */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">
               Mot de passe
-            </Label>
-            <Input
-              id="password"
-              type="password"
-              value={newUser.password}
-              onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
-              className="mt-1 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
-            />
-          </div>
+            </h3>
 
-          <div>
-            <Label htmlFor="confirmPassword" className="text-sm font-medium text-gray-900 dark:text-white">
-              Confirmer
-            </Label>
-            <Input
-              id="confirmPassword"
-              type="password"
-              value={newUser.confirmPassword}
-              onChange={(e) => setNewUser({ ...newUser, confirmPassword: e.target.value })}
-              className="mt-1 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
-            />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="password" className="text-sm font-medium text-gray-900 dark:text-white">
+                  Mot de passe *
+                </Label>
+                <div className="relative mt-1">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    value={newUser.password}
+                    onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+                    className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white pr-10"
+                    placeholder="Minimum 6 caractères"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4 text-gray-400" />
+                    ) : (
+                      <Eye className="h-4 w-4 text-gray-400" />
+                    )}
+                  </Button>
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="confirmPassword" className="text-sm font-medium text-gray-900 dark:text-white">
+                  Confirmer le mot de passe *
+                </Label>
+                <div className="relative mt-1">
+                  <Input
+                    id="confirmPassword"
+                    type={showConfirmPassword ? "text" : "password"}
+                    value={newUser.confirmPassword}
+                    onChange={(e) => setNewUser({ ...newUser, confirmPassword: e.target.value })}
+                    className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white pr-10"
+                    placeholder="Répéter le mot de passe"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  >
+                    {showConfirmPassword ? (
+                      <EyeOff className="h-4 w-4 text-gray-400" />
+                    ) : (
+                      <Eye className="h-4 w-4 text-gray-400" />
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              Le mot de passe doit contenir au moins 6 caractères.
+            </p>
           </div>
         </div>
 
@@ -741,7 +1034,7 @@ export function Gestion() {
 
       {/* Edit User Modal */}
       <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
-        <DialogContent className="max-w-md bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
         <DialogHeader>
           <DialogTitle className="text-lg font-semibold text-gray-900 dark:text-white">
             Modifier l'utilisateur
@@ -751,111 +1044,248 @@ export function Gestion() {
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="edit-nom" className="text-sm font-medium text-gray-900 dark:text-white">
-                Nom
-              </Label>
-              <Input
-                id="edit-nom"
-                value={newUser.nom}
-                onChange={(e) => setNewUser({ ...newUser, nom: e.target.value })}
-                className="mt-1 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
-              />
+        <div className="space-y-6 py-4">
+          {/* Personal Information */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">
+              Informations personnelles
+            </h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="edit-nom" className="text-sm font-medium text-gray-900 dark:text-white">
+                  Nom *
+                </Label>
+                <Input
+                  id="edit-nom"
+                  value={newUser.nom}
+                  onChange={(e) => setNewUser({ ...newUser, nom: e.target.value })}
+                  className="mt-1 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
+                  placeholder="Nom de famille"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-prenom" className="text-sm font-medium text-gray-900 dark:text-white">
+                  Prénom *
+                </Label>
+                <Input
+                  id="edit-prenom"
+                  value={newUser.prenom}
+                  onChange={(e) => setNewUser({ ...newUser, prenom: e.target.value })}
+                  className="mt-1 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
+                  placeholder="Prénom"
+                />
+              </div>
             </div>
-            <div>
-              <Label htmlFor="edit-prenom" className="text-sm font-medium text-gray-900 dark:text-white">
-                Prénom
-              </Label>
-              <Input
-                id="edit-prenom"
-                value={newUser.prenom}
-                onChange={(e) => setNewUser({ ...newUser, prenom: e.target.value })}
-                className="mt-1 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
-              />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="edit-email" className="text-sm font-medium text-gray-900 dark:text-white">
+                  Email *
+                </Label>
+                <Input
+                  id="edit-email"
+                  type="email"
+                  value={newUser.email}
+                  onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                  className="mt-1 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
+                  placeholder="email@exemple.com"
+                />
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Modification disponible pour les administrateurs
+                </p>
+              </div>
+              <div>
+                <Label htmlFor="edit-telephone" className="text-sm font-medium text-gray-900 dark:text-white">
+                  Téléphone
+                </Label>
+                <Input
+                  id="edit-telephone"
+                  value={newUser.telephone}
+                  onChange={(e) => setNewUser({ ...newUser, telephone: e.target.value })}
+                  className="mt-1 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
+                  placeholder="06 12 34 56 78"
+                />
+              </div>
             </div>
           </div>
 
-          <div>
-            <Label htmlFor="edit-email" className="text-sm font-medium text-gray-900 dark:text-white">
-              Email
-            </Label>
-            <Input
-              id="edit-email"
-              type="email"
-              value={newUser.email}
-              onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
-              className="mt-1 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
-            />
-          </div>
+          {/* Role and Status */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">
+              Rôle et statut
+            </h3>
 
-          <div>
-            <Label htmlFor="edit-telephone" className="text-sm font-medium text-gray-900 dark:text-white">
-              Téléphone
-            </Label>
-            <Input
-              id="edit-telephone"
-              value={newUser.telephone}
-              onChange={(e) => setNewUser({ ...newUser, telephone: e.target.value })}
-              className="mt-1 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="edit-role" className="text-sm font-medium text-gray-900 dark:text-white">
-                Rôle
-              </Label>
-              <Select value={newUser.role} onValueChange={(value) => setNewUser({ ...newUser, role: value })}>
-                <SelectTrigger className="mt-1 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600">
-                  <SelectItem value="Admin" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600">Admin</SelectItem>
-                  <SelectItem value="Gestionnaire" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600">Gestionnaire</SelectItem>
-                  <SelectItem value="Livreur" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600">Livreur</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="edit-statut" className="text-sm font-medium text-gray-900 dark:text-white">
-                Statut
-              </Label>
-              <Select value={newUser.statut} onValueChange={(value) => setNewUser({ ...newUser, statut: value })}>
-                <SelectTrigger className="mt-1 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600">
-                  <SelectItem value="Actif" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600">Actif</SelectItem>
-                  <SelectItem value="Inactif" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600">Inactif</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="edit-role" className="text-sm font-medium text-gray-900 dark:text-white">
+                  Rôle *
+                </Label>
+                <Select value={newUser.role} onValueChange={(value) => setNewUser({ ...newUser, role: value })}>
+                  <SelectTrigger className="mt-1 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600">
+                    <SelectItem value="Admin" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600">Admin</SelectItem>
+                    <SelectItem value="Gestionnaire" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600">Gestionnaire</SelectItem>
+                    <SelectItem value="Livreur" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600">Livreur</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="edit-statut" className="text-sm font-medium text-gray-900 dark:text-white">
+                  Statut *
+                </Label>
+                <Select value={newUser.statut} onValueChange={(value) => setNewUser({ ...newUser, statut: value })}>
+                  <SelectTrigger className="mt-1 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600">
+                    <SelectItem value="Actif" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600">Actif</SelectItem>
+                    <SelectItem value="Inactif" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600">Inactif</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="edit-adresse" className="text-sm font-medium text-gray-900 dark:text-white">
-                Adresse
-              </Label>
-              <Input
-                id="edit-adresse"
-                value={newUser.adresse}
-                onChange={(e) => setNewUser({ ...newUser, adresse: e.target.value })}
-                className="mt-1 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
-              />
+          {/* Livreur-specific fields */}
+          {newUser.role === 'Livreur' && (
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">
+                Informations de livraison
+              </h3>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="edit-vehicule" className="text-sm font-medium text-gray-900 dark:text-white">
+                    Véhicule
+                  </Label>
+                  <Input
+                    id="edit-vehicule"
+                    value={newUser.vehicule}
+                    onChange={(e) => setNewUser({ ...newUser, vehicule: e.target.value })}
+                    className="mt-1 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
+                    placeholder="Moto, Voiture, Vélo..."
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-zone" className="text-sm font-medium text-gray-900 dark:text-white">
+                    Zone de livraison
+                  </Label>
+                  <Input
+                    id="edit-zone"
+                    value={newUser.zone}
+                    onChange={(e) => setNewUser({ ...newUser, zone: e.target.value })}
+                    className="mt-1 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
+                    placeholder="Centre-ville, Banlieue, Zone industrielle..."
+                  />
+                </div>
+              </div>
             </div>
-            <div>
-              <Label htmlFor="edit-ville" className="text-sm font-medium text-gray-900 dark:text-white">
-                Ville
-              </Label>
-              <Input
-                id="edit-ville"
-                value={newUser.ville}
-                onChange={(e) => setNewUser({ ...newUser, ville: e.target.value })}
-                className="mt-1 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
-              />
+          )}
+
+          {/* Address Information */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">
+              Adresse
+            </h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="edit-adresse" className="text-sm font-medium text-gray-900 dark:text-white">
+                  Adresse complète
+                </Label>
+                <Input
+                  id="edit-adresse"
+                  value={newUser.adresse}
+                  onChange={(e) => setNewUser({ ...newUser, adresse: e.target.value })}
+                  className="mt-1 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
+                  placeholder="123 Rue de la Paix, Quartier..."
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-ville" className="text-sm font-medium text-gray-900 dark:text-white">
+                  Ville
+                </Label>
+                <Input
+                  id="edit-ville"
+                  value={newUser.ville}
+                  onChange={(e) => setNewUser({ ...newUser, ville: e.target.value })}
+                  className="mt-1 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
+                  placeholder="Casablanca, Rabat, Marrakech..."
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Password Change Section */}
+          <div className="space-y-4 pt-6 border-t border-gray-200 dark:border-gray-700">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+              Changer le mot de passe
+            </h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Laissez vide pour conserver le mot de passe actuel. Modification disponible pour les administrateurs.
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="edit-password" className="text-sm font-medium text-gray-900 dark:text-white">
+                  Nouveau mot de passe
+                </Label>
+                <div className="relative mt-1">
+                  <Input
+                    id="edit-password"
+                    type={showPassword ? "text" : "password"}
+                    value={newUser.password}
+                    onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+                    placeholder="Nouveau mot de passe"
+                    className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white pr-10"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4 text-gray-400" />
+                    ) : (
+                      <Eye className="h-4 w-4 text-gray-400" />
+                    )}
+                  </Button>
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="edit-confirmPassword" className="text-sm font-medium text-gray-900 dark:text-white">
+                  Confirmer le mot de passe
+                </Label>
+                <div className="relative mt-1">
+                  <Input
+                    id="edit-confirmPassword"
+                    type={showConfirmPassword ? "text" : "password"}
+                    value={newUser.confirmPassword}
+                    onChange={(e) => setNewUser({ ...newUser, confirmPassword: e.target.value })}
+                    placeholder="Confirmer le mot de passe"
+                    className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white pr-10"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  >
+                    {showConfirmPassword ? (
+                      <EyeOff className="h-4 w-4 text-gray-400" />
+                    ) : (
+                      <Eye className="h-4 w-4 text-gray-400" />
+                    )}
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
         </div>

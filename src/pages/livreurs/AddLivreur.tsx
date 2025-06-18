@@ -88,23 +88,27 @@ export function AddLivreur() {
       }
 
       // Try to create user in Supabase Auth first
-      console.log('Attempting to create auth user...');
+      let data = null;
+      let error = null;
 
-      const { data, error } = await auth.signUp(
-        normalizedEmail,
-        values.password,
-        {
-          nom: values.nom,
-          prenom: values.prenom,
-          role: 'Livreur'
-        }
-      );
+      try {
+        const result = await auth.signUp(
+          normalizedEmail,
+          values.password,
+          {
+            nom: values.nom,
+            prenom: values.prenom,
+            role: 'Livreur'
+          }
+        );
+        data = result.data;
+        error = result.error;
+      } catch (authError) {
+        error = authError;
+      }
 
       if (error) {
-        console.error('Auth signup failed:', error);
-
         // If auth signup fails, try creating user directly in database
-        console.log('Auth signup failed, trying direct database creation...');
 
         const { data: directData, error: directError } = await auth.createUserDirectly({
           nom: values.nom,
@@ -120,8 +124,6 @@ export function AddLivreur() {
         });
 
         if (directError) {
-          console.error('Direct creation also failed:', directError);
-
           // Provide more specific error messages
           if (directError.message.includes('duplicate') || directError.message.includes('already exists')) {
             throw new Error(`Un utilisateur avec ces informations existe déjà`);
@@ -144,7 +146,6 @@ export function AddLivreur() {
       }
 
       if (data.user) {
-        console.log('Auth user created successfully, updating profile...');
 
         // Update the user profile with additional livreur-specific data
         const updateData = {

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Save, Truck } from 'lucide-react';
+import { ArrowLeft, Save, Truck, Eye, EyeOff } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
@@ -30,6 +30,7 @@ import { useToast } from '@/hooks/use-toast';
 
 // Form schema
 const formSchema = z.object({
+  livreurId: z.string().min(3, 'L\'ID livreur doit contenir au moins 3 caractères'),
   nom: z.string().min(2, 'Le nom doit contenir au moins 2 caractères'),
   prenom: z.string().min(2, 'Le prénom doit contenir au moins 2 caractères'),
   email: z.string().email('Email invalide'),
@@ -41,6 +42,24 @@ const formSchema = z.object({
   statut: z.enum(['Actif', 'Inactif', 'Suspendu'], {
     required_error: 'Le statut est requis',
   }),
+  newPassword: z.string().optional(),
+  confirmPassword: z.string().optional(),
+}).refine((data) => {
+  if (data.newPassword && data.newPassword.length > 0) {
+    return data.newPassword.length >= 6;
+  }
+  return true;
+}, {
+  message: "Le mot de passe doit contenir au moins 6 caractères",
+  path: ["newPassword"],
+}).refine((data) => {
+  if (data.newPassword && data.confirmPassword) {
+    return data.newPassword === data.confirmPassword;
+  }
+  return true;
+}, {
+  message: "Les mots de passe ne correspondent pas",
+  path: ["confirmPassword"],
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -52,10 +71,13 @@ export function EditLivreur() {
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [livreur, setLivreur] = useState<User | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      livreurId: '',
       nom: '',
       prenom: '',
       email: '',
@@ -65,6 +87,8 @@ export function EditLivreur() {
       vehicule: '',
       zone: '',
       statut: 'Actif',
+      newPassword: '',
+      confirmPassword: '',
     },
   });
 
@@ -93,6 +117,7 @@ export function EditLivreur() {
           setLivreur(data);
           // Update form with livreur data
           form.reset({
+            livreurId: `LIV-${data.id.slice(-3).toUpperCase()}`,
             nom: data.nom || '',
             prenom: data.prenom || '',
             email: data.email || '',
@@ -102,6 +127,8 @@ export function EditLivreur() {
             vehicule: data.vehicule || '',
             zone: data.zone || '',
             statut: data.statut || 'Actif',
+            newPassword: '',
+            confirmPassword: '',
           });
         } else {
           navigate('/livreurs');
@@ -124,15 +151,14 @@ export function EditLivreur() {
 
   // Form submission handler
   const onSubmit = async (values: FormValues) => {
-    if (!id) return;
+    if (!id || !livreur) return;
 
     setLoading(true);
     try {
-      // Prepare data for submission
+      // Prepare data for submission (excluding email since it's in auth.users)
       const livreurData = {
         nom: values.nom,
         prenom: values.prenom,
-        email: values.email,
         telephone: values.telephone || null,
         adresse: values.adresse || null,
         ville: values.ville || null,
@@ -141,17 +167,64 @@ export function EditLivreur() {
         statut: values.statut,
       };
 
-      // Call API to update livreur
-      const { error } = await api.updateUser(id, livreurData);
+      // Update user profile in utilisateurs table using the correct ID
+      const { error: updateError } = await api.updateUserById(id, livreurData);
 
-      if (error) {
-        throw new Error(error.message);
+      if (updateError) {
+        throw new Error(updateError.message);
       }
 
-      toast({
-        title: 'Succès',
-        description: 'Le livreur a été modifié avec succès',
-      });
+      // Handle email update for admin users
+      let hasWarnings = false;
+      let emailUpdated = false;
+      let passwordUpdated = false;
+
+      if (values.email !== livreur.email && livreur.auth_id) {
+        const { data: emailData, error: emailError } = await api.updateUserEmail(livreur.auth_id, values.email);
+        if (emailError) {
+          hasWarnings = true;
+          toast({
+            title: 'Attention',
+            description: emailError.message || 'Impossible de mettre à jour l\'email. Veuillez créer la fonction RPC dans Supabase.',
+            variant: 'destructive',
+          });
+        } else if (emailData) {
+          emailUpdated = true;
+        }
+      }
+
+      // Handle password update for admin users
+      if (values.newPassword && values.newPassword.trim() !== '') {
+        if (livreur.auth_id) {
+          const { data: passwordData, error: passwordError } = await api.updateUserPassword(livreur.auth_id, values.newPassword);
+          if (passwordError) {
+            hasWarnings = true;
+            toast({
+              title: 'Attention',
+              description: passwordError.message || 'Impossible de mettre à jour le mot de passe. Veuillez créer la fonction RPC dans Supabase.',
+              variant: 'destructive',
+            });
+          } else if (passwordData) {
+            passwordUpdated = true;
+          }
+        }
+      }
+
+      if (!hasWarnings) {
+        let successMessage = 'Le profil du livreur a été modifié avec succès';
+        if (emailUpdated && passwordUpdated) {
+          successMessage += '. Email et mot de passe mis à jour.';
+        } else if (emailUpdated) {
+          successMessage += '. Email mis à jour.';
+        } else if (passwordUpdated) {
+          successMessage += '. Mot de passe mis à jour.';
+        }
+
+        toast({
+          title: 'Succès',
+          description: successMessage,
+        });
+      }
 
       // Navigate back to livreur details
       navigate(`/livreurs/${id}`);
@@ -241,17 +314,26 @@ export function EditLivreur() {
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <div className="space-y-6">
-              {/* ID Livreur (Read-only) */}
-              <div>
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  ID Livreur
-                </label>
-                <Input
-                  value={`LIV-${livreur?.id.slice(-3).toUpperCase()}`}
-                  disabled
-                  className="bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400 mt-1"
-                />
-              </div>
+              {/* ID Livreur (Editable) */}
+              <FormField
+                control={form.control}
+                name="livreurId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>ID Livreur</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        placeholder="LIV-XXX"
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Identifiant unique du livreur (ex: LIV-001)
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               {/* Nom et Prénom */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -398,6 +480,9 @@ export function EditLivreur() {
                           placeholder="Adresse email"
                         />
                       </FormControl>
+                      <FormDescription>
+                        Modification disponible pour les administrateurs
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -428,6 +513,89 @@ export function EditLivreur() {
                     </FormItem>
                   )}
                 />
+              </div>
+
+              {/* Password Change Section */}
+              <div className="space-y-4 pt-6 border-t border-gray-200 dark:border-gray-700">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                  Changer le mot de passe
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Laissez vide pour conserver le mot de passe actuel. Modification disponible pour les administrateurs.
+                </p>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <FormField
+                    control={form.control}
+                    name="newPassword"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nouveau mot de passe</FormLabel>
+                        <FormControl>
+                          <div className="relative">
+                            <Input
+                              {...field}
+                              type={showPassword ? "text" : "password"}
+                              placeholder="Nouveau mot de passe"
+                              className="pr-10"
+                            />
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                              onClick={() => setShowPassword(!showPassword)}
+                            >
+                              {showPassword ? (
+                                <EyeOff className="h-4 w-4 text-gray-400" />
+                              ) : (
+                                <Eye className="h-4 w-4 text-gray-400" />
+                              )}
+                            </Button>
+                          </div>
+                        </FormControl>
+                        <FormDescription>
+                          Minimum 6 caractères
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="confirmPassword"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Confirmer le mot de passe</FormLabel>
+                        <FormControl>
+                          <div className="relative">
+                            <Input
+                              {...field}
+                              type={showConfirmPassword ? "text" : "password"}
+                              placeholder="Confirmer le mot de passe"
+                              className="pr-10"
+                            />
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                            >
+                              {showConfirmPassword ? (
+                                <EyeOff className="h-4 w-4 text-gray-400" />
+                              ) : (
+                                <Eye className="h-4 w-4 text-gray-400" />
+                              )}
+                            </Button>
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
               </div>
             </div>
 

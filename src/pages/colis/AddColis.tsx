@@ -1,23 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useForm } from 'react-hook-form';
+import { useNavigate } from 'react-router-dom';
+import { ArrowLeft, Plus, Search, Save } from 'lucide-react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { Save, ArrowLeft, Truck, User, Building, Plus } from 'lucide-react';
-import { ClientCombobox } from '@/components/ui/client-combobox';
-import { AddClientModal } from '@/components/modals/AddClientModal';
+import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
-  FormDescription,
   FormMessage,
-} from '@/components/ui/form';
+} from "@/components/ui/form";
 import {
   Select,
   SelectContent,
@@ -25,21 +23,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import { api, supabase } from '@/lib/supabase';
-import type { Client, Entreprise, User as UserType, Statut } from '@/types';
-import { useToast } from '@/hooks/use-toast';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { api } from '@/lib/supabase';
+import { Client, Entreprise, Statut, User } from '@/types';
+import { z } from 'zod';
+import { useToast } from '@/components/ui/use-toast';
 
 // Form schema
 const formSchema = z.object({
-  id: z.string(),
+  ref_colis: z.string(),
   statut: z.string({ required_error: 'Le statut est requis' }),
   client_id: z.string({ required_error: 'Le client est requis' }),
   entreprise_id: z.string().optional(),
@@ -53,20 +45,21 @@ type FormValues = z.infer<typeof formSchema>;
 
 export function AddColis() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const { toast } = useToast();
+  const { toast } = useToast();  type PartialLivreur = Pick<User, 'id' | 'nom' | 'prenom' | 'statut'>;
+  type PartialStatut = Pick<Statut, 'id' | 'nom' | 'type' | 'couleur' | 'ordre' | 'actif'>;
+  
   const [clients, setClients] = useState<Client[]>([]);
   const [entreprises, setEntreprises] = useState<Entreprise[]>([]);
-  const [livreurs, setLivreurs] = useState<User[]>([]);
-  const [statuts, setStatuts] = useState<Statut[]>([]);
+  const [livreurs, setLivreurs] = useState<PartialLivreur[]>([]);
+  const [statuses, setStatuses] = useState<PartialStatut[]>([]);
   const [loading, setLoading] = useState(false);
-  const [showAddClientModal, setShowAddClientModal] = useState(false);
+  const [searchClient, setSearchClient] = useState('');
 
   // Initialize form
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      id: 'COL-' + new Date().getFullYear() + '-' + Math.floor(Math.random() * 10000),
+      ref_colis: 'COL-' + new Date().getFullYear() + '-' + Math.floor(Math.random() * 10000),
       statut: 'En cours',
       client_id: '',
       entreprise_id: '',
@@ -81,42 +74,15 @@ export function AddColis() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [clientsRes, entreprisesRes, livreursRes, statutsRes] = await Promise.all([
+        const [clientsRes, entreprisesRes, livreursRes, statusesRes] = await Promise.all([
           api.getClients(),
           api.getEntreprises(),
           api.getLivreurs(),
-          api.getStatuts('colis'),
-        ]);
-
-        if (clientsRes.data) {
-          setClients(clientsRes.data);
-
-          // Pre-select client if provided in URL params
-          const clientId = searchParams.get('client');
-          if (clientId) {
-            const clientExists = clientsRes.data.find(c => c.id === clientId);
-            if (clientExists) {
-              form.setValue('client_id', clientId);
-            }
-          }
-        }
-
+          api.getStatuts(),
+        ]);        if (clientsRes.data) setClients(clientsRes.data);
         if (entreprisesRes.data) setEntreprises(entreprisesRes.data);
-
-        if (livreursRes.data) {
-          setLivreurs(livreursRes.data);
-
-          // Pre-select livreur if provided in URL params
-          const livreurId = searchParams.get('livreur');
-          if (livreurId) {
-            const livreurExists = livreursRes.data.find(l => l.id === livreurId);
-            if (livreurExists) {
-              form.setValue('livreur_id', livreurId);
-            }
-          }
-        }
-
-        if (statutsRes.data) setStatuts(statutsRes.data);
+        if (livreursRes.data) setLivreurs(livreursRes.data);
+        if (statusesRes.data) setStatuses(statusesRes.data);
       } catch (error) {
         console.error('Error fetching data:', error);
         toast({
@@ -128,15 +94,7 @@ export function AddColis() {
     };
 
     fetchData();
-  }, [toast, searchParams, form]);
-
-  // Handle new client creation
-  const handleClientCreated = (newClient: any) => {
-    // Add the new client to the list
-    setClients(prev => [...prev, newClient]);
-    // Select the new client
-    form.setValue('client_id', newClient.id);
-  };
+  }, [toast]);
 
   // Form submission handler
   const onSubmit = async (values: FormValues) => {
@@ -144,7 +102,7 @@ export function AddColis() {
     try {
       // Prepare data for submission
       const colisData = {
-        id: values.id,
+        ref_colis: values.ref_colis,
         statut: values.statut,
         client_id: values.client_id,
         entreprise_id: values.entreprise_id || null,
@@ -152,42 +110,11 @@ export function AddColis() {
         prix: values.prix || 0,
         frais: values.frais || 0,
         notes: values.notes || '',
-      };
+      };      // Call API to create colis
+      const { error: createError } = await api.createColis(colisData);
 
-      // Call API to create colis
-      const { error } = await supabase.from('colis').insert(colisData);
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      // Add initial status to historique
-      try {
-        // Get the Supabase auth user ID
-        const { data: authUser } = await supabase.auth.getUser();
-        const supabaseAuthId = authUser?.user?.id;
-
-        // Find the corresponding utilisateur record using the auth_id field
-        const { data: utilisateur, error: userError } = await supabase
-          .from('utilisateurs')
-          .select('id')
-          .eq('auth_id', supabaseAuthId)
-          .single();
-
-        if (userError || !utilisateur) {
-          console.error('Current user not found in utilisateurs table:', userError);
-        } else {
-          // Add initial status to historique
-          await supabase.from('historique_colis').insert({
-            colis_id: values.id,
-            date: new Date().toISOString(),
-            statut: values.statut,
-            utilisateur: utilisateur.id,
-          });
-        }
-      } catch (historiqueError) {
-        console.error('Error adding initial status to historique:', historiqueError);
-        // Don't fail the entire operation if historique fails
+      if (createError) {
+        throw new Error(createError.message);
       }
 
       toast({
@@ -210,21 +137,22 @@ export function AddColis() {
   };
 
   return (
-    <div>
-      {/* Header */}
-      <div className="mb-6">
-        <Button
-          variant="ghost"
-          onClick={() => navigate('/colis')}
-          className="mb-2"
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Retour à la liste
-        </Button>
-        <h1 className="text-2xl font-bold">Créer un Colis</h1>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate('/colis')}
+            className="h-8 w-8"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Ajouter un Colis</h1>
+        </div>
       </div>
 
-      <Card>
+      <Card className="bg-white shadow-sm border-0">
         <CardHeader className="pb-4">
           <CardTitle>Informations du colis</CardTitle>
           <CardDescription>
@@ -234,13 +162,13 @@ export function AddColis() {
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)}>
             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* ID Colis */}
+              {/* Ref Colis */}
               <FormField
                 control={form.control}
-                name="id"
+                name="ref_colis"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-base font-semibold">ID Colis *</FormLabel>
+                    <FormLabel className="text-base font-semibold">Ref Colis *</FormLabel>
                     <FormControl>
                       <Input
                         {...field}
@@ -264,7 +192,7 @@ export function AddColis() {
                     <FormLabel className="text-base font-semibold">Statut *</FormLabel>
                     <Select
                       onValueChange={field.onChange}
-                      value={field.value}
+                      defaultValue={field.value}
                     >
                       <FormControl>
                         <SelectTrigger className="bg-white">
@@ -272,9 +200,9 @@ export function AddColis() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {statuts.map((statut) => (
-                          <SelectItem key={statut.id} value={statut.nom}>
-                            {statut.nom}
+                        {statuses.map((status) => (
+                          <SelectItem key={status.id} value={status.nom}>
+                            {status.nom}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -297,8 +225,7 @@ export function AddColis() {
                         step="0.01"
                         placeholder="0"
                         className="bg-white"
-                        value={field.value || ''}
-                        onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                        {...field}
                       />
                     </FormControl>
                     <FormDescription className="text-sm text-gray-500">
@@ -322,8 +249,7 @@ export function AddColis() {
                         step="0.01"
                         placeholder="0"
                         className="bg-white"
-                        value={field.value || ''}
-                        onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                        {...field}
                       />
                     </FormControl>
                     <FormDescription className="text-sm text-gray-500">
@@ -335,38 +261,60 @@ export function AddColis() {
               />
 
               {/* Client Selection */}
-              <FormField
-                control={form.control}
-                name="client_id"
-                render={({ field }) => (
-                  <FormItem>
-                    <div className="flex justify-between items-center">
-                      <FormLabel className="text-base font-semibold">
-                        Client <span className="text-red-500">*</span>
-                      </FormLabel>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setShowAddClientModal(true)}
-                      >
-                        <Plus className="h-4 w-4 mr-1" />
-                        Nouveau Client
-                      </Button>
-                    </div>
-                    <FormControl>
-                      <ClientCombobox
-                        clients={clients}
-                        value={field.value}
-                        onValueChange={field.onChange}
-                        onNewClientClick={() => setShowAddClientModal(true)}
-                        placeholder="Rechercher un client..."
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className="flex items-center gap-2">
+                <FormField
+                  control={form.control}
+                  name="client_id"
+                  render={({ field }) => (
+                    <FormItem className="flex-1">
+                      <FormLabel className="text-base font-semibold">Client *</FormLabel>
+                      <div className="relative">
+                        <FormControl>
+                          <Input
+                            placeholder="Rechercher un client..."
+                            value={searchClient}
+                            onChange={(e) => setSearchClient(e.target.value)}
+                            className="bg-white"
+                          />
+                        </FormControl>
+                        {searchClient && (
+                          <div className="absolute w-full mt-1 bg-white border rounded-md shadow-lg z-50 max-h-64 overflow-auto">
+                            {clients
+                              .filter(client =>
+                                client.nom.toLowerCase().includes(searchClient.toLowerCase()) ||
+                                (client.telephone && client.telephone.includes(searchClient))
+                              )
+                              .map((client) => (
+                                <div
+                                  key={client.id}
+                                  className="p-2 hover:bg-gray-100 cursor-pointer"
+                                  onClick={() => {
+                                    field.onChange(client.id);
+                                    setSearchClient(client.nom);
+                                  }}
+                                >
+                                  <div className="font-medium">{client.nom}</div>
+                                  {client.telephone && (
+                                    <div className="text-sm text-gray-500">{client.telephone}</div>
+                                  )}
+                                </div>
+                              ))}
+                          </div>
+                        )}
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="mt-8"
+                  onClick={() => navigate('/clients/new')}
+                >
+                  Nouveau Client
+                </Button>
+              </div>
 
               {/* Entreprise Selection */}
               <FormField
@@ -376,8 +324,8 @@ export function AddColis() {
                   <FormItem>
                     <FormLabel className="text-base font-semibold">Entreprise (optionnel)</FormLabel>
                     <Select
-                      onValueChange={(value) => field.onChange(value === "none" ? "" : value)}
-                      value={field.value || "none"}
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
                     >
                       <FormControl>
                         <SelectTrigger className="bg-white">
@@ -385,7 +333,6 @@ export function AddColis() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="none">Aucune</SelectItem>
                         {entreprises.map((entreprise) => (
                           <SelectItem key={entreprise.id} value={entreprise.id}>
                             {entreprise.nom}
@@ -406,8 +353,8 @@ export function AddColis() {
                   <FormItem>
                     <FormLabel className="text-base font-semibold">Livreur (optionnel)</FormLabel>
                     <Select
-                      onValueChange={(value) => field.onChange(value === "none" ? "" : value)}
-                      value={field.value || "none"}
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
                     >
                       <FormControl>
                         <SelectTrigger className="bg-white">
@@ -415,7 +362,6 @@ export function AddColis() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="none">Aucun</SelectItem>
                         {livreurs.map((livreur) => (
                           <SelectItem key={livreur.id} value={livreur.id}>
                             {`${livreur.prenom || ''} ${livreur.nom}`.trim()}
@@ -478,13 +424,6 @@ export function AddColis() {
           </form>
         </Form>
       </Card>
-
-      {/* Add Client Modal */}
-      <AddClientModal
-        open={showAddClientModal}
-        onOpenChange={setShowAddClientModal}
-        onClientCreated={handleClientCreated}
-      />
     </div>
   );
 }
