@@ -243,7 +243,7 @@ export function Notifications() {
 
   // Initial data fetch
   useEffect(() => {
-    if (state.user?.id && (state.user.role === 'admin' || state.user.role === 'gestionnaire')) {
+    if (state.user?.id && (state.user?.role?.toLowerCase() === 'admin' || state.user?.role?.toLowerCase() === 'gestionnaire')) {
       fetchNotifications();
     }
   }, [fetchNotifications, state.user?.id, state.user?.role]);

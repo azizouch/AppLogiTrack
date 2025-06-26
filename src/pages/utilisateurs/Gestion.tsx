@@ -234,100 +234,25 @@ export function Gestion() {
         throw new Error(`Format d'email invalide: ${normalizedEmail}`);
       }
 
-      // Try to create user in Supabase Auth first
-      let data = null;
-      let error = null;
-
-      try {
-        const result = await auth.signUp(
-          normalizedEmail,
-          userData.password,
-          {
-            nom: userData.nom,
-            prenom: userData.prenom,
-            role: userData.role
-          }
-        );
-        data = result.data;
-        error = result.error;
-      } catch (authError) {
-        error = authError;
-      }
+      // Use the admin create function (doesn't affect current session)
+      const { data, error, authCreated } = await auth.createUserWithAuthAdmin(userData);
 
       if (error) {
-        // If auth signup fails, try creating user directly in database
-
-        const { data: directData, error: directError } = await auth.createUserDirectly({
-          nom: userData.nom,
-          prenom: userData.prenom,
-          email: normalizedEmail,
-          role: userData.role,
-          telephone: userData.telephone || undefined,
-          adresse: userData.adresse || undefined,
-          ville: userData.ville || undefined,
-          vehicule: userData.vehicule || undefined,
-          zone: userData.zone || undefined,
-          statut: userData.statut,
-        });
-
-        if (directError) {
-          // Provide more specific error messages
-          if (directError.message.includes('duplicate') || directError.message.includes('already exists')) {
-            throw new Error(`Un utilisateur avec ces informations existe déjà`);
-          } else if (directError.message.includes('constraint')) {
-            throw new Error(`Erreur de validation des données. Vérifiez que tous les champs sont corrects.`);
-          } else {
-            throw new Error(`Erreur lors de la création: ${directError.message}`);
-          }
-        }
-
-        // Direct creation succeeded
-        toast({
-          title: 'Succès',
-          description: 'L\'utilisateur a été créé avec succès. Note: Les identifiants de connexion devront être configurés manuellement.',
-        });
-
-        // Navigate back to users list
-        await fetchUsers();
-        setShowAddModal(false);
-        setNewUser({
-          nom: '',
-          prenom: '',
-          email: '',
-          telephone: '',
-          role: 'Gestionnaire',
-          statut: 'Actif',
-          adresse: '',
-          ville: '',
-          zone: '',
-          vehicule: '',
-          password: '',
-          confirmPassword: '',
-        });
-        return;
+        throw error;
       }
 
-      if (data.user) {
-        // Update the user profile with additional data
-        const updateData = {
-          telephone: userData.telephone || null,
-          adresse: userData.adresse || null,
-          ville: userData.ville || null,
-          vehicule: userData.vehicule || null,
-          zone: userData.zone || null,
-          statut: userData.statut,
-        };
+      // Success message
+      const message = authCreated
+        ? 'L\'utilisateur a été créé avec succès avec des identifiants de connexion.'
+        : 'L\'utilisateur a été créé avec succès. Note: Les identifiants de connexion devront être configurés manuellement.';
 
-        const { error: updateError } = await api.updateUser(data.user.id, updateData);
+      toast({
+        title: 'Succès',
+        description: message,
+      });
 
-        if (updateError) {
-          // Don't throw here as the main user creation was successful
-        }
-      }
-
-      // Refresh the users list
+      // Reset form and refresh list
       await fetchUsers();
-
       setShowAddModal(false);
       setNewUser({
         nom: '',
@@ -343,11 +268,6 @@ export function Gestion() {
         password: '',
         confirmPassword: '',
       });
-
-      toast({
-        title: 'Succès',
-        description: 'Utilisateur créé avec succès',
-      });
     } catch (error) {
       console.error('Error creating user:', error);
       toast({
@@ -358,23 +278,44 @@ export function Gestion() {
     }
   };
 
-  const handleEditUser = (user: User) => {
-    setEditingUser(user);
-    setNewUser({
-      nom: user.nom,
-      prenom: user.prenom,
-      email: user.email,
-      telephone: user.telephone,
-      role: user.role,
-      statut: user.statut,
-      adresse: user.adresse,
-      ville: user.ville,
-      zone: user.zone || '',
-      vehicule: user.vehicule || '',
-      password: '',
-      confirmPassword: '',
-    });
-    setShowEditModal(true);
+  const handleEditUser = async (user: User) => {
+    try {
+      // Fetch full user details including email
+      const { data: fullUser, error } = await api.getUserById(user.id);
+
+      if (error || !fullUser) {
+        toast({
+          title: 'Erreur',
+          description: 'Impossible de charger les données de l\'utilisateur',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      setEditingUser(fullUser);
+      setNewUser({
+        nom: fullUser.nom,
+        prenom: fullUser.prenom,
+        email: fullUser.email || '', // Use email from getUserById
+        telephone: fullUser.telephone,
+        role: fullUser.role,
+        statut: fullUser.statut,
+        adresse: fullUser.adresse,
+        ville: fullUser.ville,
+        zone: fullUser.zone || '',
+        vehicule: fullUser.vehicule || '',
+        password: '',
+        confirmPassword: '',
+      });
+      setShowEditModal(true);
+    } catch (error) {
+      console.error('Error fetching user details:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Impossible de charger les données de l\'utilisateur',
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleUpdateUser = async () => {
@@ -409,8 +350,8 @@ export function Gestion() {
     }
 
     try {
-      // Prepare data for submission (excluding email since it's in auth.users)
-      const userData = {
+      // Prepare update data
+      const updates = {
         nom: newUser.nom,
         prenom: newUser.prenom,
         telephone: newUser.telephone,
@@ -422,50 +363,30 @@ export function Gestion() {
         vehicule: newUser.role === 'Livreur' ? newUser.vehicule : undefined,
       };
 
-      // Update user profile in utilisateurs table
-      const { error: updateError } = await api.updateUserById(editingUser.id, userData);
-
-      if (updateError) {
-        throw new Error(updateError.message);
-      }
-
-      // Handle email update if changed
+      // Add email if changed
       if (newUser.email !== editingUser.email) {
-        // Find the auth_id for this user
-        const { data: userWithAuth } = await api.getUserById(editingUser.id);
-        if (userWithAuth?.auth_id) {
-          const { error: emailError } = await api.updateUserEmail(userWithAuth.auth_id, newUser.email);
-          if (emailError) {
-            console.warn('Email update failed:', emailError);
-            toast({
-              title: 'Attention',
-              description: 'Profil mis à jour mais l\'email n\'a pas pu être modifié. Veuillez créer la fonction RPC dans Supabase.',
-              variant: 'destructive',
-            });
-          }
-        }
+        updates.email = newUser.email;
       }
 
-      // Handle password update if provided
+      // Add password if provided
       if (newUser.password && newUser.password.trim() !== '') {
-        // Find the auth_id for this user
-        const { data: userWithAuth } = await api.getUserById(editingUser.id);
-        if (userWithAuth?.auth_id) {
-          const { error: passwordError } = await api.updateUserPassword(userWithAuth.auth_id, newUser.password);
-          if (passwordError) {
-            console.warn('Password update failed:', passwordError);
-            toast({
-              title: 'Attention',
-              description: 'Profil mis à jour mais le mot de passe n\'a pas pu être modifié. Veuillez créer la fonction RPC dans Supabase.',
-              variant: 'destructive',
-            });
-          }
-        }
+        updates.password = newUser.password;
       }
 
-      // Refresh the users list
-      await fetchUsers();
+      // Use the unified update function
+      const { data, error } = await auth.updateUserWithAuth(editingUser.id, updates);
 
+      if (error) {
+        throw error;
+      }
+
+      toast({
+        title: 'Succès',
+        description: 'Utilisateur modifié avec succès',
+      });
+
+      // Reset form and refresh list
+      await fetchUsers();
       setShowEditModal(false);
       setEditingUser(null);
       setNewUser({
@@ -483,15 +404,11 @@ export function Gestion() {
         confirmPassword: '',
       });
 
-      toast({
-        title: 'Succès',
-        description: 'Utilisateur modifié avec succès',
-      });
     } catch (error) {
       console.error('Error updating user:', error);
       toast({
         title: 'Erreur',
-        description: 'Impossible de modifier l\'utilisateur',
+        description: error instanceof Error ? error.message : 'Impossible de modifier l\'utilisateur',
         variant: 'destructive',
       });
     }
@@ -506,26 +423,44 @@ export function Gestion() {
     if (!userToDelete) return;
 
     try {
-      const { error } = await api.deleteUser(userToDelete.id);
+      // Use the same delete function as livreurs
+      const { data, error } = await api.deleteUser(userToDelete.id);
 
       if (error) {
-        throw new Error(error.message);
+        toast({
+          title: 'Erreur',
+          description: error.message || 'Impossible de supprimer l\'utilisateur',
+          variant: 'destructive',
+        });
+        return;
       }
 
-      // Refresh the users list
-      await fetchUsers();
+      // Provide feedback based on auth deletion status (same as livreurs)
+      let description = 'Utilisateur supprimé avec succès';
 
-      setShowDeleteModal(false);
-      setUserToDelete(null);
+      if (data?.authDeletionStatus === 'auth_success') {
+        description = 'Utilisateur et compte d\'authentification supprimés avec succès';
+      } else if (data?.authDeletionStatus === 'auth_failed') {
+        description = 'Utilisateur supprimé, mais le compte d\'authentification n\'a pas pu être supprimé. Veuillez contacter l\'administrateur.';
+      } else if (data?.authDeletionStatus === 'no_auth') {
+        description = 'Utilisateur supprimé avec succès (aucun compte d\'authentification associé)';
+      }
 
       toast({
         title: 'Succès',
-        description: 'Utilisateur et compte d\'authentification supprimés avec succès',
+        description,
       });
+
+      // Reset and refresh
+      await fetchUsers();
+      setShowDeleteModal(false);
+      setUserToDelete(null);
+
     } catch (error) {
+      console.error('Error deleting user:', error);
       toast({
         title: 'Erreur',
-        description: error instanceof Error ? error.message : 'Impossible de supprimer l\'utilisateur',
+        description: 'Une erreur est survenue lors de la suppression',
         variant: 'destructive',
       });
     }

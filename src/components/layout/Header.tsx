@@ -24,7 +24,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
-import { api } from '@/lib/supabase';
+import { api, supabase } from '@/lib/supabase';
 import { Notification } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 
@@ -35,6 +35,7 @@ export function Header() {
   const { toast: showToast } = useToast();
   const [showMobileSearch, setShowMobileSearch] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
 
   // Notification state
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -133,7 +134,7 @@ export function Header() {
 
   // Fetch notifications on mount and when user changes
   useEffect(() => {
-    if (state.user?.id && (state.user.role === 'admin' || state.user.role === 'gestionnaire')) {
+    if (state.user?.id && (state.user?.role?.toLowerCase() === 'admin' || state.user?.role?.toLowerCase() === 'gestionnaire')) {
       fetchNotifications();
 
       // Set up polling for new notifications every 30 seconds
@@ -148,6 +149,26 @@ export function Header() {
       setShowLogoutConfirm(false);
     };
   }, []);
+
+  // Fetch user email from auth session if not available in profile
+  useEffect(() => {
+    const fetchUserEmail = async () => {
+      if (!state.user?.email && state.isAuthenticated) {
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.user?.email) {
+            setUserEmail(session.user.email);
+          }
+        } catch (error) {
+          console.error('Error fetching user email:', error);
+        }
+      } else if (state.user?.email) {
+        setUserEmail(state.user.email);
+      }
+    };
+
+    fetchUserEmail();
+  }, [state.user, state.isAuthenticated]);
 
   // Global cleanup effect to monitor and fix pointer-events issues
   useEffect(() => {
@@ -240,8 +261,8 @@ export function Header() {
         <h1 className="text-lg font-bold text-gray-900 dark:text-white absolute left-1/2 transform -translate-x-1/2">LogiTrack</h1>
 
         {/* Right side - Notification and User */}
-        <div className="flex items-center space-x-6">
-          {(state.user?.role === 'admin' || state.user?.role === 'gestionnaire') && (
+        <div className="flex items-center space-x-3">
+          {(state.user?.role?.toLowerCase() === 'admin' || state.user?.role?.toLowerCase() === 'gestionnaire') && (
             <Popover open={showNotifications} onOpenChange={setShowNotifications}>
               <PopoverTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full border border-gray-300 dark:border-gray-600 p-0 hover:bg-transparent relative">
@@ -354,7 +375,7 @@ export function Header() {
                     {state.user ? `${state.user.prenom} ${state.user.nom}` : 'Utilisateur'}
                   </div>
                   <div className="text-xs text-gray-500 dark:text-gray-400 font-normal">
-                    {state.user?.email || 'email@example.com'}
+                    {userEmail || state.user?.email || 'Aucun email'}
                   </div>
                 </div>
               </DropdownMenuLabel>
@@ -404,7 +425,7 @@ export function Header() {
         </div>
 
         <div className="flex items-center space-x-4 ml-6">
-          {(state.user?.role === 'admin' || state.user?.role === 'gestionnaire') && (
+          {(state.user?.role?.toLowerCase() === 'admin' || state.user?.role?.toLowerCase() === 'gestionnaire') && (
             <Popover open={showNotifications} onOpenChange={setShowNotifications}>
               <PopoverTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 relative">
@@ -513,7 +534,7 @@ export function Header() {
                     {state.user ? `${state.user.prenom} ${state.user.nom}` : 'Utilisateur'}
                   </div>
                   <div className="text-xs text-gray-500 dark:text-gray-400">
-                    {state.user?.email || 'email@example.com'}
+                    {userEmail || state.user?.email || 'Aucun email'}
                   </div>
                 </div>
                 <div className="h-8 w-8 rounded-full border border-gray-300 dark:border-gray-600 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">

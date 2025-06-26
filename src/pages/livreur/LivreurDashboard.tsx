@@ -200,36 +200,36 @@ export function LivreurDashboard() {
       value: loading ? '...' : stats.aLivrerAujourdhui.toString(),
       description: 'Colis à livrer aujourd\'hui',
       icon: Clock,
-      color: 'text-yellow-600 dark:text-yellow-400',
-      borderColor: 'border-l-yellow-400',
-      bgColor: 'bg-yellow-50 dark:bg-yellow-900/20',
+      iconColor: 'text-white',
+      textColor: 'text-white',
+      gradient: 'bg-gradient-to-r from-yellow-600 to-yellow-400',
     },
     {
       title: 'En cours',
       value: loading ? '...' : stats.enCours.toString(),
       description: 'Colis en cours de livraison',
       icon: Truck,
-      color: 'text-blue-600 dark:text-blue-400',
-      borderColor: 'border-l-blue-400',
-      bgColor: 'bg-blue-50 dark:bg-blue-900/20',
+      iconColor: 'text-white',
+      textColor: 'text-white',
+      gradient: 'bg-gradient-to-r from-blue-600 to-blue-400',
     },
     {
       title: 'Livrés aujourd\'hui',
       value: loading ? '...' : stats.livresAujourdhui.toString(),
       description: 'Colis livrés aujourd\'hui',
       icon: CheckCircle,
-      color: 'text-green-600 dark:text-green-400',
-      borderColor: 'border-l-green-400',
-      bgColor: 'bg-green-50 dark:bg-green-900/20',
+      iconColor: 'text-white',
+      textColor: 'text-white',
+      gradient: 'bg-gradient-to-r from-green-600 to-green-400',
     },
     {
       title: 'Retournés',
       value: loading ? '...' : stats.retournes.toString(),
       description: 'Colis retournés aujourd\'hui',
       icon: RotateCcw,
-      color: 'text-red-600 dark:text-red-400',
-      borderColor: 'border-l-red-400',
-      bgColor: 'bg-red-50 dark:bg-red-900/20',
+      iconColor: 'text-white',
+      textColor: 'text-white',
+      gradient: 'bg-gradient-to-r from-red-600 to-red-400',
     },
   ];
 
@@ -248,16 +248,16 @@ export function LivreurDashboard() {
       {/* Statistics Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         {statsCards.map((stat) => (
-          <Card key={stat.title} className={`${stat.borderColor} border-l-4 ${stat.bgColor}`}>
+          <Card key={stat.title} className={`${stat.gradient} border-0 shadow-lg`}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-300">
+              <CardTitle className={`text-sm font-medium ${stat.textColor}`}>
                 {stat.title}
               </CardTitle>
-              <stat.icon className={`h-5 w-5 ${stat.color}`} />
+              <stat.icon className={`h-5 w-5 ${stat.iconColor}`} />
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-gray-900 dark:text-white">{stat.value}</div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{stat.description}</p>
+              <div className={`text-3xl font-bold ${stat.textColor}`}>{stat.value}</div>
+              <p className={`text-xs ${stat.textColor} opacity-90 mt-1`}>{stat.description}</p>
             </CardContent>
           </Card>
         ))}

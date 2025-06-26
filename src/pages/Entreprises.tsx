@@ -332,7 +332,8 @@ export function Entreprises() {
             <span className="text-sm text-gray-500 dark:text-gray-400">Total: {totalCount} entreprises</span>
           </div>
         </div>
-        <Table>
+        <div className="w-full overflow-x-auto">
+          <Table>
           <TableHeader>
             <TableRow className="border-b border-gray-200 dark:border-gray-600" style={{ backgroundColor: 'hsl(210, 40%, 96.1%)' }}>
               <TableHead className="font-semibold text-gray-900">Nom</TableHead>
@@ -436,6 +437,7 @@ export function Entreprises() {
             )}
           </TableBody>
         </Table>
+        </div>
       </div>
 
       {/* Pagination */}

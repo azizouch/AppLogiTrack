@@ -30,7 +30,7 @@ export function ColisAnnules() {
   const { state } = useAuth();
 
   // Check if user is livreur
-  const isLivreur = state.user?.role === 'livreur';
+  const isLivreur = state.user?.role?.toLowerCase() === 'livreur';
 
   // Data state
   const [colis, setColis] = useState<Colis[]>([]);

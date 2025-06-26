@@ -87,89 +87,47 @@ export function AddLivreur() {
         throw new Error(`Format d'email invalide: ${normalizedEmail}`);
       }
 
-      // Try to create user in Supabase Auth first
-      let data = null;
-      let error = null;
+      // Use the new unified method that handles both auth and fallback
+      console.log('Attempting to create livreur with email:', normalizedEmail);
+      const { data, error, authCreated } = await auth.createUserWithAuth({
+        nom: values.nom,
+        prenom: values.prenom,
+        email: normalizedEmail,
+        password: values.password,
+        role: 'Livreur',
+        telephone: values.telephone || undefined,
+        adresse: values.adresse || undefined,
+        ville: values.ville || undefined,
+        vehicule: values.vehicule || undefined,
+        zone: values.zone || undefined,
+        statut: values.statut,
+      });
 
-      try {
-        const result = await auth.signUp(
-          normalizedEmail,
-          values.password,
-          {
-            nom: values.nom,
-            prenom: values.prenom,
-            role: 'Livreur'
-          }
-        );
-        data = result.data;
-        error = result.error;
-      } catch (authError) {
-        error = authError;
-      }
+      console.log('Creation result:', { data, error, authCreated });
 
       if (error) {
-        // If auth signup fails, try creating user directly in database
-
-        const { data: directData, error: directError } = await auth.createUserDirectly({
-          nom: values.nom,
-          prenom: values.prenom,
-          email: normalizedEmail,
-          role: 'Livreur',
-          telephone: values.telephone || undefined,
-          adresse: values.adresse || undefined,
-          ville: values.ville || undefined,
-          vehicule: values.vehicule || undefined,
-          zone: values.zone || undefined,
-          statut: values.statut,
-        });
-
-        if (directError) {
-          // Provide more specific error messages
-          if (directError.message.includes('duplicate') || directError.message.includes('already exists')) {
-            throw new Error(`Un utilisateur avec ces informations existe déjà`);
-          } else if (directError.message.includes('constraint')) {
-            throw new Error(`Erreur de validation des données. Vérifiez que tous les champs sont corrects.`);
-          } else {
-            throw new Error(`Erreur lors de la création: ${directError.message}`);
-          }
+        // Provide more specific error messages
+        if (error.message.includes('duplicate') || error.message.includes('already exists')) {
+          throw new Error(`Un utilisateur avec ces informations existe déjà`);
+        } else if (error.message.includes('constraint')) {
+          throw new Error(`Erreur de validation des données. Vérifiez que tous les champs sont corrects.`);
+        } else {
+          throw new Error(`Erreur lors de la création: ${error.message}`);
         }
+      }
 
-        // Direct creation succeeded
+      // Success - provide appropriate feedback based on auth creation status
+      if (authCreated) {
         toast({
           title: 'Succès',
+          description: 'Le livreur a été créé avec succès avec identifiants de connexion.',
+        });
+      } else {
+        toast({
+          title: 'Livreur créé',
           description: 'Le livreur a été créé avec succès. Note: Les identifiants de connexion devront être configurés manuellement.',
         });
-
-        // Navigate back to livreurs list
-        navigate('/livreurs');
-        return;
       }
-
-      if (data.user) {
-
-        // Update the user profile with additional livreur-specific data
-        const updateData = {
-          telephone: values.telephone || null,
-          adresse: values.adresse || null,
-          ville: values.ville || null,
-          vehicule: values.vehicule || null,
-          zone: values.zone || null,
-          statut: values.statut,
-        };
-
-        const { error: updateError } = await api.updateUser(data.user.id, updateData);
-
-        if (updateError) {
-          console.warn('Error updating user profile:', updateError);
-          // Don't throw here as the main user creation was successful
-        }
-      }
-
-      // Auth creation succeeded
-      toast({
-        title: 'Succès',
-        description: 'Le livreur a été créé avec succès avec identifiants de connexion.',
-      });
 
       // Navigate back to livreurs list
       navigate('/livreurs');

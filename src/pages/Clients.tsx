@@ -244,17 +244,17 @@ export function Clients() {
   }, [fetchClients]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
-            <Users className="h-7 w-7 text-blue-600 dark:text-blue-400" />
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
+            <Users className="h-6 w-6 sm:h-7 sm:w-7 text-blue-600 dark:text-blue-400" />
             Gestion des Clients
           </h1>
         </div>
         <Button
-          className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800"
+          className="bg-blue-600 hover:bg-blue-700"
           onClick={() => navigate('/clients/nouveau')}
         >
           <Plus className="mr-2 h-4 w-4" />
@@ -263,7 +263,7 @@ export function Clients() {
       </div>
 
       {/* Filters */}
-      <div className="space-y-4">
+      <div className="space-y-3 sm:space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <svg className="h-4 w-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -333,12 +333,12 @@ export function Clients() {
       </div>
 
       {/* Liste des Clients */}
-      <div className="space-y-4">
-        <div className="flex justify-between items-center">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Liste des Clients</h2>
-          <div className="flex items-center gap-4">
+      <div className="space-y-3 sm:space-y-4">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-4">
+          <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">Liste des Clients</h2>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
             <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-500 dark:text-gray-400">Afficher</span>
+              <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Afficher</span>
               <Select value={itemsPerPage.toString()} onValueChange={(value) => {
                 setItemsPerPage(Number(value));
                 setCurrentPage(1);
@@ -353,126 +353,128 @@ export function Clients() {
                   <SelectItem value="50" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">50</SelectItem>
                 </SelectContent>
               </Select>
-              <span className="text-sm text-gray-500 dark:text-gray-400">entrées</span>
+              <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">entrées</span>
             </div>
-            <span className="text-sm text-gray-500 dark:text-gray-400">Total: {totalCount} clients</span>
+            <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Total: {totalCount} clients</span>
           </div>
         </div>
-        <Table>
-          <TableHeader>
-            <TableRow className="border-b border-gray-200 dark:border-gray-600" style={{ backgroundColor: 'hsl(210, 40%, 96.1%)' }}>
-              <TableHead className="font-semibold text-gray-900">Nom</TableHead>
-              <TableHead className="font-semibold text-gray-900">Contact</TableHead>
-              <TableHead className="font-semibold text-gray-900">Adresse</TableHead>
-              <TableHead className="font-semibold text-gray-900">Entreprise</TableHead>
-              <TableHead className="font-semibold text-right text-gray-900">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {loading ? (
-              Array.from({ length: 5 }).map((_, index) => (
-                <TableRow key={index} className="border-b border-gray-200 dark:border-gray-600 bg-white dark:bg-transparent">
-                  <TableCell colSpan={6}>
-                    <div className="flex items-center space-x-4">
-                      <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse flex-1"></div>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))
-            ) : clients.length === 0 ? (
-              <TableRow className="border-b border-gray-200 dark:border-gray-600 bg-white dark:bg-transparent">
-                <TableCell colSpan={6} className="text-center py-8">
-                  <div className="flex flex-col items-center justify-center text-gray-500 dark:text-gray-400">
-                    <Users className="h-12 w-12 mb-4 text-gray-300 dark:text-gray-600" />
-                    <p className="text-lg font-medium mb-2">Aucun client trouvé</p>
-                    <p className="text-sm">
-                      {hasActiveFilters
-                        ? 'Aucun client ne correspond aux filtres sélectionnés'
-                        : 'Commencez par ajouter votre premier client'
-                      }
-                    </p>
-                  </div>
-                </TableCell>
+        <div className="overflow-x-auto w-full">
+          <Table>
+            <TableHeader>
+              <TableRow className="border-b border-gray-200 dark:border-gray-600" style={{ backgroundColor: 'hsl(210, 40%, 96.1%)' }}>
+                <TableHead className="font-semibold text-gray-900 w-1/5 min-w-[80px]">Nom</TableHead>
+                <TableHead className="font-semibold text-gray-900 w-1/4 min-w-[100px]">Contact</TableHead>
+                <TableHead className="font-semibold text-gray-900 w-1/4 min-w-[100px]">Adresse</TableHead>
+                <TableHead className="font-semibold text-gray-900 w-1/5 min-w-[80px]">Entreprise</TableHead>
+                <TableHead className="font-semibold text-right text-gray-900 w-[80px]">Actions</TableHead>
               </TableRow>
-            ) : (
-              clients.map((client) => (
-                <TableRow key={client.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-200 dark:border-gray-600 bg-white dark:bg-transparent">
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
-                        <svg className="w-4 h-4 text-blue-600 dark:text-blue-400" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                        </svg>
-                      </div>
-                      <div className="font-medium text-gray-900 dark:text-white">
-                        {client.nom}
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="space-y-1">
-                      {client.telephone && (
-                        <div className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-400">
-                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
-                          </svg>
-                          {client.telephone}
+            </TableHeader>
+            <TableBody>
+                  {loading ? (
+                    Array.from({ length: 5 }).map((_, index) => (
+                      <TableRow key={index} className="border-b border-gray-200 dark:border-gray-600 bg-white dark:bg-transparent">
+                        <TableCell colSpan={5}>
+                          <div className="flex items-center space-x-4">
+                            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse flex-1"></div>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : clients.length === 0 ? (
+                    <TableRow className="border-b border-gray-200 dark:border-gray-600 bg-white dark:bg-transparent">
+                      <TableCell colSpan={5} className="text-center py-8">
+                        <div className="flex flex-col items-center justify-center text-gray-500 dark:text-gray-400">
+                          <Users className="h-12 w-12 mb-4 text-gray-300 dark:text-gray-600" />
+                          <p className="text-lg font-medium mb-2">Aucun client trouvé</p>
+                          <p className="text-sm">
+                            {hasActiveFilters
+                              ? 'Aucun client ne correspond aux filtres sélectionnés'
+                              : 'Commencez par ajouter votre premier client'
+                            }
+                          </p>
                         </div>
-                      )}
-                      {client.email && (
-                        <div className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-400">
-                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
-                            <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
-                          </svg>
-                          {client.email}
-                        </div>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-400">
-                      <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
-                      </svg>
-                      {client.adresse || '-'}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    {client.entreprise ? (
-                      <Badge variant="secondary" className="bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
-                        {client.entreprise}
-                      </Badge>
-                    ) : (
-                      <span className="text-gray-400 dark:text-gray-500">-</span>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex items-center gap-2 justify-end">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => navigate(`/clients/${client.id}`)}
-                        className="h-8 px-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 hover:text-gray-900 dark:hover:text-white transition-colors"
-                      >
-                        Détails
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => showDeleteConfirmation(client)}
-                        disabled={deleting === client.id}
-                        className="h-8 px-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    clients.map((client) => (
+                      <TableRow key={client.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-200 dark:border-gray-600 bg-white dark:bg-transparent">
+                        <TableCell className="max-w-0">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center flex-shrink-0">
+                              <svg className="w-4 h-4 text-blue-600 dark:text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                              </svg>
+                            </div>
+                            <div className="font-medium text-gray-900 dark:text-white truncate">
+                              {client.nom}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="max-w-0">
+                          <div className="space-y-1">
+                            {client.telephone && (
+                              <div className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-400">
+                                <svg className="w-3 h-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                  <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
+                                </svg>
+                                <span className="truncate">{client.telephone}</span>
+                              </div>
+                            )}
+                            {client.email && (
+                              <div className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-400">
+                                <svg className="w-3 h-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                  <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
+                                  <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
+                                </svg>
+                                <span className="truncate">{client.email}</span>
+                              </div>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-400">
+                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                            </svg>
+                            {client.adresse || '-'}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {client.entreprise ? (
+                            <Badge variant="secondary" className="bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
+                              {client.entreprise}
+                            </Badge>
+                          ) : (
+                            <span className="text-gray-400 dark:text-gray-500">-</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center gap-2 justify-end">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => navigate(`/clients/${client.id}`)}
+                              className="h-8 px-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 hover:text-gray-900 dark:hover:text-white transition-colors"
+                            >
+                              Détails
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => showDeleteConfirmation(client)}
+                              disabled={deleting === client.id}
+                              className="h-8 px-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+            </TableBody>
+          </Table>
+        </div>
       </div>
 
       {/* Pagination */}

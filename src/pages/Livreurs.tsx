@@ -179,7 +179,7 @@ export function Livreurs() {
   const handleDelete = async (livreurId: string) => {
     setDeleting(livreurId);
     try {
-      const { error } = await api.deleteUser(livreurId);
+      const { data, error } = await api.deleteUser(livreurId);
 
       if (error) {
         toast({
@@ -188,9 +188,20 @@ export function Livreurs() {
           variant: 'destructive',
         });
       } else {
+        // Provide feedback based on auth deletion status
+        let description = 'Livreur supprimé avec succès';
+
+        if (data?.authDeletionStatus === 'auth_success') {
+          description = 'Livreur et compte d\'authentification supprimés avec succès';
+        } else if (data?.authDeletionStatus === 'auth_failed') {
+          description = 'Livreur supprimé, mais le compte d\'authentification n\'a pas pu être supprimé. Veuillez contacter l\'administrateur.';
+        } else if (data?.authDeletionStatus === 'no_auth') {
+          description = 'Livreur supprimé avec succès (aucun compte d\'authentification associé)';
+        }
+
         toast({
           title: 'Succès',
-          description: 'Livreur et compte d\'authentification supprimés avec succès',
+          description,
         });
         fetchLivreurs(true);
       }
@@ -459,7 +470,8 @@ export function Livreurs() {
             <span className="text-sm text-gray-500 dark:text-gray-400">Total: {totalCount} livreurs</span>
           </div>
         </div>
-        <Table>
+        <div className="overflow-x-auto">
+          <Table>
           <TableHeader>
             <TableRow className="border-b border-gray-200 dark:border-gray-600" style={{ backgroundColor: 'hsl(210, 40%, 96.1%)' }}>
               <TableHead className="font-semibold text-gray-900">Nom</TableHead>
@@ -579,6 +591,7 @@ export function Livreurs() {
             )}
           </TableBody>
         </Table>
+        </div>
       </div>
 
       {/* Pagination */}

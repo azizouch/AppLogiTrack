@@ -115,7 +115,7 @@ export function LivreurDetails() {
 
     setDeleting(true);
     try {
-      const { error } = await api.deleteUser(livreur.id);
+      const { data, error } = await api.deleteUser(livreur.id);
 
       if (error) {
         toast({
@@ -124,9 +124,20 @@ export function LivreurDetails() {
           variant: 'destructive',
         });
       } else {
+        // Provide feedback based on auth deletion status
+        let description = 'Livreur supprimé avec succès';
+
+        if (data?.authDeletionStatus === 'auth_success') {
+          description = 'Livreur et compte d\'authentification supprimés avec succès';
+        } else if (data?.authDeletionStatus === 'auth_failed') {
+          description = 'Livreur supprimé, mais le compte d\'authentification n\'a pas pu être supprimé. Veuillez contacter l\'administrateur.';
+        } else if (data?.authDeletionStatus === 'no_auth') {
+          description = 'Livreur supprimé avec succès (aucun compte d\'authentification associé)';
+        }
+
         toast({
           title: 'Succès',
-          description: 'Livreur et compte d\'authentification supprimés avec succès',
+          description,
         });
         navigate('/livreurs');
       }

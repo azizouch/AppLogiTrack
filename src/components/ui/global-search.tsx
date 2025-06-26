@@ -1,17 +1,18 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Search, X, User, Package, Building2, Loader2 } from 'lucide-react';
+import { Search, X, User, Package, Building2, Truck, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { api } from '@/lib/supabase';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Client, Colis, Entreprise } from '@/types';
+import { Client, Colis, Entreprise, User as Livreur } from '@/types';
 
 interface SearchResults {
   clients: Client[];
   colis: (Colis & { client?: { nom: string }; entreprise?: { nom: string } })[];
   entreprises: Entreprise[];
+  livreurs: Livreur[];
 }
 
 interface GlobalSearchProps {
@@ -23,12 +24,12 @@ interface GlobalSearchProps {
 
 export function GlobalSearch({
   className = "",
-  placeholder = "Rechercher clients, colis, entreprises...",
+  placeholder = "Rechercher clients, colis, entreprises, livreurs...",
   isMobile = false,
   onClose
 }: GlobalSearchProps) {
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<SearchResults>({ clients: [], colis: [], entreprises: [] });
+  const [results, setResults] = useState<SearchResults>({ clients: [], colis: [], entreprises: [], livreurs: [] });
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
@@ -42,7 +43,7 @@ export function GlobalSearch({
   // Clear search when component mounts or when location changes
   useEffect(() => {
     setQuery('');
-    setResults({ clients: [], colis: [], entreprises: [] });
+    setResults({ clients: [], colis: [], entreprises: [], livreurs: [] });
     setIsOpen(false);
     setSelectedIndex(-1);
   }, []);
@@ -50,7 +51,7 @@ export function GlobalSearch({
   // Clear search when location changes (navigation)
   useEffect(() => {
     setQuery('');
-    setResults({ clients: [], colis: [], entreprises: [] });
+    setResults({ clients: [], colis: [], entreprises: [], livreurs: [] });
     setIsOpen(false);
     setSelectedIndex(-1);
   }, [location.pathname]);
@@ -58,7 +59,7 @@ export function GlobalSearch({
   // Perform search
   const performSearch = useCallback(async (searchQuery: string) => {
     if (!searchQuery || searchQuery.trim().length < 2) {
-      setResults({ clients: [], colis: [], entreprises: [] });
+      setResults({ clients: [], colis: [], entreprises: [], livreurs: [] });
       setIsLoading(false);
       return;
     }
@@ -68,18 +69,19 @@ export function GlobalSearch({
       const searchResults = await api.globalSearch(searchQuery, 5);
 
       if (searchResults.error) {
-        setResults({ clients: [], colis: [], entreprises: [] });
+        setResults({ clients: [], colis: [], entreprises: [], livreurs: [] });
       } else {
         setResults({
           clients: searchResults.clients,
           colis: searchResults.colis,
-          entreprises: searchResults.entreprises
+          entreprises: searchResults.entreprises,
+          livreurs: searchResults.livreurs
         });
         // Ensure dropdown is open when we have results
         setIsOpen(true);
       }
     } catch (error) {
-      setResults({ clients: [], colis: [], entreprises: [] });
+      setResults({ clients: [], colis: [], entreprises: [], livreurs: [] });
     } finally {
       setIsLoading(false);
     }
@@ -91,7 +93,7 @@ export function GlobalSearch({
       performSearch(debouncedQuery);
       setIsOpen(true);
     } else {
-      setResults({ clients: [], colis: [], entreprises: [] });
+      setResults({ clients: [], colis: [], entreprises: [], livreurs: [] });
       setIsOpen(false);
     }
   }, [debouncedQuery, performSearch]);
@@ -113,7 +115,7 @@ export function GlobalSearch({
   const handleInputFocus = () => {
     if (query.trim().length >= 2) {
       // If we have existing results, show them immediately
-      const hasExistingResults = results.clients.length > 0 || results.colis.length > 0 || results.entreprises.length > 0;
+      const hasExistingResults = results.clients.length > 0 || results.colis.length > 0 || results.entreprises.length > 0 || results.livreurs.length > 0;
       if (hasExistingResults) {
         setIsOpen(true);
       } else {
@@ -126,7 +128,7 @@ export function GlobalSearch({
   // Clear search
   const clearSearch = () => {
     setQuery('');
-    setResults({ clients: [], colis: [], entreprises: [] });
+    setResults({ clients: [], colis: [], entreprises: [], livreurs: [] });
     setIsOpen(false);
     setSelectedIndex(-1);
     inputRef.current?.focus();
@@ -142,7 +144,7 @@ export function GlobalSearch({
   };
 
   // Navigate to result
-  const navigateToResult = (type: 'client' | 'colis' | 'entreprise', id: string) => {
+  const navigateToResult = (type: 'client' | 'colis' | 'entreprise' | 'livreur', id: string) => {
     closeDropdown();
     setQuery('');
 
@@ -156,12 +158,15 @@ export function GlobalSearch({
       case 'entreprise':
         navigate(`/entreprises/${id}`);
         break;
+      case 'livreur':
+        navigate(`/livreurs/${id}`);
+        break;
     }
   };
 
   // Get all results as flat array for keyboard navigation
   const getAllResults = () => {
-    const allResults: Array<{ type: 'client' | 'colis' | 'entreprise'; item: any; index: number }> = [];
+    const allResults: Array<{ type: 'client' | 'colis' | 'entreprise' | 'livreur'; item: any; index: number }> = [];
     let index = 0;
 
     results.clients.forEach(client => {
@@ -174,6 +179,10 @@ export function GlobalSearch({
 
     results.entreprises.forEach(entreprise => {
       allResults.push({ type: 'entreprise', item: entreprise, index: index++ });
+    });
+
+    results.livreurs.forEach(livreur => {
+      allResults.push({ type: 'livreur', item: livreur, index: index++ });
     });
 
     return allResults;
@@ -223,7 +232,7 @@ export function GlobalSearch({
   }, []);
 
   // Calculate total results
-  const totalResults = results.clients.length + results.colis.length + results.entreprises.length;
+  const totalResults = results.clients.length + results.colis.length + results.entreprises.length + results.livreurs.length;
   const hasResults = totalResults > 0;
   const showNoResults = !isLoading && query.trim().length >= 2 && !hasResults;
 
@@ -384,6 +393,37 @@ export function GlobalSearch({
                           {entreprise.contact && <span>{entreprise.contact}</span>}
                           {entreprise.contact && entreprise.telephone && <span> • </span>}
                           {entreprise.telephone && <span>{entreprise.telephone}</span>}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Livreurs Section */}
+              {results.livreurs.length > 0 && (
+                <div>
+                  <div className="px-3 py-2 text-xs font-medium text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-700/50">
+                    <Truck className="inline h-3 w-3 mr-1" />
+                    Livreurs ({results.livreurs.length})
+                  </div>
+                  {results.livreurs.map((livreur, index) => {
+                    const globalIndex = results.clients.length + results.colis.length + results.entreprises.length + index;
+                    return (
+                      <button
+                        key={livreur.id}
+                        onClick={() => navigateToResult('livreur', livreur.id)}
+                        className={`w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-100 dark:border-gray-700 last:border-b-0 transition-colors ${
+                          selectedIndex === globalIndex ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                        }`}
+                      >
+                        <div className="font-medium text-gray-900 dark:text-white text-sm">
+                          {livreur.nom} {livreur.prenom}
+                        </div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                          {livreur.telephone && <span>{livreur.telephone}</span>}
+                          {livreur.telephone && livreur.statut && <span> • </span>}
+                          {livreur.statut && <span>{livreur.statut}</span>}
                         </div>
                       </button>
                     );
