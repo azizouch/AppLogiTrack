@@ -327,6 +327,60 @@ export const auth = {
     return { data, error }
   },
 
+
+
+  // Upload profile image
+  uploadProfileImage: async (file: File, userId: string) => {
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${userId}-${Date.now()}.${fileExt}`;
+      const filePath = `profiles/${fileName}`;
+
+      const { error } = await supabase.storage
+        .from('profile-images')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (error) {
+        if (error.message.includes('Bucket not found')) {
+          throw new Error('Le bucket de stockage n\'existe pas. Veuillez contacter l\'administrateur.');
+        }
+        if (error.message.includes('The resource already exists')) {
+          throw new Error('Un fichier avec ce nom existe déjà. Veuillez réessayer.');
+        }
+        throw new Error(`Erreur lors de l'upload: ${error.message}`);
+      }
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('profile-images')
+        .getPublicUrl(filePath);
+
+      return { data: { path: filePath, url: publicUrl }, error: null };
+    } catch (error: any) {
+      return {
+        data: null,
+        error: error instanceof Error ? error : new Error('Erreur inconnue lors de l\'upload')
+      };
+    }
+  },
+
+  // Delete profile image
+  deleteProfileImage: async (filePath: string) => {
+    try {
+      const { error } = await supabase.storage
+        .from('profile-images')
+        .remove([filePath]);
+
+      return { error };
+    } catch (error) {
+      return { error };
+    }
+  },
+
+
   // Check if auth user exists using database function
   checkAuthUserExists: async (authId: string) => {
     try {
@@ -1164,22 +1218,70 @@ export const api = {
 
   // Dashboard stats
   getDashboardStats: async () => {
-    const [colisResult, usersResult] = await Promise.all([
-      supabase.from('colis').select('statut'),
-      supabase.from('utilisateurs').select('role').eq('role', 'Livreur').eq('statut', 'actif')
-    ])
+    try {
+      const [colisResult, livreursResult, clientsResult, entreprisesResult] = await Promise.all([
+        supabase.from('colis').select('statut'),
+        supabase.from('utilisateurs').select('role, statut').eq('role', 'Livreur'),
+        supabase.from('clients').select('id'),
+        supabase.from('entreprises').select('id')
+      ]);
 
-    const colis = colisResult.data || []
-    const livreurs = usersResult.data || []
+      const colis = colisResult.data || [];
+      const livreurs = livreursResult.data || [];
+      const clients = clientsResult.data || [];
+      const entreprises = entreprisesResult.data || [];
 
-    const stats = {
-      totalColis: colis.length,
-      colisEnCours: colis.filter(c => c.statut === 'En cours').length,
-      colisLivres: colis.filter(c => c.statut === 'Livré').length,
-      livreursActifs: livreurs.length
+      // Count colis by status
+      const enAttente = colis.filter(c =>
+        c.statut === 'en_attente' ||
+        c.statut === 'En attente' ||
+        c.statut === 'nouveau'
+      ).length;
+
+      const livres = colis.filter(c =>
+        c.statut === 'Livré' ||
+        c.statut === 'livré'
+      ).length;
+
+      const retournes = colis.filter(c =>
+        c.statut === 'Retourné' ||
+        c.statut === 'retourné' ||
+        c.statut === 'retour'
+      ).length;
+
+      // En traitement = all colis EXCEPT En attente, Livrés, and Retournés
+      const enTraitement = colis.filter(c => {
+        const statut = c.statut?.toLowerCase() || '';
+        return !(
+          statut === 'en_attente' ||
+          statut === 'en attente' ||
+          statut === 'nouveau' ||
+          statut === 'livré' ||
+          statut === 'retourné' ||
+          statut === 'retour'
+        );
+      }).length;
+
+      const livreursActifs = livreurs.filter(l =>
+        l.statut === 'Actif' ||
+        l.statut === 'actif'
+      ).length;
+
+      const stats = {
+        totalColis: colis.length,
+        enAttente,
+        enTraitement,
+        livres,
+        retournes,
+        clientsEnregistres: clients.length,
+        entreprisesPartenaires: entreprises.length,
+        livreursActifs
+      };
+
+      return { data: stats, error: null };
+    } catch (error) {
+      return { data: null, error };
     }
-
-    return { data: stats, error: colisResult.error || usersResult.error }
   },
 
   // Recent colis for dashboard
@@ -1266,6 +1368,97 @@ export const api = {
     }
   },
 
+  // Livreur-specific global search - only shows data related to the livreur
+  livreurGlobalSearch: async (query: string, livreurId: string, limit: number = 10) => {
+    if (!query || query.trim().length < 2 || !livreurId) {
+      return {
+        clients: [],
+        colis: [],
+        entreprises: [],
+        livreurs: [],
+        error: null
+      };
+    }
+
+    const searchTerm = query.trim();
+
+    try {
+      // First, get all colis assigned to this livreur
+      const { data: livreurColis, error: livreurColisError } = await supabase
+        .from('colis')
+        .select(`
+          id,
+          statut,
+          prix,
+          client_id,
+          entreprise_id,
+          client:clients(id, nom, email, telephone, adresse),
+          entreprise:entreprises(id, nom, contact, telephone, email, adresse)
+        `)
+        .eq('livreur_id', livreurId);
+
+      if (livreurColisError) {
+        throw livreurColisError;
+      }
+
+      // Extract unique client and entreprise IDs from livreur's colis
+      const clientIds = [...new Set(livreurColis?.map(c => c.client_id).filter(Boolean) || [])];
+      const entrepriseIds = [...new Set(livreurColis?.map(c => c.entreprise_id).filter(Boolean) || [])];
+
+      // Search colis by ID (only livreur's colis)
+      const colisByID = livreurColis?.filter(colis =>
+        colis.id.toLowerCase().includes(searchTerm.toLowerCase())
+      ).slice(0, limit) || [];
+
+      // Search clients (only clients related to livreur's colis)
+      let clients = [];
+      if (clientIds.length > 0) {
+        const { data: clientsData, error: clientsError } = await supabase
+          .from('clients')
+          .select('id, nom, email, telephone, adresse')
+          .in('id', clientIds)
+          .or(`nom.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,telephone.ilike.%${searchTerm}%`)
+          .limit(limit);
+
+        if (!clientsError) {
+          clients = clientsData || [];
+        }
+      }
+
+      // Search entreprises (only entreprises related to livreur's colis)
+      let entreprises = [];
+      if (entrepriseIds.length > 0) {
+        const { data: entreprisesData, error: entreprisesError } = await supabase
+          .from('entreprises')
+          .select('id, nom, contact, telephone, email, adresse')
+          .in('id', entrepriseIds)
+          .or(`nom.ilike.%${searchTerm}%,contact.ilike.%${searchTerm}%,telephone.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%`)
+          .limit(limit);
+
+        if (!entreprisesError) {
+          entreprises = entreprisesData || [];
+        }
+      }
+
+      return {
+        clients: clients,
+        colis: colisByID,
+        entreprises: entreprises,
+        livreurs: [], // Livreurs don't need to search for other livreurs
+        error: null
+      };
+    } catch (error) {
+      console.error('Livreur global search error:', error);
+      return {
+        clients: [],
+        colis: [],
+        entreprises: [],
+        livreurs: [],
+        error: error
+      };
+    }
+  },
+
   // CRUD operations for Colis
   createColis: async (colis: Omit<Colis, 'id' | 'date_creation'>) => {
     const { data, error } = await supabase
@@ -1292,6 +1485,44 @@ export const api = {
       .delete()
       .eq('id', id)
     return { data, error }
+  },
+
+  // Get recent activity for dashboard
+  getRecentActivity: async (limit: number = 5) => {
+    try {
+      const { data, error } = await supabase
+        .from('colis')
+        .select(`
+          id,
+          numero_suivi,
+          statut,
+          date_mise_a_jour,
+          clients (nom, prenom),
+          utilisateurs (nom, prenom)
+        `)
+        .order('date_mise_a_jour', { ascending: false })
+        .limit(limit);
+
+      if (error) return { data: null, error };
+
+      const activities = data?.map(colis => {
+        const client = Array.isArray(colis.clients) ? colis.clients[0] : colis.clients;
+        const livreur = Array.isArray(colis.utilisateurs) ? colis.utilisateurs[0] : colis.utilisateurs;
+
+        return {
+          id: colis.id,
+          numero_suivi: colis.numero_suivi,
+          statut: colis.statut,
+          date_mise_a_jour: colis.date_mise_a_jour,
+          client_nom: client ? `${client.prenom || ''} ${client.nom || ''}`.trim() : 'Client inconnu',
+          livreur_nom: livreur ? `${livreur.prenom || ''} ${livreur.nom || ''}`.trim() : 'Non assigné'
+        };
+      }) || [];
+
+      return { data: activities, error: null };
+    } catch (error) {
+      return { data: null, error };
+    }
   },
 
   // CRUD operations for Clients
@@ -1398,6 +1629,21 @@ export const api = {
     return { data, error }
   },
 
+  // Update user profile with image
+  updateUserProfile: async (userId: string, profileData: Partial<User>) => {
+    const { data, error } = await supabase
+      .from('utilisateurs')
+      .update({
+        ...profileData,
+        date_modification: new Date().toISOString()
+      })
+      .eq('id', userId)
+      .select()
+      .single();
+
+    return { data, error };
+  },
+
   updateUserEmail: async (authId: string, newEmail: string) => {
     try {
       // Use the database function to update email in auth.users
@@ -1492,11 +1738,14 @@ export const api = {
   // Notifications
   getNotifications: async (userId: string) => {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('notifications')
-        .select('*')
-        .eq('user_id', userId)  // Changed from 'utilisateur_id' to 'user_id'
-        .order('created_at', { ascending: false });  // Changed from 'date_creation' to 'created_at'
+        .select('*');
+
+      // All users (including admin/gestionnaire) should only see their own notifications
+      query = query.eq('user_id', userId);
+
+      const { data, error } = await query.order('created_at', { ascending: false });
 
       // Transform the data to match our interface
       const transformedData = data?.map(notification => ({
@@ -1535,7 +1784,6 @@ export const api = {
         .single();
 
       if (error) {
-        console.error('Error creating notification:', error);
         return { data: null, error };
       }
 
@@ -1552,7 +1800,6 @@ export const api = {
 
       return { data: transformedData, error };
     } catch (error) {
-      console.error('Exception creating notification:', error);
       return { data: null, error };
     }
   },
@@ -1579,7 +1826,6 @@ export const api = {
 
       return { data: transformedData, error };
     } catch (error) {
-      console.error('Error marking notification as read:', error);
       return { data: null, error };
     }
   },
@@ -1594,7 +1840,6 @@ export const api = {
 
       return { data, error };
     } catch (error) {
-      console.error('Error marking all notifications as read:', error);
       return { data: null, error };
     }
   },
@@ -1608,7 +1853,6 @@ export const api = {
 
       return { error };
     } catch (error) {
-      console.error('Error deleting notification:', error);
       return { error };
     }
   },
@@ -1643,10 +1887,22 @@ export const api = {
           .select('id, nom, prenom, role, statut')
           .in('role', ['Admin', 'Gestionnaire']);
 
-        return { data: dataNoStatus, error: errorNoStatus };
+        // Remove duplicates based on user ID
+        const uniqueUsers = dataNoStatus ? dataNoStatus.filter((user, index, self) =>
+          index === self.findIndex(u => u.id === user.id)
+        ) : [];
+
+        console.log('Admin/Gestionnaire users found:', uniqueUsers);
+        return { data: uniqueUsers, error: errorNoStatus };
       }
 
-      return { data, error };
+      // Remove duplicates based on user ID
+      const uniqueUsers = data ? data.filter((user, index, self) =>
+        index === self.findIndex(u => u.id === user.id)
+      ) : [];
+
+      console.log('Admin/Gestionnaire users found:', uniqueUsers);
+      return { data: uniqueUsers, error };
     } catch (error) {
       console.error('Error fetching admin/gestionnaire users:', error);
       return { data: null, error };

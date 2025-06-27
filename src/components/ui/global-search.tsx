@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { api } from '@/lib/supabase';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 import { Client, Colis, Entreprise, User as Livreur } from '@/types';
 
 interface SearchResults {
@@ -24,10 +25,11 @@ interface GlobalSearchProps {
 
 export function GlobalSearch({
   className = "",
-  placeholder = "Rechercher clients, colis, entreprises, livreurs...",
+  placeholder,
   isMobile = false,
   onClose
 }: GlobalSearchProps) {
+  const { state } = useAuth();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResults>({ clients: [], colis: [], entreprises: [], livreurs: [] });
   const [isLoading, setIsLoading] = useState(false);
@@ -39,6 +41,16 @@ export function GlobalSearch({
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Dynamic placeholder based on user role
+  const getPlaceholder = () => {
+    if (placeholder) return placeholder;
+
+    if (state.user?.role?.toLowerCase() === 'livreur') {
+      return "Rechercher mes colis, clients, entreprises...";
+    }
+    return "Rechercher clients, colis, entreprises, livreurs...";
+  };
 
   // Clear search when component mounts or when location changes
   useEffect(() => {
@@ -66,7 +78,14 @@ export function GlobalSearch({
 
     setIsLoading(true);
     try {
-      const searchResults = await api.globalSearch(searchQuery, 5);
+      let searchResults;
+
+      // Use different search functions based on user role
+      if (state.user?.role?.toLowerCase() === 'livreur' && state.user?.id) {
+        searchResults = await api.livreurGlobalSearch(searchQuery, state.user.id, 5);
+      } else {
+        searchResults = await api.globalSearch(searchQuery, 5);
+      }
 
       if (searchResults.error) {
         setResults({ clients: [], colis: [], entreprises: [], livreurs: [] });
@@ -85,7 +104,7 @@ export function GlobalSearch({
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [state.user?.role, state.user?.id]);
 
   // Effect for debounced search
   useEffect(() => {
@@ -148,18 +167,38 @@ export function GlobalSearch({
     closeDropdown();
     setQuery('');
 
+    const isLivreur = state.user?.role?.toLowerCase() === 'livreur';
+
     switch (type) {
       case 'client':
-        navigate(`/clients/${id}`);
+        // Livreurs can't access client details directly, navigate to their colis instead
+        if (isLivreur) {
+          navigate('/colis/mes-colis');
+        } else {
+          navigate(`/clients/${id}`);
+        }
         break;
       case 'colis':
-        navigate(`/colis/${id}`);
+        // Navigate to appropriate colis view based on role
+        if (isLivreur) {
+          navigate(`/colis/${id}`); // Livreurs can still view individual colis details
+        } else {
+          navigate(`/colis/${id}`);
+        }
         break;
       case 'entreprise':
-        navigate(`/entreprises/${id}`);
+        // Livreurs can't access entreprise details directly, navigate to their colis instead
+        if (isLivreur) {
+          navigate('/colis/mes-colis');
+        } else {
+          navigate(`/entreprises/${id}`);
+        }
         break;
       case 'livreur':
-        navigate(`/livreurs/${id}`);
+        // Only admin/gestionnaire can access livreur details
+        if (!isLivreur) {
+          navigate(`/livreurs/${id}`);
+        }
         break;
     }
   };
@@ -181,9 +220,12 @@ export function GlobalSearch({
       allResults.push({ type: 'entreprise', item: entreprise, index: index++ });
     });
 
-    results.livreurs.forEach(livreur => {
-      allResults.push({ type: 'livreur', item: livreur, index: index++ });
-    });
+    // Only include livreurs for non-livreur users
+    if (state.user?.role?.toLowerCase() !== 'livreur') {
+      results.livreurs.forEach(livreur => {
+        allResults.push({ type: 'livreur', item: livreur, index: index++ });
+      });
+    }
 
     return allResults;
   };
@@ -232,7 +274,9 @@ export function GlobalSearch({
   }, []);
 
   // Calculate total results
-  const totalResults = results.clients.length + results.colis.length + results.entreprises.length + results.livreurs.length;
+  const isLivreur = state.user?.role?.toLowerCase() === 'livreur';
+  const totalResults = results.clients.length + results.colis.length + results.entreprises.length +
+    (isLivreur ? 0 : results.livreurs.length);
   const hasResults = totalResults > 0;
   const showNoResults = !isLoading && query.trim().length >= 2 && !hasResults;
 
@@ -247,7 +291,7 @@ export function GlobalSearch({
           key={location.pathname} // Force re-render on navigation
           ref={inputRef}
           type="text"
-          placeholder={placeholder}
+          placeholder={getPlaceholder()}
           value={query}
           onChange={handleInputChange}
           onFocus={handleInputFocus}
@@ -400,8 +444,8 @@ export function GlobalSearch({
                 </div>
               )}
 
-              {/* Livreurs Section */}
-              {results.livreurs.length > 0 && (
+              {/* Livreurs Section - Only show for admin/gestionnaire */}
+              {results.livreurs.length > 0 && state.user?.role?.toLowerCase() !== 'livreur' && (
                 <div>
                   <div className="px-3 py-2 text-xs font-medium text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-700/50">
                     <Truck className="inline h-3 w-3 mr-1" />

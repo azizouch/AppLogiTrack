@@ -26,6 +26,7 @@ import { useToast } from '@/hooks/use-toast';
 const formSchema = z.object({
   nom: z.string().min(2, 'Le nom doit contenir au moins 2 caractères'),
   telephone: z.string().optional(),
+  telephone_2: z.string().optional(),
   email: z.string().email('Email invalide').optional().or(z.literal('')),
   adresse: z.string().optional(),
   contact: z.string().optional(),
@@ -47,6 +48,7 @@ export function EditEntreprise() {
     defaultValues: {
       nom: '',
       telephone: '',
+      telephone_2: '',
       email: '',
       adresse: '',
       contact: '',
@@ -81,6 +83,7 @@ export function EditEntreprise() {
           form.reset({
             nom: data.nom || '',
             telephone: data.telephone || '',
+            telephone_2: data.telephone_2 || '',
             email: data.email || '',
             adresse: data.adresse || '',
             contact: data.contact || '',
@@ -113,6 +116,7 @@ export function EditEntreprise() {
       const entrepriseData = {
         nom: values.nom,
         telephone: values.telephone || null,
+        telephone_2: values.telephone_2 || null,
         email: values.email || null,
         adresse: values.adresse || null,
         contact: values.contact || null,
@@ -263,12 +267,31 @@ export function EditEntreprise() {
                 name="telephone"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-base font-semibold">Téléphone</FormLabel>
+                    <FormLabel className="text-base font-semibold">Téléphone (Vendeur B)</FormLabel>
                     <FormControl>
                       <Input
                         {...field}
                         className="bg-white dark:bg-gray-700"
-                        placeholder="Numéro de téléphone"
+                        placeholder="Numéro de téléphone principal"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Téléphone 2 */}
+              <FormField
+                control={form.control}
+                name="telephone_2"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-base font-semibold">Téléphone 2 (Vendeur P)</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        className="bg-white dark:bg-gray-700"
+                        placeholder="Numéro de téléphone secondaire"
                       />
                     </FormControl>
                     <FormMessage />

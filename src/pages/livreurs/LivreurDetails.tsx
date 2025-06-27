@@ -4,6 +4,7 @@ import { ArrowLeft, RefreshCw, User, Edit, Trash2, Package, FileText, Plus, Sear
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import {
   Dialog,
   DialogContent,
@@ -333,9 +334,15 @@ export function LivreurDetails() {
       {/* Livreur Info Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
-            <User className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-          </div>
+          <Avatar className="w-12 h-12">
+            <AvatarImage
+              src={livreur.image_url}
+              alt={`${livreur.prenom || ''} ${livreur.nom}`.trim()}
+            />
+            <AvatarFallback className="bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 text-lg font-bold">
+              {livreur.prenom?.[0] || livreur.nom?.[0] || '?'}
+            </AvatarFallback>
+          </Avatar>
           <div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
               {livreur.nom} {livreur.prenom} (LIV-{livreur.id.slice(-3).toUpperCase()})

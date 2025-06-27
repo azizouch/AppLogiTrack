@@ -369,7 +369,7 @@ export function ColisLivres() {
                           variant="ghost"
                           size="sm"
                           className="h-8 px-2 bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-900/40 transition-colors"
-                          onClick={() => navigate(`/colis/${colisItem.id}`)}
+                          onClick={() => navigate(`/colis/${colisItem.id}?returnTo=${encodeURIComponent('/colis/livres')}`)}
                           title="Voir détails du colis"
                         >
                           Colis

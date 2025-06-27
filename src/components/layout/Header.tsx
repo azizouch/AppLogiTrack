@@ -1,9 +1,22 @@
 
-import { Search, Bell, User, Menu, X, LogOut, CheckCircle, XCircle, Settings, Check, Trash2 } from 'lucide-react';
+import { Search, Bell, User, Menu, X, LogOut, CheckCircle, XCircle, Settings, Check, Trash2, CheckCheck, Loader2, AlertCircle } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -40,7 +53,8 @@ export function Header() {
   // Notification state
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [showNotifications, setShowNotifications] = useState(false);
+  const [showMobileNotifications, setShowMobileNotifications] = useState(false);
+  const [showDesktopNotifications, setShowDesktopNotifications] = useState(false);
 
 
 
@@ -112,7 +126,7 @@ export function Header() {
         });
       }
     } catch (error) {
-      console.error('Error deleting notification:', error);
+      // Silently handle error - user will see if deletion failed
     }
   };
 
@@ -260,10 +274,10 @@ export function Header() {
         {/* Center - LogiTrack Title */}
         <h1 className="text-lg font-bold text-gray-900 dark:text-white absolute left-1/2 transform -translate-x-1/2">LogiTrack</h1>
 
-        {/* Right side - Notification and User */}
-        <div className="flex items-center space-x-3">
-          {(state.user?.role?.toLowerCase() === 'admin' || state.user?.role?.toLowerCase() === 'gestionnaire') && (
-            <Popover open={showNotifications} onOpenChange={setShowNotifications}>
+        {/* Right side - Notification and User (Mobile Only) */}
+        <div className="flex items-center space-x-3 md:hidden">
+          {state.user && (
+            <Popover open={showMobileNotifications} onOpenChange={setShowMobileNotifications}>
               <PopoverTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full border border-gray-300 dark:border-gray-600 p-0 hover:bg-transparent relative">
                   <Bell className="h-4 w-4 text-gray-600 dark:text-white" />
@@ -275,89 +289,120 @@ export function Header() {
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-80 p-0" align="end">
-                <div className="p-4 border-b">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-semibold">Notifications</h3>
-                    {unreadCount > 0 && (
-                      <Button variant="ghost" size="sm" onClick={markAllAsRead}>
-                        <Check className="h-4 w-4 mr-1" />
-                        Tout marquer comme lu
-                      </Button>
-                    )}
-                  </div>
-                </div>
-                <ScrollArea className="h-80">
-                  {notifications.length === 0 ? (
-                    <div className="p-4 text-center text-gray-500">
-                      Aucune notification
-                    </div>
-                  ) : (
-                    <div className="space-y-1">
-                      {notifications.map((notification) => (
-                        <div
-                          key={notification.id}
-                          className={`p-3 border-b last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-800 ${
-                            !notification.lu ? 'bg-blue-50 dark:bg-blue-900/10' : ''
-                          }`}
+                <Card className="shadow-lg border-border animate-in fade-in zoom-in-95 duration-200">
+                  <CardHeader className="pb-3 pt-4 px-4">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-base font-medium">
+                        Notifications
+                      </CardTitle>
+                      {unreadCount > 0 && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 text-xs"
+                          onClick={markAllAsRead}
                         >
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-1">
-                                <h4 className={`text-sm font-medium ${!notification.lu ? 'text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-300'}`}>
-                                  {notification.titre}
-                                </h4>
-                                {!notification.lu && (
-                                  <div className="w-2 h-2 bg-blue-600 rounded-full flex-shrink-0"></div>
-                                )}
-                              </div>
-                              <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                                {notification.message}
-                              </p>
-                              <p className="text-xs text-gray-500">
-                                {formatRelativeTime(notification.date_creation)}
-                              </p>
-                            </div>
-                            <div className="flex items-center gap-1 flex-shrink-0">
-                              {!notification.lu && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => markAsRead(notification.id)}
-                                  className="h-6 w-6 p-0"
-                                >
-                                  <Check className="h-3 w-3" />
-                                </Button>
-                              )}
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => deleteNotification(notification.id)}
-                                className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
-                              >
-                                <Trash2 className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
+                          <CheckCheck className="mr-1 h-3.5 w-3.5" />
+                          Tout marquer comme lu
+                        </Button>
+                      )}
                     </div>
-                  )}
-                </ScrollArea>
-                {notifications.length > 0 && (
-                  <div className="p-3 border-t">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        navigate('/notifications');
-                        setShowNotifications(false);
-                      }}
-                      className="w-full"
-                    >
-                      Voir toutes les notifications
-                    </Button>
-                  </div>
-                )}
+                  </CardHeader>
+                  <CardContent className="px-2 py-0 max-h-[60vh] overflow-y-auto">
+                    {notifications.length === 0 ? (
+                      <div className="text-center py-8 text-sm text-muted-foreground">
+                        <p>Aucune notification</p>
+                      </div>
+                    ) : (
+                      <div className="divide-y divide-border">
+                        {notifications.map((notification) => (
+                          <div
+                            key={notification.id}
+                            className={`block px-4 py-3 hover:bg-muted/50 transition-colors relative ${
+                              !notification.lu ? 'bg-muted/30' : ''
+                            }`}
+                          >
+                            <div className="flex items-start gap-3">
+                              <div className="flex-1 space-y-1">
+                                <div className="flex items-center justify-between">
+                                  <p className={`text-sm ${!notification.lu ? 'font-medium' : ''}`}>
+                                    {notification.titre}
+                                  </p>
+                                  <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-6 w-6 text-muted-foreground hover:text-foreground ml-2"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          e.preventDefault();
+                                        }}
+                                      >
+                                        <Trash2 className="h-3.5 w-3.5" />
+                                        <span className="sr-only">Supprimer</span>
+                                      </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                      <AlertDialogHeader>
+                                        <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                          Êtes-vous sûr de vouloir supprimer cette notification ?
+                                          Cette action est irréversible.
+                                        </AlertDialogDescription>
+                                      </AlertDialogHeader>
+                                      <AlertDialogFooter>
+                                        <AlertDialogCancel>Annuler</AlertDialogCancel>
+                                        <AlertDialogAction
+                                          onClick={() => deleteNotification(notification.id)}
+                                          className="bg-red-600 hover:bg-red-700"
+                                        >
+                                          Supprimer
+                                        </AlertDialogAction>
+                                      </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                  </AlertDialog>
+                                </div>
+                                <p className="text-xs text-muted-foreground line-clamp-2">
+                                  {notification.message}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  {formatRelativeTime(notification.date_creation)}
+                                </p>
+                              </div>
+                            </div>
+                            {!notification.lu && (
+                              <span className="absolute right-12 top-3 h-2 w-2 rounded-full bg-primary" />
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                  <CardFooter className="p-3 border-t">
+                    <div className="flex w-full gap-2">
+                      <Button
+                        variant="default"
+                        size="sm"
+                        className="text-xs flex-1"
+                        onClick={() => {
+                          navigate('/notifications');
+                          setShowMobileNotifications(false);
+                        }}
+                      >
+                        Voir tout
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-xs"
+                        onClick={() => setShowMobileNotifications(false)}
+                      >
+                        Fermer
+                      </Button>
+                    </div>
+                  </CardFooter>
+                </Card>
               </PopoverContent>
             </Popover>
           )}
@@ -365,7 +410,11 @@ export function Header() {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full border border-gray-300 dark:border-gray-600 p-0 hover:bg-transparent">
-                <User className="h-4 w-4 text-gray-600 dark:text-white" />
+                <Avatar className="h-7 w-7">
+                  <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-xs font-bold">
+                    {state.user?.prenom?.[0] || state.user?.nom?.[0] || '?'}
+                  </AvatarFallback>
+                </Avatar>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
@@ -425,8 +474,8 @@ export function Header() {
         </div>
 
         <div className="flex items-center space-x-4 ml-6">
-          {(state.user?.role?.toLowerCase() === 'admin' || state.user?.role?.toLowerCase() === 'gestionnaire') && (
-            <Popover open={showNotifications} onOpenChange={setShowNotifications}>
+          {state.user && (
+            <Popover open={showDesktopNotifications} onOpenChange={setShowDesktopNotifications}>
               <PopoverTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 relative">
                   <Bell className="h-4 w-4 text-gray-600 dark:text-gray-400" />
@@ -438,89 +487,121 @@ export function Header() {
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-80 p-0" align="end">
-                <div className="p-4 border-b">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-semibold">Notifications</h3>
-                    {unreadCount > 0 && (
-                      <Button variant="ghost" size="sm" onClick={markAllAsRead}>
-                        <Check className="h-4 w-4 mr-1" />
-                        Tout marquer comme lu
-                      </Button>
-                    )}
-                  </div>
-                </div>
-                <ScrollArea className="h-80">
-                  {notifications.length === 0 ? (
-                    <div className="p-4 text-center text-gray-500">
-                      Aucune notification
-                    </div>
-                  ) : (
-                    <div className="space-y-1">
-                      {notifications.map((notification) => (
-                        <div
-                          key={notification.id}
-                          className={`p-3 border-b last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-800 ${
-                            !notification.lu ? 'bg-blue-50 dark:bg-blue-900/10' : ''
-                          }`}
+                <Card className="shadow-lg border-border animate-in fade-in zoom-in-95 duration-200">
+                  <CardHeader className="pb-3 pt-4 px-4">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-base font-medium">
+                        Notifications
+                      </CardTitle>
+                      {unreadCount > 0 && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 text-xs"
+                          onClick={markAllAsRead}
                         >
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-1">
-                                <h4 className={`text-sm font-medium ${!notification.lu ? 'text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-300'}`}>
-                                  {notification.titre}
-                                </h4>
-                                {!notification.lu && (
-                                  <div className="w-2 h-2 bg-blue-600 rounded-full flex-shrink-0"></div>
-                                )}
-                              </div>
-                              <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                                {notification.message}
-                              </p>
-                              <p className="text-xs text-gray-500">
-                                {formatRelativeTime(notification.date_creation)}
-                              </p>
-                            </div>
-                            <div className="flex items-center gap-1 flex-shrink-0">
-                              {!notification.lu && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => markAsRead(notification.id)}
-                                  className="h-6 w-6 p-0"
-                                >
-                                  <Check className="h-3 w-3" />
-                                </Button>
-                              )}
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => deleteNotification(notification.id)}
-                                className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
-                              >
-                                <Trash2 className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
+                          <CheckCheck className="mr-1 h-3.5 w-3.5" />
+                          Tout marquer comme lu
+                        </Button>
+                      )}
                     </div>
-                  )}
-                </ScrollArea>
-                {notifications.length > 0 && (
-                  <div className="p-3 border-t">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        navigate('/notifications');
-                        setShowNotifications(false);
-                      }}
-                      className="w-full"
-                    >
-                      Voir toutes les notifications
-                    </Button>
-                  </div>
-                )}
+                  </CardHeader>
+                  <CardContent className="px-2 py-0 max-h-[60vh] overflow-y-auto">
+                    {notifications.length === 0 ? (
+                      <div className="text-center py-8 text-sm text-muted-foreground">
+                        <p>Aucune notification</p>
+                      </div>
+                    ) : (
+                      <div className="divide-y divide-border">
+                        {notifications.map((notification) => (
+                          <div
+                            key={notification.id}
+                            className={`block px-4 py-3 hover:bg-muted/50 transition-colors relative ${
+                              !notification.lu ? 'bg-muted/30' : ''
+                            }`}
+                          >
+                            <div className="flex items-start gap-3">
+                              <div className="flex-1 space-y-1">
+                                <div className="flex items-center justify-between">
+                                  <p className={`text-sm ${!notification.lu ? 'font-medium' : ''}`}>
+                                    {notification.titre}
+                                  </p>
+                                  <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-6 w-6 text-muted-foreground hover:text-foreground ml-2"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          e.preventDefault();
+                                        }}
+                                      >
+                                        <Trash2 className="h-3.5 w-3.5" />
+                                        <span className="sr-only">Supprimer</span>
+                                      </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                      <AlertDialogHeader>
+                                        <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                          Êtes-vous sûr de vouloir supprimer cette notification ?
+                                          Cette action est irréversible.
+                                        </AlertDialogDescription>
+                                      </AlertDialogHeader>
+                                      <AlertDialogFooter>
+                                        <AlertDialogCancel>Annuler</AlertDialogCancel>
+                                        <AlertDialogAction
+                                          onClick={() => deleteNotification(notification.id)}
+                                          className="bg-red-600 hover:bg-red-700"
+                                        >
+                                          Supprimer
+                                        </AlertDialogAction>
+                                      </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                  </AlertDialog>
+                                </div>
+                                <p className="text-xs text-muted-foreground line-clamp-2">
+                                  {notification.message}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  {formatRelativeTime(notification.date_creation)}
+                                </p>
+                              </div>
+                            </div>
+                            {!notification.lu && (
+                              <span className="absolute right-12 top-3 h-2 w-2 rounded-full bg-primary" />
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+
+                  <CardFooter className="p-3 border-t">
+                    <div className="flex w-full gap-2">
+                      <Button
+                        variant="default"
+                        size="sm"
+                        className="text-xs flex-1"
+                        onClick={() => {
+                          navigate('/notifications');
+                          setShowDesktopNotifications(false);
+                        }}
+                      >
+                        Voir tout
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-xs"
+                        onClick={() => setShowDesktopNotifications(false)}
+                      >
+                        Fermer
+                      </Button>
+                    </div>
+                  </CardFooter>
+                </Card>
               </PopoverContent>
             </Popover>
           )}
@@ -537,9 +618,11 @@ export function Header() {
                     {userEmail || state.user?.email || 'Aucun email'}
                   </div>
                 </div>
-                <div className="h-8 w-8 rounded-full border border-gray-300 dark:border-gray-600 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                  <User className="h-4 w-4 text-gray-600 dark:text-gray-400" />
-                </div>
+                <Avatar className="h-8 w-8 border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                  <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-sm font-bold">
+                    {state.user?.prenom?.[0] || state.user?.nom?.[0] || '?'}
+                  </AvatarFallback>
+                </Avatar>
               </div>
             </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">

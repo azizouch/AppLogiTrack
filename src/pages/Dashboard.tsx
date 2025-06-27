@@ -4,43 +4,54 @@ import { Package, Truck, Users, Clock, CheckCircle, RotateCcw, RefreshCw } from 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import { LivreurDashboard } from './livreur/LivreurDashboard';
 
 import { api } from '@/lib/supabase';
 
 export function Dashboard() {
   const { state } = useAuth();
+  const navigate = useNavigate();
   const [stats, setStats] = useState({
     enAttente: 0,
-    enTraitement: 5,
-    livres: 2,
-    retournes: 1,
-    totalColis: 8,
-    clientsEnregistres: 9,
-    entreprisesPartenaires: 4,
-    livreursDisponibles: 6
+    enTraitement: 0,
+    livres: 0,
+    retournes: 0,
+    totalColis: 0,
+    clientsEnregistres: 0,
+    entreprisesPartenaires: 0,
+    livreursDisponibles: 0
   });
   const [loading, setLoading] = useState(false);
+  const [recentActivity, setRecentActivity] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
         setLoading(true);
 
-        // Fetch dashboard stats
-        const { data: statsData, error: statsError } = await api.getDashboardStats();
-        if (statsData && !statsError) {
-          // Map the API response to our new stats structure
+        // Fetch dashboard stats and recent activity
+        const [statsResult, activityResult] = await Promise.all([
+          api.getDashboardStats(),
+          api.getRecentActivity(3)
+        ]);
+
+        if (statsResult.data && !statsResult.error) {
+          // Use all real data from the API
           setStats({
-            enAttente: statsData.totalColis - statsData.colisEnCours - statsData.colisLivres,
-            enTraitement: statsData.colisEnCours,
-            livres: statsData.colisLivres,
-            retournes: 1, // Default value since not in API
-            totalColis: statsData.totalColis,
-            clientsEnregistres: 9, // Default values
-            entreprisesPartenaires: 4,
-            livreursDisponibles: statsData.livreursActifs || 6
+            enAttente: statsResult.data.enAttente,
+            enTraitement: statsResult.data.enTraitement,
+            livres: statsResult.data.livres,
+            retournes: statsResult.data.retournes,
+            totalColis: statsResult.data.totalColis,
+            clientsEnregistres: statsResult.data.clientsEnregistres,
+            entreprisesPartenaires: statsResult.data.entreprisesPartenaires,
+            livreursDisponibles: statsResult.data.livreursActifs
           });
+        }
+
+        if (activityResult.data && !activityResult.error) {
+          setRecentActivity(activityResult.data);
         }
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
@@ -52,42 +63,63 @@ export function Dashboard() {
     fetchDashboardData();
   }, []);
 
+  // Handle card click navigation
+  const handleCardClick = (status: string) => {
+    navigate(`/colis/filtered?status=${status}`);
+  };
+
   const statsCards = [
     {
       title: 'En attente',
       value: loading ? '...' : stats.enAttente.toString(),
       description: 'Colis en attente',
       icon: Clock,
-      iconColor: 'text-white',
-      textColor: 'text-white',
-      gradient: 'bg-gradient-to-r from-yellow-600 to-yellow-400',
+      iconColor: 'text-orange-500',
+      titleColor: 'text-gray-900 dark:text-white',
+      valueColor: 'text-gray-900 dark:text-white',
+      descColor: 'text-gray-600 dark:text-gray-400',
+      borderColor: 'border-orange-500',
+      bgColor: 'bg-transparent',
+      status: 'en_attente',
     },
     {
       title: 'En traitement',
       value: loading ? '...' : stats.enTraitement.toString(),
       description: 'Pris en charge / En cours',
       icon: Truck,
-      iconColor: 'text-white',
-      textColor: 'text-white',
-      gradient: 'bg-gradient-to-r from-blue-600 to-blue-400',
+      iconColor: 'text-blue-500',
+      titleColor: 'text-gray-900 dark:text-white',
+      valueColor: 'text-gray-900 dark:text-white',
+      descColor: 'text-gray-600 dark:text-gray-400',
+      borderColor: 'border-blue-500',
+      bgColor: 'bg-transparent',
+      status: 'en_traitement',
     },
     {
       title: 'Livrés',
       value: loading ? '...' : stats.livres.toString(),
       description: 'Colis livrés',
-      icon: CheckCircle,
-      iconColor: 'text-white',
-      textColor: 'text-white',
-      gradient: 'bg-gradient-to-r from-green-600 to-green-400',
+      icon: Package,
+      iconColor: 'text-green-500',
+      titleColor: 'text-gray-900 dark:text-white',
+      valueColor: 'text-gray-900 dark:text-white',
+      descColor: 'text-gray-600 dark:text-gray-400',
+      borderColor: 'border-green-500',
+      bgColor: 'bg-transparent',
+      status: 'livres',
     },
     {
       title: 'Retournés',
       value: loading ? '...' : stats.retournes.toString(),
       description: 'Colis retournés',
       icon: RotateCcw,
-      iconColor: 'text-white',
-      textColor: 'text-white',
-      gradient: 'bg-gradient-to-r from-red-600 to-red-400',
+      iconColor: 'text-red-500',
+      titleColor: 'text-gray-900 dark:text-white',
+      valueColor: 'text-gray-900 dark:text-white',
+      descColor: 'text-gray-600 dark:text-gray-400',
+      borderColor: 'border-red-500',
+      bgColor: 'bg-transparent',
+      status: 'retournes',
     },
   ];
 
@@ -123,16 +155,20 @@ export function Dashboard() {
       {/* Statistics Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         {statsCards.map((stat) => (
-          <Card key={stat.title} className={`${stat.gradient} border-0 shadow-lg`}>
+          <Card
+            key={stat.title}
+            className={`${stat.bgColor} border-l-4 border-t border-r border-b ${stat.borderColor} shadow-lg cursor-pointer hover:shadow-xl transition-shadow duration-200`}
+            onClick={() => handleCardClick(stat.status)}
+          >
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className={`text-sm font-medium ${stat.textColor}`}>
+              <CardTitle className={`text-sm font-medium ${stat.titleColor}`}>
                 {stat.title}
               </CardTitle>
               <stat.icon className={`h-5 w-5 ${stat.iconColor}`} />
             </CardHeader>
             <CardContent>
-              <div className={`text-3xl font-bold ${stat.textColor}`}>{stat.value}</div>
-              <p className={`text-xs ${stat.textColor} opacity-90 mt-1`}>{stat.description}</p>
+              <div className={`text-3xl font-bold ${stat.valueColor}`}>{stat.value}</div>
+              <p className={`text-xs ${stat.descColor} mt-1`}>{stat.description}</p>
             </CardContent>
           </Card>
         ))}
@@ -192,32 +228,83 @@ export function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <div className="flex items-start gap-3">
-                <div className="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
-                <div className="flex-1">
-                  <p className="font-medium text-sm">Colis #COL-2025-632425255 en cours</p>
-                  <p className="text-xs text-gray-500">Quartier Azentou Ait Ourir Marrakech, Ait Ourir</p>
-                  <p className="text-xs text-gray-400">Il y a 19 heures</p>
+              {loading ? (
+                <div className="space-y-3">
+                  {[1, 2, 3].map(i => (
+                    <div key={i} className="flex items-start gap-3">
+                      <div className="w-2 h-2 bg-gray-300 rounded-full mt-2 animate-pulse"></div>
+                      <div className="flex-1 space-y-1">
+                        <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
+                        <div className="h-3 bg-gray-100 rounded animate-pulse w-3/4"></div>
+                        <div className="h-3 bg-gray-100 rounded animate-pulse w-1/2"></div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              </div>
+              ) : recentActivity.length > 0 ? (
+                recentActivity.map((activity, index) => {
+                  const getStatusColor = (statut: string) => {
+                    switch (statut?.toLowerCase()) {
+                      case 'livré': return 'bg-green-500';
+                      case 'en_cours': case 'en cours': return 'bg-blue-500';
+                      case 'pris_en_charge': return 'bg-yellow-500';
+                      case 'retourné': return 'bg-red-500';
+                      default: return 'bg-orange-500';
+                    }
+                  };
 
-              <div className="flex items-start gap-3">
-                <div className="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
-                <div className="flex-1">
-                  <p className="font-medium text-sm">Colis #COL-2025-4869 en cours</p>
-                  <p className="text-xs text-gray-500">Quartier Azentou Ait Ourir Marrakech, Ait Ourir</p>
-                  <p className="text-xs text-gray-400">Il y a 8 jours</p>
-                </div>
-              </div>
+                  const getStatusText = (statut: string) => {
+                    switch (statut?.toLowerCase()) {
+                      case 'livré': return 'livré';
+                      case 'en_cours': case 'en cours': return 'en cours';
+                      case 'pris_en_charge': return 'pris en charge';
+                      case 'retourné': return 'retourné';
+                      case 'en_attente': return 'en attente';
+                      default: return statut || 'statut inconnu';
+                    }
+                  };
 
-              <div className="flex items-start gap-3">
-                <div className="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
-                <div className="flex-1">
-                  <p className="font-medium text-sm">Colis #COL-2025-8317 en cours</p>
-                  <p className="text-xs text-gray-500"></p>
-                  <p className="text-xs text-gray-400"></p>
+                  const formatDate = (dateString: string) => {
+                    if (!dateString) return 'Date inconnue';
+                    const date = new Date(dateString);
+                    const now = new Date();
+                    const diffMs = now.getTime() - date.getTime();
+                    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+                    const diffDays = Math.floor(diffHours / 24);
+
+                    if (diffDays > 0) {
+                      return `Il y a ${diffDays} jour${diffDays > 1 ? 's' : ''}`;
+                    } else if (diffHours > 0) {
+                      return `Il y a ${diffHours} heure${diffHours > 1 ? 's' : ''}`;
+                    } else {
+                      return 'Il y a moins d\'une heure';
+                    }
+                  };
+
+                  return (
+                    <div key={activity.id} className="flex items-start gap-3">
+                      <div className={`w-2 h-2 ${getStatusColor(activity.statut)} rounded-full mt-2`}></div>
+                      <div className="flex-1">
+                        <p className="font-medium text-sm">
+                          Colis #{activity.numero_suivi} {getStatusText(activity.statut)}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {activity.statut?.toLowerCase() === 'livré' ? `Client: ${activity.client_nom}` :
+                           activity.livreur_nom !== 'Non assigné' ? `Assigné à ${activity.livreur_nom}` :
+                           `Client: ${activity.client_nom}`}
+                        </p>
+                        <p className="text-xs text-gray-400">
+                          {formatDate(activity.date_mise_a_jour)}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="text-center py-4">
+                  <p className="text-sm text-gray-500">Aucune activité récente</p>
                 </div>
-              </div>
+              )}
             </div>
           </CardContent>
         </Card>

@@ -25,6 +25,7 @@ const formSchema = z.object({
   id: z.string().min(1, 'ID requis'),
   nom: z.string().min(2, 'Le nom doit contenir au moins 2 caractères'),
   telephone: z.string().optional(),
+  telephone_2: z.string().optional(),
   email: z.string().email('Email invalide').optional().or(z.literal('')),
   adresse: z.string().optional(),
   contact: z.string().optional(),
@@ -50,6 +51,7 @@ export function AddEntreprise() {
       id: generateEntrepriseId(),
       nom: '',
       telephone: '',
+      telephone_2: '',
       email: '',
       adresse: '',
       contact: '',
@@ -66,6 +68,7 @@ export function AddEntreprise() {
         id: values.id,
         nom: values.nom,
         telephone: values.telephone || null,
+        telephone_2: values.telephone_2 || null,
         email: values.email || null,
         adresse: values.adresse || null,
         contact: values.contact || null,
@@ -187,11 +190,29 @@ export function AddEntreprise() {
                 name="telephone"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Téléphone</FormLabel>
+                    <FormLabel>Téléphone (Vendeur B)</FormLabel>
                     <FormControl>
                       <Input
                         {...field}
-                        placeholder="Numéro de téléphone"
+                        placeholder="Numéro de téléphone principal"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Téléphone 2 */}
+              <FormField
+                control={form.control}
+                name="telephone_2"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Téléphone 2 (Vendeur P)</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        placeholder="Numéro de téléphone secondaire"
                       />
                     </FormControl>
                     <FormMessage />

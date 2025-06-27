@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Edit, Package, User, Building, Truck, Calendar, MapPin, Phone, Mail, Clock, DollarSign, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -20,8 +20,12 @@ import { useToast } from '@/hooks/use-toast';
 export function ViewColis() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const { state } = useAuth();
+
+  // Get the return URL from query parameters
+  const returnTo = searchParams.get('returnTo') || '/colis';
 
 
   const [colis, setColis] = useState<Colis | null>(null);
@@ -95,7 +99,7 @@ export function ViewColis() {
           description: 'Impossible de charger les données du colis',
           variant: 'destructive',
         });
-        navigate('/colis');
+        navigate(returnTo);
       } finally {
         setLoading(false);
       }
@@ -104,7 +108,7 @@ export function ViewColis() {
     if (id) {
       fetchData();
     }
-  }, [id, navigate, toast]);
+  }, [id, navigate, toast, returnTo]);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -270,7 +274,7 @@ export function ViewColis() {
       });
 
       // Navigate back to colis list
-      navigate('/colis');
+      navigate(returnTo);
     } catch (error) {
       console.error('Error deleting colis:', error);
       toast({
@@ -298,7 +302,7 @@ export function ViewColis() {
         <Package className="h-16 w-16 text-gray-400 mb-4" />
         <h2 className="text-xl font-semibold text-gray-700">Colis non trouvé</h2>
         <p className="text-gray-500 mb-4">Le colis que vous recherchez n'existe pas ou a été supprimé.</p>
-        <Button onClick={() => navigate('/colis')}>Retour à la liste</Button>
+        <Button onClick={() => navigate(returnTo)}>Retour à la liste</Button>
       </div>
     );
   }
@@ -309,7 +313,7 @@ export function ViewColis() {
       <div className="mb-2">
         <Button
           variant="ghost"
-          onClick={() => navigate('/colis')}
+          onClick={() => navigate(returnTo)}
           className="inline-flex h-9 items-center justify-center gap-2 whitespace-nowrap rounded-md px-3 text-sm font-medium transition-colors ring-offset-background hover:bg-gray-100 dark:hover:bg-gray-800"
         >
           <ArrowLeft className="h-4 w-4" />

@@ -373,7 +373,7 @@ export function ColisList() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => navigate(`/colis/${colisItem.id}`)}
+                        onClick={() => navigate(`/colis/${colisItem.id}?returnTo=${encodeURIComponent('/colis')}`)}
                         className="h-8 px-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 hover:text-gray-900 dark:hover:text-white transition-colors"
                       >
                         Voir

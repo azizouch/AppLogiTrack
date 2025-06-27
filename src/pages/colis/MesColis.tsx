@@ -324,7 +324,6 @@ export function MesColis() {
       const { data: adminUsers, error: adminError } = await api.getAdminAndGestionnaireUsers();
 
       if (adminError) {
-        console.error('Error fetching admin users:', adminError);
         toast({
           title: 'Erreur',
           description: 'Impossible de récupérer les administrateurs',
@@ -906,49 +905,65 @@ export function MesColis() {
                   <MessageCircle className="mr-2 h-4 w-4" />
                   Contacts Vendeurs
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <h4 className="text-xs font-medium text-muted-foreground">Vendeur B</h4>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="flex-1 h-7 text-xs"
-                      >
-                        <Phone className="mr-1 h-3 w-3" />
-                        Appeler
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="flex-1 h-7 text-xs"
-                      >
-                        <MessageCircle className="mr-1 h-3 w-3" />
-                        WhatsApp
-                      </Button>
+                <div className="space-y-3">
+                  {/* Vendeur B */}
+                  {selectedColis.entreprise?.telephone && (
+                    <div className="space-y-2">
+                      <h4 className="text-sm font-medium text-gray-900 dark:text-white">Vendeur B</h4>
+                      <p className="text-xs text-gray-600 dark:text-gray-400">{selectedColis.entreprise.telephone}</p>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                          onClick={() => window.open(`tel:${selectedColis.entreprise?.telephone}`, '_self')}
+                        >
+                          <Phone className="mr-1 h-3 w-3" />
+                          Vendeur B
+                        </Button>
+                        <Button
+                          size="sm"
+                          className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                          onClick={() => window.open(`https://wa.me/${selectedColis.entreprise?.telephone?.replace(/\D/g, '')}`, '_blank')}
+                        >
+                          <MessageCircle className="mr-1 h-3 w-3" />
+                          Vendeur B
+                        </Button>
+                      </div>
                     </div>
-                  </div>
-                  <div className="space-y-1">
-                    <h4 className="text-xs font-medium text-muted-foreground">Vendeur P</h4>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="flex-1 h-7 text-xs"
-                      >
-                        <Phone className="mr-1 h-3 w-3" />
-                        Appeler
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="flex-1 h-7 text-xs"
-                      >
-                        <MessageCircle className="mr-1 h-3 w-3" />
-                        WhatsApp
-                      </Button>
+                  )}
+
+                  {/* Vendeur P */}
+                  {selectedColis.entreprise?.telephone_2 && (
+                    <div className="space-y-2">
+                      <h4 className="text-sm font-medium text-gray-900 dark:text-white">Vendeur P</h4>
+                      <p className="text-xs text-gray-600 dark:text-gray-400">{selectedColis.entreprise.telephone_2}</p>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          className="flex-1 bg-purple-600 hover:bg-purple-700 text-white"
+                          onClick={() => window.open(`tel:${selectedColis.entreprise?.telephone_2}`, '_self')}
+                        >
+                          <Phone className="mr-1 h-3 w-3" />
+                          Vendeur P
+                        </Button>
+                        <Button
+                          size="sm"
+                          className="flex-1 bg-pink-600 hover:bg-pink-700 text-white"
+                          onClick={() => window.open(`https://wa.me/${selectedColis.entreprise?.telephone_2?.replace(/\D/g, '')}`, '_blank')}
+                        >
+                          <MessageCircle className="mr-1 h-3 w-3" />
+                          Vendeur P
+                        </Button>
+                      </div>
                     </div>
-                  </div>
+                  )}
+
+                  {/* No phone numbers available */}
+                  {!selectedColis.entreprise?.telephone && !selectedColis.entreprise?.telephone_2 && (
+                    <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
+                      Aucun numéro de téléphone disponible pour cette entreprise
+                    </p>
+                  )}
                 </div>
               </div>
             </div>

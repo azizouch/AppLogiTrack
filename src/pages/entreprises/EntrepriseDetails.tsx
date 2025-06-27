@@ -273,25 +273,57 @@ export function EntrepriseDetails() {
               </div>
 
               <div className="space-y-4">
-                <div>
-                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Adresse</p>
-                  <div className="flex items-center gap-2">
-                    <MapPin className="w-4 h-4 text-gray-400" />
-                    <span className="text-gray-900 dark:text-white">
-                      {entreprise.adresse || 'Non renseignée'}
-                    </span>
+                {/* Address and Contact - Horizontal Layout */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Adresse</p>
+                    <div className="flex items-center gap-2">
+                      <MapPin className="w-4 h-4 text-gray-400" />
+                      <span className="text-gray-900 dark:text-white">
+                        {entreprise.adresse || 'Non renseignée'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Personne de contact</p>
+                    <div className="flex items-center gap-2">
+                      <User className="w-4 h-4 text-gray-400" />
+                      <span className="text-gray-900 dark:text-white">
+                        {entreprise.contact || 'Non renseignée'}
+                      </span>
+                    </div>
                   </div>
                 </div>
 
-                <div>
-                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Personne de contact</p>
-                  <div className="flex items-center gap-2">
-                    <User className="w-4 h-4 text-gray-400" />
-                    <span className="text-gray-900 dark:text-white">
-                      {entreprise.contact || 'Non renseignée'}
-                    </span>
+                {/* Phone Numbers - Horizontal Layout */}
+                {(entreprise.telephone || entreprise.telephone_2) && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {entreprise.telephone && (
+                      <div>
+                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Téléphone (Vendeur B)</p>
+                        <div className="flex items-center gap-2">
+                          <Phone className="w-4 h-4 text-gray-400" />
+                          <span className="text-gray-900 dark:text-white">
+                            {entreprise.telephone}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
+                    {entreprise.telephone_2 && (
+                      <div>
+                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Téléphone 2 (Vendeur P)</p>
+                        <div className="flex items-center gap-2">
+                          <Phone className="w-4 h-4 text-gray-400" />
+                          <span className="text-gray-900 dark:text-white">
+                            {entreprise.telephone_2}
+                          </span>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                </div>
+                )}
 
                 <div>
                   <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Date de création</p>

@@ -1,13 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import { User, Mail, Phone, MapPin, Calendar, Edit, Save, X, Camera } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { User, Mail, Phone, MapPin, Calendar, Edit, Save, X, Camera, Upload, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/AuthContext';
-import { api } from '@/lib/supabase';
+import { api, auth } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 
 export function Profile() {
@@ -16,13 +17,16 @@ export function Profile() {
   
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [profileData, setProfileData] = useState({
     nom: '',
     prenom: '',
     email: '',
     telephone: '',
     adresse: '',
-    ville: ''
+    ville: '',
+    image_url: ''
   });
 
   useEffect(() => {
@@ -33,7 +37,8 @@ export function Profile() {
         email: state.user.email || '',
         telephone: state.user.telephone || '',
         adresse: state.user.adresse || '',
-        ville: state.user.ville || ''
+        ville: state.user.ville || '',
+        image_url: state.user.image_url || ''
       });
     }
   }, [state.user]);
@@ -45,17 +50,134 @@ export function Profile() {
     }));
   };
 
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !state.user?.id) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: 'Erreur',
+        description: 'Veuillez sélectionner un fichier image valide',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: 'Erreur',
+        description: 'La taille du fichier ne doit pas dépasser 5MB',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setUploadingImage(true);
+    try {
+      // Upload image
+      const { data: uploadData, error: uploadError } = await auth.uploadProfileImage(file, state.user.id);
+
+      if (uploadError) throw uploadError;
+
+      // Update user profile with new image URL
+      const { data, error } = await api.updateUserProfile(state.user.id, {
+        image_url: uploadData?.url
+      });
+
+      if (error) throw error;
+
+      // Update local state
+      setProfileData(prev => ({
+        ...prev,
+        image_url: uploadData?.url || ''
+      }));
+
+      toast({
+        title: 'Succès',
+        description: 'Photo de profil mise à jour avec succès',
+      });
+
+    } catch (error: any) {
+      let errorMessage = 'Impossible de mettre à jour la photo de profil';
+
+      if (error?.message) {
+        errorMessage = error.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      }
+
+      toast({
+        title: 'Erreur',
+        description: errorMessage,
+        variant: 'destructive',
+      });
+    } finally {
+      setUploadingImage(false);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handleDeleteImage = async () => {
+    if (!state.user?.id) return;
+
+    setUploadingImage(true);
+    try {
+      // Update database to remove image_url
+      const { data, error } = await api.updateUserById(state.user.id, { image_url: null });
+
+      if (error) {
+        throw error;
+      }
+
+      // Update local state
+      setProfileData(prev => ({
+        ...prev,
+        image_url: ''
+      }));
+
+      toast({
+        title: "Succès",
+        description: "Photo de profil supprimée avec succès",
+      });
+
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error.message || "Erreur lors de la suppression de l'image",
+        variant: "destructive",
+      });
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const handleCameraClick = () => {
+    if (isEditing && fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+
+
   const handleSave = async () => {
     if (!state.user?.id) return;
 
     setLoading(true);
     try {
-      const { error } = await api.updateUser(state.user.id, profileData);
-      
+      // Filter out email field since it's stored in auth.users, not utilisateurs
+      const { email, ...updateData } = profileData;
+
+      const { data, error } = await api.updateUserById(state.user.id, updateData);
+
       if (error) {
         toast({
           title: "Erreur",
-          description: "Impossible de mettre à jour le profil",
+          description: `Impossible de mettre à jour le profil: ${error.message || error}`,
           variant: "destructive",
         });
       } else {
@@ -64,11 +186,19 @@ export function Profile() {
           description: "Profil mis à jour avec succès",
         });
         setIsEditing(false);
+
+        // Update local profile data to reflect changes
+        if (data) {
+          setProfileData(prev => ({
+            ...prev,
+            ...data
+          }));
+        }
       }
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Erreur",
-        description: "Une erreur est survenue",
+        description: `Une erreur est survenue: ${error.message || error}`,
         variant: "destructive",
       });
     } finally {
@@ -84,7 +214,8 @@ export function Profile() {
         email: state.user.email || '',
         telephone: state.user.telephone || '',
         adresse: state.user.adresse || '',
-        ville: state.user.ville || ''
+        ville: state.user.ville || '',
+        image_url: state.user.image_url || ''
       });
     }
     setIsEditing(false);
@@ -123,9 +254,6 @@ export function Profile() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Mon Profil</h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            Gérez vos informations personnelles et vos préférences
-          </p>
         </div>
         <div className="flex items-center gap-2">
           {isEditing ? (
@@ -162,17 +290,57 @@ export function Profile() {
         <Card className="lg:col-span-1">
           <CardHeader className="text-center">
             <div className="relative mx-auto">
-              <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-2xl font-bold">
-                {state.user.prenom?.[0] || state.user.nom[0]}
-              </div>
+              <Avatar className="w-24 h-24">
+                <AvatarImage
+                  src={profileData.image_url}
+                  alt={`${profileData.prenom || ''} ${profileData.nom}`.trim()}
+                />
+                <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-2xl font-bold">
+                  {state.user?.prenom?.[0] || state.user?.nom?.[0] || '?'}
+                </AvatarFallback>
+              </Avatar>
+
+              {/* Hidden file input */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+                className="hidden"
+              />
+
+              {/* Upload/Camera Button */}
               <Button
                 size="sm"
                 variant="outline"
                 className="absolute -bottom-2 -right-2 rounded-full w-8 h-8 p-0"
-                disabled={!isEditing}
+                disabled={!isEditing || uploadingImage}
+                onClick={handleCameraClick}
               >
-                <Camera className="h-4 w-4" />
+                {uploadingImage ? (
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600"></div>
+                ) : (
+                  <Camera className="h-4 w-4" />
+                )}
               </Button>
+
+              {/* Delete Button - Only show when there's an image and in edit mode */}
+              {isEditing && profileData.image_url && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="absolute -bottom-2 -left-2 rounded-full w-8 h-8 p-0 bg-red-50 hover:bg-red-100 border-red-200 text-red-600 hover:text-red-700"
+                  disabled={uploadingImage}
+                  onClick={handleDeleteImage}
+                  title="Supprimer la photo de profil"
+                >
+                  {uploadingImage ? (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600"></div>
+                  ) : (
+                    <Trash2 className="h-4 w-4" />
+                  )}
+                </Button>
+              )}
             </div>
             <CardTitle className="mt-4">
               {`${profileData.prenom || ''} ${profileData.nom}`.trim()}

@@ -15,6 +15,7 @@ export interface User {
   ville?: string;
   vehicule?: string;
   zone?: string;
+  image_url?: string;
 }
 
 export interface Client {
@@ -38,6 +39,7 @@ export interface Entreprise {
   description?: string;
   email?: string;
   telephone?: string;
+  telephone_2?: string;
 }
 
 export interface Colis {

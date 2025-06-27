@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Package, Clock, CheckCircle, RotateCcw, User, MapPin, Truck, Calendar, Award, LucideIcon } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import { api } from '@/lib/supabase';
 
 import { useToast } from '@/hooks/use-toast';
@@ -89,6 +90,7 @@ interface LivreurStats {
 export function LivreurDashboard() {
   const { state } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const [stats, setStats] = useState<LivreurStats>({
     aLivrerAujourdhui: 0,
@@ -194,42 +196,63 @@ export function LivreurDashboard() {
     return now.toLocaleDateString('fr-FR', options);
   };
 
+  // Handle card click navigation
+  const handleCardClick = (status: string) => {
+    navigate(`/colis/filtered?status=${status}`);
+  };
+
   const statsCards = [
     {
       title: 'À livrer aujourd\'hui',
       value: loading ? '...' : stats.aLivrerAujourdhui.toString(),
       description: 'Colis à livrer aujourd\'hui',
       icon: Clock,
-      iconColor: 'text-white',
-      textColor: 'text-white',
-      gradient: 'bg-gradient-to-r from-yellow-600 to-yellow-400',
+      iconColor: 'text-orange-500',
+      titleColor: 'text-gray-900 dark:text-white',
+      valueColor: 'text-gray-900 dark:text-white',
+      descColor: 'text-gray-600 dark:text-gray-400',
+      borderColor: 'border-orange-500',
+      bgColor: 'bg-transparent',
+      status: 'a_livrer_aujourdhui',
     },
     {
       title: 'En cours',
       value: loading ? '...' : stats.enCours.toString(),
       description: 'Colis en cours de livraison',
       icon: Truck,
-      iconColor: 'text-white',
-      textColor: 'text-white',
-      gradient: 'bg-gradient-to-r from-blue-600 to-blue-400',
+      iconColor: 'text-blue-500',
+      titleColor: 'text-gray-900 dark:text-white',
+      valueColor: 'text-gray-900 dark:text-white',
+      descColor: 'text-gray-600 dark:text-gray-400',
+      borderColor: 'border-blue-500',
+      bgColor: 'bg-transparent',
+      status: 'en_cours',
     },
     {
       title: 'Livrés aujourd\'hui',
       value: loading ? '...' : stats.livresAujourdhui.toString(),
       description: 'Colis livrés aujourd\'hui',
       icon: CheckCircle,
-      iconColor: 'text-white',
-      textColor: 'text-white',
-      gradient: 'bg-gradient-to-r from-green-600 to-green-400',
+      iconColor: 'text-green-500',
+      titleColor: 'text-gray-900 dark:text-white',
+      valueColor: 'text-gray-900 dark:text-white',
+      descColor: 'text-gray-600 dark:text-gray-400',
+      borderColor: 'border-green-500',
+      bgColor: 'bg-transparent',
+      status: 'livres_aujourdhui',
     },
     {
       title: 'Retournés',
       value: loading ? '...' : stats.retournes.toString(),
       description: 'Colis retournés aujourd\'hui',
       icon: RotateCcw,
-      iconColor: 'text-white',
-      textColor: 'text-white',
-      gradient: 'bg-gradient-to-r from-red-600 to-red-400',
+      iconColor: 'text-red-500',
+      titleColor: 'text-gray-900 dark:text-white',
+      valueColor: 'text-gray-900 dark:text-white',
+      descColor: 'text-gray-600 dark:text-gray-400',
+      borderColor: 'border-red-500',
+      bgColor: 'bg-transparent',
+      status: 'retournes_livreur',
     },
   ];
 
@@ -248,16 +271,20 @@ export function LivreurDashboard() {
       {/* Statistics Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         {statsCards.map((stat) => (
-          <Card key={stat.title} className={`${stat.gradient} border-0 shadow-lg`}>
+          <Card
+            key={stat.title}
+            className={`${stat.bgColor} border-l-4 border-t border-r border-b ${stat.borderColor} shadow-lg cursor-pointer hover:shadow-xl transition-shadow duration-200`}
+            onClick={() => handleCardClick(stat.status)}
+          >
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className={`text-sm font-medium ${stat.textColor}`}>
+              <CardTitle className={`text-sm font-medium ${stat.titleColor}`}>
                 {stat.title}
               </CardTitle>
               <stat.icon className={`h-5 w-5 ${stat.iconColor}`} />
             </CardHeader>
             <CardContent>
-              <div className={`text-3xl font-bold ${stat.textColor}`}>{stat.value}</div>
-              <p className={`text-xs ${stat.textColor} opacity-90 mt-1`}>{stat.description}</p>
+              <div className={`text-3xl font-bold ${stat.valueColor}`}>{stat.value}</div>
+              <p className={`text-xs ${stat.descColor} mt-1`}>{stat.description}</p>
             </CardContent>
           </Card>
         ))}

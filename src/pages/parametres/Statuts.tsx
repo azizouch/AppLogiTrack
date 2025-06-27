@@ -329,7 +329,7 @@ export function Statuts() {
   }
 
   return (
-    <div className="space-y-6 bg-white dark:bg-gray-900 min-h-screen text-gray-900 dark:text-white">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -546,17 +546,7 @@ export function Statuts() {
       <Dialog open={isAddModalOpen} onOpenChange={closeModals}>
         <DialogContent className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white max-w-md">
           <DialogHeader>
-            <div className="flex items-center justify-between">
-              <DialogTitle className="text-xl font-semibold text-gray-900 dark:text-white">Ajouter un statut</DialogTitle>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={closeModals}
-                className="h-8 w-8 p-0 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white"
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
+            <DialogTitle className="text-xl font-semibold text-gray-900 dark:text-white">Ajouter un statut</DialogTitle>
             <DialogDescription className="text-gray-600 dark:text-gray-400">
               Créez un nouveau statut pour les colis
             </DialogDescription>
@@ -691,17 +681,7 @@ export function Statuts() {
       <Dialog open={isEditModalOpen} onOpenChange={closeModals}>
         <DialogContent className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white max-w-md">
           <DialogHeader>
-            <div className="flex items-center justify-between">
-              <DialogTitle className="text-xl font-semibold text-gray-900 dark:text-white">Modifier un statut</DialogTitle>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={closeModals}
-                className="h-8 w-8 p-0 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white"
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
+            <DialogTitle className="text-xl font-semibold text-gray-900 dark:text-white">Modifier un statut</DialogTitle>
             <DialogDescription className="text-gray-600 dark:text-gray-400">
               Modifiez les informations du statut
             </DialogDescription>

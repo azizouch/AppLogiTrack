@@ -34,6 +34,22 @@ export function General() {
     langue: 'francais',
   });
 
+  // Numbering format state
+  const [numberingFormat, setNumberingFormat] = useState({
+    colis: {
+      prefix: 'COL',
+      separator: '-',
+      includeYear: true,
+      digitCount: 4,
+    },
+    bonDistribution: {
+      prefix: 'BD',
+      separator: '-',
+      includeYear: true,
+      digitCount: 4,
+    },
+  });
+
   const handleSaveCompanyInfo = async () => {
     setSaving(true);
     try {
@@ -76,8 +92,42 @@ export function General() {
     }
   };
 
+  const handleSaveNumberingFormat = async () => {
+    setSaving(true);
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      toast({
+        title: 'Succès',
+        description: 'Le format de numérotation a été enregistré',
+      });
+    } catch (error) {
+      toast({
+        title: 'Erreur',
+        description: 'Impossible d\'enregistrer le format de numérotation',
+        variant: 'destructive',
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Generate preview for numbering format
+  const generatePreview = (format: any) => {
+    const currentYear = new Date().getFullYear();
+    const yearPart = format.includeYear ? currentYear.toString() : '';
+    const numberPart = '0001'.padStart(format.digitCount, '0');
+
+    if (format.includeYear) {
+      return `${format.prefix}${format.separator}${yearPart}${format.separator}${numberPart}`;
+    } else {
+      return `${format.prefix}${format.separator}${numberPart}`;
+    }
+  };
+
   return (
-    <div className="space-y-6 bg-white dark:bg-gray-900 min-h-screen text-gray-900 dark:text-white p-6">
+    <div className="space-y-6 p-6">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Paramètres</h1>
@@ -272,9 +322,211 @@ export function General() {
       )}
 
       {activeTab === 'numerotation' && (
-        <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-          <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-            <p>Configuration de la numérotation - À implémenter</p>
+        <div className="space-y-6">
+          <div className="mb-6">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Format de numérotation</h2>
+            <p className="text-gray-600 dark:text-gray-400 text-sm">Configurez le format des numéros pour les colis et les bons de distribution</p>
+          </div>
+
+          {/* Format des numéros de colis */}
+          <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Format des numéros de colis</h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Prefix */}
+              <div>
+                <Label htmlFor="colis-prefix" className="text-sm font-medium text-gray-900 dark:text-white">
+                  Préfixe
+                </Label>
+                <Input
+                  id="colis-prefix"
+                  value={numberingFormat.colis.prefix}
+                  onChange={(e) => setNumberingFormat({
+                    ...numberingFormat,
+                    colis: { ...numberingFormat.colis, prefix: e.target.value }
+                  })}
+                  className="mt-1 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
+                  placeholder="COL"
+                />
+              </div>
+
+              {/* Separator */}
+              <div>
+                <Label htmlFor="colis-separator" className="text-sm font-medium text-gray-900 dark:text-white">
+                  Séparateur
+                </Label>
+                <Input
+                  id="colis-separator"
+                  value={numberingFormat.colis.separator}
+                  onChange={(e) => setNumberingFormat({
+                    ...numberingFormat,
+                    colis: { ...numberingFormat.colis, separator: e.target.value }
+                  })}
+                  className="mt-1 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
+                  placeholder="-"
+                />
+              </div>
+
+              {/* Include Year */}
+              <div>
+                <Label htmlFor="colis-year" className="text-sm font-medium text-gray-900 dark:text-white">
+                  Inclure l'année
+                </Label>
+                <Select
+                  value={numberingFormat.colis.includeYear ? 'oui' : 'non'}
+                  onValueChange={(value) => setNumberingFormat({
+                    ...numberingFormat,
+                    colis: { ...numberingFormat.colis, includeYear: value === 'oui' }
+                  })}
+                >
+                  <SelectTrigger className="mt-1 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="oui">Oui</SelectItem>
+                    <SelectItem value="non">Non</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Number of digits */}
+              <div>
+                <Label htmlFor="colis-digits" className="text-sm font-medium text-gray-900 dark:text-white">
+                  Nombre de chiffres
+                </Label>
+                <Select
+                  value={numberingFormat.colis.digitCount.toString()}
+                  onValueChange={(value) => setNumberingFormat({
+                    ...numberingFormat,
+                    colis: { ...numberingFormat.colis, digitCount: parseInt(value) }
+                  })}
+                >
+                  <SelectTrigger className="mt-1 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="3">3 chiffres</SelectItem>
+                    <SelectItem value="4">4 chiffres</SelectItem>
+                    <SelectItem value="5">5 chiffres</SelectItem>
+                    <SelectItem value="6">6 chiffres</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Preview */}
+            <div className="mt-4 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Aperçu:</p>
+              <p className="font-mono text-lg text-gray-900 dark:text-white">
+                {generatePreview(numberingFormat.colis)}
+              </p>
+            </div>
+          </div>
+
+          {/* Format des numéros de bons de distribution */}
+          <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Format des numéros de bons de distribution</h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Prefix */}
+              <div>
+                <Label htmlFor="bd-prefix" className="text-sm font-medium text-gray-900 dark:text-white">
+                  Préfixe
+                </Label>
+                <Input
+                  id="bd-prefix"
+                  value={numberingFormat.bonDistribution.prefix}
+                  onChange={(e) => setNumberingFormat({
+                    ...numberingFormat,
+                    bonDistribution: { ...numberingFormat.bonDistribution, prefix: e.target.value }
+                  })}
+                  className="mt-1 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
+                  placeholder="BD"
+                />
+              </div>
+
+              {/* Separator */}
+              <div>
+                <Label htmlFor="bd-separator" className="text-sm font-medium text-gray-900 dark:text-white">
+                  Séparateur
+                </Label>
+                <Input
+                  id="bd-separator"
+                  value={numberingFormat.bonDistribution.separator}
+                  onChange={(e) => setNumberingFormat({
+                    ...numberingFormat,
+                    bonDistribution: { ...numberingFormat.bonDistribution, separator: e.target.value }
+                  })}
+                  className="mt-1 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
+                  placeholder="-"
+                />
+              </div>
+
+              {/* Include Year */}
+              <div>
+                <Label htmlFor="bd-year" className="text-sm font-medium text-gray-900 dark:text-white">
+                  Inclure l'année
+                </Label>
+                <Select
+                  value={numberingFormat.bonDistribution.includeYear ? 'oui' : 'non'}
+                  onValueChange={(value) => setNumberingFormat({
+                    ...numberingFormat,
+                    bonDistribution: { ...numberingFormat.bonDistribution, includeYear: value === 'oui' }
+                  })}
+                >
+                  <SelectTrigger className="mt-1 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="oui">Oui</SelectItem>
+                    <SelectItem value="non">Non</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Number of digits */}
+              <div>
+                <Label htmlFor="bd-digits" className="text-sm font-medium text-gray-900 dark:text-white">
+                  Nombre de chiffres
+                </Label>
+                <Select
+                  value={numberingFormat.bonDistribution.digitCount.toString()}
+                  onValueChange={(value) => setNumberingFormat({
+                    ...numberingFormat,
+                    bonDistribution: { ...numberingFormat.bonDistribution, digitCount: parseInt(value) }
+                  })}
+                >
+                  <SelectTrigger className="mt-1 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="3">3 chiffres</SelectItem>
+                    <SelectItem value="4">4 chiffres</SelectItem>
+                    <SelectItem value="5">5 chiffres</SelectItem>
+                    <SelectItem value="6">6 chiffres</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Preview */}
+            <div className="mt-4 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Aperçu:</p>
+              <p className="font-mono text-lg text-gray-900 dark:text-white">
+                {generatePreview(numberingFormat.bonDistribution)}
+              </p>
+            </div>
+          </div>
+
+          {/* Save Button */}
+          <div className="flex justify-end">
+            <Button
+              onClick={handleSaveNumberingFormat}
+              disabled={saving}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-6"
+            >
+              {saving ? 'Enregistrement...' : 'Enregistrer'}
+            </Button>
           </div>
         </div>
       )}

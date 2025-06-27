@@ -20,6 +20,7 @@ import { MesColisRefuses } from "@/pages/colis/MesColisRefuses";
 import { MesColisAnnules } from "@/pages/colis/MesColisAnnules";
 import { ColisRelance } from "@/pages/colis/ColisRelance";
 import { RelanceAutreClient } from "@/pages/colis/RelanceAutreClient";
+import { FilteredColisView } from "@/pages/colis/FilteredColisView";
 import { Profile } from "@/pages/profile/Profile";
 import { Settings } from "@/pages/profile/Settings";
 import { Distribution } from "@/pages/bons/Distribution";
@@ -42,6 +43,7 @@ import { Gestion } from "@/pages/utilisateurs/Gestion";
 import { Suivi } from "@/pages/utilisateurs/Suivi";
 import { General } from "@/pages/parametres/General";
 import { Statuts } from "@/pages/parametres/Statuts";
+import { ResetPassword } from "@/pages/auth/ResetPassword";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -54,6 +56,9 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
+          {/* Public Routes */}
+          <Route path="/reset-password" element={<ResetPassword />} />
+
           <Route path="/" element={
             <ProtectedRoute>
               <Layout>
@@ -109,6 +114,13 @@ const App = () => (
             <ProtectedRoute>
               <Layout>
                 <ColisAnnules />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/colis/filtered" element={
+            <ProtectedRoute>
+              <Layout>
+                <FilteredColisView />
               </Layout>
             </ProtectedRoute>
           } />

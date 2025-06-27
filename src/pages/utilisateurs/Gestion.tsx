@@ -44,6 +44,7 @@ interface User {
   ville: string;
   zone?: string;
   vehicule?: string;
+  image_url?: string;
 }
 
 export function Gestion() {
@@ -475,7 +476,7 @@ export function Gestion() {
   const hasActiveFilters = searchTerm || roleFilter !== 'all' || statusFilter !== 'all';
 
   return (
-    <div className="space-y-6 bg-white dark:bg-gray-900 min-h-screen text-gray-900 dark:text-white">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex justify-between items-start">
         <div>

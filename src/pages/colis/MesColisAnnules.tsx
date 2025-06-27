@@ -230,7 +230,7 @@ export function MesColisAnnules() {
       const { data: adminUsers, error: adminError } = await api.getAdminAndGestionnaireUsers();
 
       if (adminError) {
-        console.error('Error fetching admin users:', adminError);
+        // Silently handle error
       }
 
       // Create notifications for each admin/gestionnaire
