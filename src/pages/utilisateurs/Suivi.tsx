@@ -69,8 +69,8 @@ export function Suivi() {
         // Transform data to include activity information
         const usersWithActivity = data.map(user => ({
           ...user,
-          derniere_activite: getRandomActivity(),
-          en_ligne: Math.random() > 0.6, // Random online status for demo
+          derniere_activite: formatLastActivity(user.derniere_connexion),
+          en_ligne: isUserOnline(user.derniere_connexion),
         }));
         setUsers(usersWithActivity);
       }
@@ -87,17 +87,102 @@ export function Suivi() {
     }
   }, [toast]);
 
-  // Helper function to generate random activity times
-  const getRandomActivity = () => {
-    const activities = [
-      'Il y a 5 minutes',
-      'Il y a 30 minutes',
-      'Il y a 1 heure',
-      'Il y a 2 heures',
-      'Il y a 4 heures',
-      'Il y a 1 jour',
-    ];
-    return activities[Math.floor(Math.random() * activities.length)];
+  // Action handlers
+  const handleViewProfile = (user: UserActivity) => {
+    // Navigate to user profile or show profile modal
+    toast({
+      title: 'Profil utilisateur',
+      description: `Affichage du profil de ${user.nom} ${user.prenom}`,
+    });
+    // TODO: Implement navigation to user profile page
+  };
+
+  const handleManagePermissions = (user: UserActivity) => {
+    // Open permissions management modal
+    toast({
+      title: 'Gestion des permissions',
+      description: `Gestion des permissions pour ${user.nom} ${user.prenom}`,
+    });
+    // TODO: Implement permissions management modal
+  };
+
+  const handleSendMessage = (user: UserActivity) => {
+    // Open message composition modal
+    toast({
+      title: 'Envoyer un message',
+      description: `Envoi d'un message à ${user.nom} ${user.prenom}`,
+    });
+    // TODO: Implement message sending functionality
+  };
+
+  const handleSuspendUser = async (user: UserActivity) => {
+    try {
+      // Toggle user status between Actif and Inactif
+      const newStatus = user.statut === 'Actif' ? 'Inactif' : 'Actif';
+
+      const { error } = await api.updateUserById(user.id, { statut: newStatus });
+
+      if (error) {
+        toast({
+          title: 'Erreur',
+          description: 'Impossible de modifier le statut de l\'utilisateur',
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: 'Succès',
+          description: `Utilisateur ${newStatus === 'Actif' ? 'activé' : 'suspendu'} avec succès`,
+        });
+        // Refresh the users list
+        fetchUsers();
+      }
+    } catch (error) {
+      toast({
+        title: 'Erreur',
+        description: 'Une erreur est survenue lors de la modification du statut',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // Helper function to format last activity from derniere_connexion
+  const formatLastActivity = (derniereConnexion: string | null) => {
+    if (!derniereConnexion) {
+      return 'Jamais connecté';
+    }
+
+    const lastConnection = new Date(derniereConnexion);
+    const now = new Date();
+    const diffInMs = now.getTime() - lastConnection.getTime();
+    const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
+    const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
+    const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+
+    if (diffInMinutes < 1) {
+      return 'À l\'instant';
+    } else if (diffInMinutes < 60) {
+      return `Il y a ${diffInMinutes} minute${diffInMinutes > 1 ? 's' : ''}`;
+    } else if (diffInHours < 24) {
+      return `Il y a ${diffInHours} heure${diffInHours > 1 ? 's' : ''}`;
+    } else if (diffInDays < 7) {
+      return `Il y a ${diffInDays} jour${diffInDays > 1 ? 's' : ''}`;
+    } else {
+      return lastConnection.toLocaleDateString('fr-FR');
+    }
+  };
+
+  // Helper function to determine if user is online (connected within last 5 minutes)
+  const isUserOnline = (derniereConnexion: string | null) => {
+    if (!derniereConnexion) {
+      return false;
+    }
+
+    const lastConnection = new Date(derniereConnexion);
+    const now = new Date();
+    const diffInMs = now.getTime() - lastConnection.getTime();
+    const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
+
+    return diffInMinutes <= 5; // Consider online if connected within last 5 minutes
   };
 
   useEffect(() => {
@@ -330,6 +415,7 @@ export function Suivi() {
                             size="sm"
                             className="h-8 w-8 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900"
                             title="Voir le profil"
+                            onClick={() => handleViewProfile(user)}
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
@@ -338,6 +424,7 @@ export function Suivi() {
                             size="sm"
                             className="h-8 w-8 p-0 text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-900"
                             title="Gérer les permissions"
+                            onClick={() => handleManagePermissions(user)}
                           >
                             <UserCheck className="h-4 w-4" />
                           </Button>
@@ -346,16 +433,22 @@ export function Suivi() {
                             size="sm"
                             className="h-8 w-8 p-0 text-orange-600 hover:text-orange-700 hover:bg-orange-50 dark:hover:bg-orange-900"
                             title="Envoyer un message"
+                            onClick={() => handleSendMessage(user)}
                           >
                             <MessageCircle className="h-4 w-4" />
                           </Button>
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900"
-                            title="Suspendre l'utilisateur"
+                            className={`h-8 w-8 p-0 ${
+                              user.statut === 'Actif'
+                                ? 'text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900'
+                                : 'text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-900'
+                            }`}
+                            title={user.statut === 'Actif' ? 'Suspendre l\'utilisateur' : 'Activer l\'utilisateur'}
+                            onClick={() => handleSuspendUser(user)}
                           >
-                            <UserX className="h-4 w-4" />
+                            {user.statut === 'Actif' ? <UserX className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}
                           </Button>
                         </div>
                       </TableCell>
