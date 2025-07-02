@@ -290,9 +290,10 @@ export function ColisList() {
 
       {/* Colis Table */}
       <div className="space-y-4">
-        <div className="flex justify-between items-center">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Liste des Colis</h2>
-          <div className="flex items-center gap-4">
+        <div className="space-y-3 sm:space-y-0">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Liste des Colis</h2>
+            <div className="flex justify-between items-center sm:gap-4">
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-500 dark:text-gray-400">Afficher</span>
               <Select value={itemsPerPage.toString()} onValueChange={(value) => {
@@ -318,6 +319,7 @@ export function ColisList() {
                 `Total: ${totalCount} colis`
               )}
             </span>
+            </div>
           </div>
         </div>
 
@@ -327,12 +329,12 @@ export function ColisList() {
               <TableRow className="border-b border-gray-200 dark:border-gray-600" style={{ backgroundColor: 'hsl(210, 40%, 96.1%)' }}>
                 <TableHead className="text-gray-900 font-medium">ID Colis</TableHead>
                 <TableHead className="text-gray-900 font-medium">Client</TableHead>
-                <TableHead className="text-gray-900 font-medium hidden sm:table-cell">Entreprise</TableHead>
+                <TableHead className="text-gray-900 font-medium">Entreprise</TableHead>
                 <TableHead className="text-gray-900 font-medium">Statut</TableHead>
-                <TableHead className="text-gray-900 font-medium hidden md:table-cell">Prix</TableHead>
-                <TableHead className="text-gray-900 font-medium hidden md:table-cell">Frais</TableHead>
-                <TableHead className="text-gray-900 font-medium hidden md:table-cell">Date de création</TableHead>
-                <TableHead className="text-gray-900 font-medium hidden lg:table-cell">Livreur</TableHead>
+                <TableHead className="text-gray-900 font-medium">Prix</TableHead>
+                <TableHead className="text-gray-900 font-medium">Frais</TableHead>
+                <TableHead className="text-gray-900 font-medium">Date de création</TableHead>
+                <TableHead className="text-gray-900 font-medium">Livreur</TableHead>
                 <TableHead className="text-gray-900 font-medium text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -343,10 +345,12 @@ export function ColisList() {
                   <TableRow key={index} className="border-b border-gray-600 dark:border-gray-600 bg-transparent">
                     <TableCell><div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div></TableCell>
                     <TableCell><div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div></TableCell>
-                    <TableCell className="hidden sm:table-cell"><div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div></TableCell>
+                    <TableCell><div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div></TableCell>
                     <TableCell><div className="h-6 bg-gray-200 dark:bg-gray-600 rounded animate-pulse w-16"></div></TableCell>
-                    <TableCell className="hidden md:table-cell"><div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div></TableCell>
-                    <TableCell className="hidden lg:table-cell"><div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div></TableCell>
+                    <TableCell><div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div></TableCell>
+                    <TableCell><div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div></TableCell>
+                    <TableCell><div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div></TableCell>
+                    <TableCell><div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div></TableCell>
                     <TableCell><div className="h-8 bg-gray-200 dark:bg-gray-600 rounded animate-pulse w-16"></div></TableCell>
                   </TableRow>
                 ))
@@ -355,18 +359,18 @@ export function ColisList() {
                   <TableRow key={colisItem.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-200 dark:border-gray-600 bg-white dark:bg-transparent">
                     <TableCell className="font-mono text-sm text-gray-900 dark:text-gray-100">{colisItem.id}</TableCell>
                     <TableCell className="text-gray-900 dark:text-gray-100">{colisItem.client?.nom}</TableCell>
-                    <TableCell className="text-gray-900 dark:text-gray-100 hidden sm:table-cell">{colisItem.entreprise?.nom}</TableCell>
+                    <TableCell className="text-gray-900 dark:text-gray-100">{colisItem.entreprise?.nom}</TableCell>
                     <TableCell>{getStatusBadge(colisItem.statut)}</TableCell>
-                    <TableCell className="text-gray-900 dark:text-gray-100 hidden md:table-cell">
+                    <TableCell className="text-gray-900 dark:text-gray-100">
                       {colisItem.prix ? `${colisItem.prix} DH` : '-'}
                     </TableCell>
-                    <TableCell className="text-gray-900 dark:text-gray-100 hidden md:table-cell">
+                    <TableCell className="text-gray-900 dark:text-gray-100">
                       {colisItem.frais ? `${colisItem.frais} DH` : '-'}
                     </TableCell>
-                    <TableCell className="text-gray-900 dark:text-gray-100 hidden md:table-cell">
+                    <TableCell className="text-gray-900 dark:text-gray-100">
                       {new Date(colisItem.date_creation).toLocaleDateString('fr-FR')}
                     </TableCell>
-                    <TableCell className="text-sm text-gray-600 dark:text-gray-400 hidden lg:table-cell">
+                    <TableCell className="text-sm text-gray-600 dark:text-gray-400">
                       {getLivreurInfo(colisItem)}
                     </TableCell>
                     <TableCell className="text-right">

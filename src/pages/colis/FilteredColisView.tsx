@@ -374,11 +374,11 @@ export function FilteredColisView() {
                 <TableRow className="border-b border-gray-200 dark:border-gray-600" style={{ backgroundColor: 'hsl(210, 40%, 96.1%)' }}>
                   <TableHead className="text-gray-900 font-medium">ID Colis</TableHead>
                   <TableHead className="text-gray-900 font-medium">Client</TableHead>
-                  <TableHead className="text-gray-900 font-medium hidden sm:table-cell">Entreprise</TableHead>
+                  <TableHead className="text-gray-900 font-medium">Entreprise</TableHead>
                   <TableHead className="text-gray-900 font-medium">Statut</TableHead>
-                  <TableHead className="text-gray-900 font-medium hidden md:table-cell">Prix</TableHead>
-                  <TableHead className="text-gray-900 font-medium hidden md:table-cell">Date</TableHead>
-                  <TableHead className="text-gray-900 font-medium hidden lg:table-cell">Livreur</TableHead>
+                  <TableHead className="text-gray-900 font-medium">Prix</TableHead>
+                  <TableHead className="text-gray-900 font-medium">Date</TableHead>
+                  <TableHead className="text-gray-900 font-medium">Livreur</TableHead>
                   <TableHead className="text-gray-900 font-medium text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -388,11 +388,11 @@ export function FilteredColisView() {
                     <TableRow key={index} className="border-b border-gray-600 dark:border-gray-600 bg-transparent">
                       <TableCell><div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div></TableCell>
                       <TableCell><div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div></TableCell>
-                      <TableCell className="hidden sm:table-cell"><div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div></TableCell>
                       <TableCell><div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div></TableCell>
-                      <TableCell className="hidden md:table-cell"><div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div></TableCell>
-                      <TableCell className="hidden md:table-cell"><div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div></TableCell>
-                      <TableCell className="hidden lg:table-cell"><div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div></TableCell>
+                      <TableCell><div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div></TableCell>
+                      <TableCell><div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div></TableCell>
+                      <TableCell><div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div></TableCell>
+                      <TableCell><div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div></TableCell>
                       <TableCell><div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div></TableCell>
                     </TableRow>
                   ))
@@ -401,15 +401,15 @@ export function FilteredColisView() {
                     <TableRow key={colisItem.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-200 dark:border-gray-600 bg-white dark:bg-transparent">
                       <TableCell className="font-mono text-sm text-gray-900 dark:text-gray-100">{colisItem.id}</TableCell>
                       <TableCell className="text-gray-900 dark:text-gray-100">{colisItem.client?.nom}</TableCell>
-                      <TableCell className="text-gray-900 dark:text-gray-100 hidden sm:table-cell">{colisItem.entreprise?.nom}</TableCell>
+                      <TableCell className="text-gray-900 dark:text-gray-100">{colisItem.entreprise?.nom}</TableCell>
                       <TableCell>{getStatusBadge(colisItem.statut)}</TableCell>
-                      <TableCell className="text-gray-900 dark:text-gray-100 hidden md:table-cell">
+                      <TableCell className="text-gray-900 dark:text-gray-100">
                         {colisItem.prix ? `${colisItem.prix} DH` : '-'}
                       </TableCell>
-                      <TableCell className="text-gray-900 dark:text-gray-100 hidden md:table-cell">
+                      <TableCell className="text-gray-900 dark:text-gray-100">
                         {new Date(colisItem.date_creation).toLocaleDateString('fr-FR')}
                       </TableCell>
-                      <TableCell className="text-gray-900 dark:text-gray-100 hidden lg:table-cell">
+                      <TableCell className="text-gray-900 dark:text-gray-100">
                         {colisItem.livreur ? `${colisItem.livreur.prenom || ''} ${colisItem.livreur.nom}`.trim() : '-'}
                       </TableCell>
                       <TableCell className="text-right">

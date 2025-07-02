@@ -255,9 +255,10 @@ export function Suivi() {
 
       {/* Users List */}
       <div className="space-y-4">
-        <div className="flex justify-between items-center">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Liste des utilisateurs</h2>
-          <div className="flex items-center gap-4">
+        <div className="space-y-3 sm:space-y-0">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Liste des utilisateurs</h2>
+            <div className="flex justify-between items-center sm:gap-4">
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-500 dark:text-gray-400">Afficher</span>
               <Select value={itemsPerPage.toString()} onValueChange={(value) => {
@@ -279,6 +280,7 @@ export function Suivi() {
             <span className="text-sm text-gray-500 dark:text-gray-400">
               Total: {filteredUsers.length} utilisateurs
             </span>
+            </div>
           </div>
         </div>
 

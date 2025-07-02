@@ -1907,5 +1907,175 @@ export const api = {
       console.error('Error fetching admin/gestionnaire users:', error);
       return { data: null, error };
     }
+  },
+
+  // Check bons table structure
+  checkBonsTable: async () => {
+    const { data, error } = await supabase
+      .from('bons')
+      .select('*')
+      .limit(1);
+
+    console.log('Bons table structure check:', { data, error });
+    return { data, error };
+  },
+
+  // Bons API
+  getBons: async (params?: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    type?: 'distribution' | 'paiement' | 'retour';
+    userId?: string;
+    statut?: string;
+    sortBy?: 'recent' | 'oldest';
+  }) => {
+    const {
+      page = 1,
+      limit = 10,
+      search = '',
+      type,
+      userId,
+      statut,
+      sortBy = 'recent'
+    } = params || {};
+
+    // Query with basic fields first, then try to join if possible
+    let query = supabase
+      .from('bons')
+      .select('*', { count: 'exact' });
+
+    // Apply filters
+    if (search) {
+      query = query.or(`id.ilike.%${search}%,notes.ilike.%${search}%,motif.ilike.%${search}%`);
+    }
+
+    // Only filter by type if the column exists (after migration)
+    if (type) {
+      try {
+        query = query.eq('type', type);
+      } catch (error) {
+        console.log('Type column might not exist yet, skipping type filter');
+      }
+    }
+
+    if (userId) {
+      try {
+        // Try user_id first (after migration), fallback to livreur_id (before migration)
+        query = query.eq('user_id', userId);
+      } catch (error) {
+        try {
+          query = query.eq('livreur_id', userId);
+        } catch (error2) {
+          console.log('Neither user_id nor livreur_id column found');
+        }
+      }
+    }
+
+    if (statut) {
+      query = query.eq('statut', statut);
+    }
+
+    // Apply sorting
+    const sortOrder = sortBy === 'recent' ? { ascending: false } : { ascending: true };
+    query = query.order('date_creation', sortOrder);
+
+    // Apply pagination
+    const from = (page - 1) * limit;
+    const to = from + limit - 1;
+    query = query.range(from, to);
+
+    const { data, error, count } = await query;
+
+    // Debug logging
+    console.log('getBons query result:', { data, error, count, params });
+
+    const totalPages = count ? Math.ceil(count / limit) : 0;
+    const hasNextPage = page < totalPages;
+    const hasPrevPage = page > 1;
+
+    return {
+      data,
+      error,
+      count,
+      totalPages,
+      hasNextPage,
+      hasPrevPage
+    };
+  },
+
+  getBonById: async (id: string) => {
+    const { data, error } = await supabase
+      .from('bons')
+      .select(`
+        *,
+        user:utilisateurs(id, nom, prenom, email),
+        client:clients(id, nom, email, telephone),
+        colis:colis(id, client:clients(nom))
+      `)
+      .eq('id', id)
+      .single();
+
+    return { data, error };
+  },
+
+  createBon: async (bonData: {
+    user_id: string;
+    type: 'distribution' | 'paiement' | 'retour';
+    statut: string;
+    nb_colis?: number;
+    client_id?: string;
+    montant?: number;
+    date_echeance?: string;
+    colis_id?: string;
+    motif?: string;
+    notes?: string;
+  }) => {
+    const { data, error } = await supabase
+      .from('bons')
+      .insert([bonData])
+      .select(`
+        *,
+        user:utilisateurs(id, nom, prenom, email),
+        client:clients(id, nom, email, telephone),
+        colis:colis(id, client:clients(nom))
+      `)
+      .single();
+
+    return { data, error };
+  },
+
+  updateBon: async (id: string, updates: {
+    statut?: string;
+    nb_colis?: number;
+    montant?: number;
+    date_echeance?: string;
+    motif?: string;
+    notes?: string;
+  }) => {
+    const { data, error } = await supabase
+      .from('bons')
+      .update(updates)
+      .eq('id', id)
+      .select(`
+        *,
+        user:utilisateurs(id, nom, prenom, email),
+        client:clients(id, nom, email, telephone),
+        colis:colis(id, client:clients(nom))
+      `)
+      .single();
+
+    return { data, error };
+  },
+
+  deleteBon: async (id: string) => {
+    const { data, error } = await supabase
+      .from('bons')
+      .delete()
+      .eq('id', id)
+      .select()
+      .single();
+
+    return { data, error };
   }
 }

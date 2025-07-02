@@ -260,11 +260,12 @@ export function ColisAnnules() {
 
       {/* Colis Table */}
       <div className="space-y-4">
-        <div className="flex justify-between items-center">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-            <span>Colis Annulés</span>
-          </h2>
-          <div className="flex items-center gap-4">
+        <div className="space-y-3 sm:space-y-0">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+              <span>Colis Annulés</span>
+            </h2>
+            <div className="flex justify-between items-center sm:gap-4">
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-500 dark:text-gray-400">Afficher</span>
               <Select value={itemsPerPage.toString()} onValueChange={(value) => {
@@ -290,6 +291,7 @@ export function ColisAnnules() {
                 `Total: ${totalCount} colis`
               )}
             </span>
+            </div>
           </div>
         </div>
 
@@ -299,9 +301,9 @@ export function ColisAnnules() {
               <TableRow className="border-b border-gray-200 dark:border-gray-600" style={{ backgroundColor: 'hsl(210, 40%, 96.1%)' }}>
                 <TableHead className="text-gray-900 font-medium">ID Colis</TableHead>
                 <TableHead className="text-gray-900 font-medium">Client</TableHead>
-                <TableHead className="text-gray-900 font-medium hidden sm:table-cell">Entreprise</TableHead>
-                <TableHead className="text-gray-900 font-medium hidden md:table-cell">Date d'annulation</TableHead>
-                <TableHead className="text-gray-900 font-medium hidden lg:table-cell">Livreur</TableHead>
+                <TableHead className="text-gray-900 font-medium">Entreprise</TableHead>
+                <TableHead className="text-gray-900 font-medium">Date d'annulation</TableHead>
+                <TableHead className="text-gray-900 font-medium">Livreur</TableHead>
                 <TableHead className="text-gray-900 font-medium">Actions</TableHead>
               </TableRow>
             </TableHeader>

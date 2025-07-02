@@ -238,12 +238,21 @@ export function Entreprises() {
           </h1>
           <p className="text-gray-600 dark:text-gray-400">Gestion des entreprises partenaires</p>
         </div>
-        <div className="flex items-center gap-2 w-full sm:w-auto">
+        <div className="flex items-center gap-1 sm:gap-2 w-full sm:w-auto">
           <Button
-            className="bg-blue-600 hover:bg-blue-700 flex-1 sm:flex-none"
+            variant="outline"
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700 px-2 sm:px-4 py-1 sm:py-2 text-xs sm:text-sm flex-1 sm:flex-none"
+          >
+            <RefreshCw className={`mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4 ${refreshing ? 'animate-spin' : ''}`} />
+            Actualiser
+          </Button>
+          <Button
+            className="bg-blue-600 hover:bg-blue-700 flex-1 sm:flex-none px-2 sm:px-4 py-1 sm:py-2 text-xs sm:text-sm"
             onClick={() => navigate('/entreprises/ajouter')}
           >
-            <Plus className="mr-2 h-4 w-4" />
+            <Plus className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
             Ajouter une entreprise
           </Button>
         </div>
@@ -308,9 +317,10 @@ export function Entreprises() {
 
       {/* Table */}
       <div className="space-y-4">
-        <div className="flex justify-between items-center">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Liste des Entreprises</h2>
-          <div className="flex items-center gap-4">
+        <div className="space-y-3 sm:space-y-0">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Liste des Entreprises</h2>
+            <div className="flex justify-between items-center sm:gap-4">
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-500 dark:text-gray-400">Afficher</span>
               <Select value={itemsPerPage.toString()} onValueChange={(value) => {
@@ -330,10 +340,11 @@ export function Entreprises() {
               <span className="text-sm text-gray-500 dark:text-gray-400">entrées</span>
             </div>
             <span className="text-sm text-gray-500 dark:text-gray-400">Total: {totalCount} entreprises</span>
+            </div>
           </div>
         </div>
-        <div className="w-full overflow-x-auto">
-          <Table>
+        <div className="overflow-x-auto">
+          <Table className="bg-transparent min-w-full">
           <TableHeader>
             <TableRow className="border-b border-gray-200 dark:border-gray-600" style={{ backgroundColor: 'hsl(210, 40%, 96.1%)' }}>
               <TableHead className="font-semibold text-gray-900">Nom</TableHead>

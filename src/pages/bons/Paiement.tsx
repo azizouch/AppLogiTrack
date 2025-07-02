@@ -1,56 +1,65 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Search, FileText, Edit, Trash2 } from 'lucide-react';
+import { Plus, Search, FileText, Edit, Trash2, CreditCard, RefreshCw } from 'lucide-react';
+import { api } from '@/lib/supabase';
+import { Bon } from '@/types';
+import { useDebounce } from '@/hooks/useDebounce';
 
 export function Paiement() {
   const [searchTerm, setSearchTerm] = useState('');
+  const [bons, setBons] = useState<Bon[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
-  // Mock data for demonstration
-  const bonsPaiement = [
-    {
-      id: 'BP-2025-001',
-      date: '15/04/2025',
-      client: 'Tech Solutions',
-      montant: 1250.00,
-      statut: 'Payé'
-    },
-    {
-      id: 'BP-2025-002',
-      date: '16/04/2025',
-      client: 'Entreprise ABC',
-      montant: 980.50,
-      statut: 'En attente'
-    },
-    {
-      id: 'BP-2025-003',
-      date: '17/04/2025',
-      client: 'Société XYZ',
-      montant: 1750.75,
-      statut: 'Payé'
-    },
-    {
-      id: 'BP-2025-004',
-      date: '18/04/2025',
-      client: 'Compagnie 123',
-      montant: 2300.00,
-      statut: 'En attente'
-    },
-    {
-      id: 'BP-2025-005',
-      date: '19/04/2025',
-      client: 'Entreprise DEF',
-      montant: 1100.25,
-      statut: 'Payé'
+  // Fetch bons data
+  const fetchBons = useCallback(async (isRefresh = false) => {
+    try {
+      if (isRefresh) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
+
+      // Check if getBons function exists
+      if (!api.getBons) {
+        console.error('getBons function not available');
+        setBons([]);
+        return;
+      }
+
+      const { data, error } = await api.getBons({
+        type: 'paiement',
+        search: debouncedSearchTerm,
+        sortBy: 'recent'
+      });
+
+      if (error) {
+        console.error('Error fetching bons:', error);
+        setBons([]); // Ensure we always set an array
+      } else {
+        setBons(Array.isArray(data) ? data : []); // Ensure we always set an array
+      }
+    } catch (error) {
+      console.error('Error fetching bons:', error);
+      setBons([]); // Ensure we always set an array on error
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
     }
-  ];
+  }, [debouncedSearchTerm]);
 
-  const filteredBons = bonsPaiement.filter(bon =>
-    bon.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    bon.client.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    bon.statut.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Initial fetch and when search changes
+  useEffect(() => {
+    fetchBons();
+  }, [fetchBons]);
+
+  // Handle refresh
+  const handleRefresh = () => {
+    fetchBons(true);
+  };
 
   const getStatusBadge = (statut: string) => {
     switch (statut) {
@@ -66,20 +75,30 @@ export function Paiement() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Bons de paiement</h1>
-          <p className="text-gray-600 dark:text-gray-400">Gérez tous les bons de paiement de vos clients</p>
+      <div className="space-y-3">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
+            <CreditCard className="h-7 w-7 text-blue-600 dark:text-blue-400" />
+            Bons de paiement
+          </h1>
+          <div className="flex gap-2 w-full sm:w-auto">
+            <Button
+              variant="outline"
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700 flex-1 sm:flex-none"
+            >
+              <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+              Actualiser
+            </Button>
+            <Button className="bg-blue-600 hover:bg-blue-700 flex-1 sm:flex-none">
+              <Plus className="h-4 w-4 mr-2" />
+              Nouveau bon de paiement
+            </Button>
+          </div>
         </div>
-        <Button className="bg-blue-600 hover:bg-blue-700">
-          <Plus className="h-4 w-4 mr-2" />
-          Nouveau bon de paiement
-        </Button>
-      </div>
 
-      {/* Search Section */}
-      <div className="space-y-2">
-        <h2 className="text-lg font-medium text-gray-900 dark:text-white">Recherche</h2>
+        {/* Search Section */}
         <div className="relative max-w-md">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
           <Input
@@ -99,7 +118,11 @@ export function Paiement() {
             Liste des bons de paiement
           </h2>
           <span className="text-sm text-gray-500 dark:text-gray-400">
-            Total: {filteredBons.length} bons trouvés
+            {loading ? (
+              'Chargement...'
+            ) : (
+              `Total: ${bons.length} bons trouvés`
+            )}
           </span>
         </div>
 
@@ -129,19 +152,43 @@ export function Paiement() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-              {filteredBons.map((bon) => (
+              {loading ? (
+                Array.from({ length: 5 }).map((_, index) => (
+                  <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div>
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div>
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div>
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div>
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div>
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <div className="h-8 bg-gray-200 dark:bg-gray-600 rounded animate-pulse w-20"></div>
+                    </td>
+                  </tr>
+                ))
+              ) : bons.length > 0 ? (
+                bons.map((bon) => (
                 <tr key={bon.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                   <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                    {bon.id}
+                    💳 {bon.id}
                   </td>
                   <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                    {bon.date}
+                    {new Date(bon.date_creation).toLocaleDateString('fr-FR')}
                   </td>
                   <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                    {bon.client}
+                    {bon.client ? bon.client.nom : 'N/A'}
                   </td>
                   <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                    {bon.montant.toFixed(2)}
+                    {bon.montant ? bon.montant.toFixed(2) : '0.00'}
                   </td>
                   <td className="px-4 py-4 whitespace-nowrap">
                     {getStatusBadge(bon.statut)}
@@ -160,7 +207,15 @@ export function Paiement() {
                     </div>
                   </td>
                 </tr>
-              ))}
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={6} className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
+                    <CreditCard className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                    <p>Aucun bon de paiement trouvé</p>
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

@@ -347,21 +347,21 @@ export function Livreurs() {
           </h1>
           <p className="text-gray-600 dark:text-gray-400">Gestion des livreurs</p>
         </div>
-        <div className="flex items-center gap-2 w-full sm:w-auto">
+        <div className="flex items-center gap-1 sm:gap-2 w-full sm:w-auto">
           <Button
             variant="outline"
             onClick={handleRefresh}
             disabled={refreshing}
-            className="bg-transparent border-gray-600 dark:border-gray-600 text-gray-900 dark:text-gray-100 hover:bg-gray-700/10 dark:hover:bg-gray-700/20"
+            className="bg-transparent border-gray-600 dark:border-gray-600 text-gray-900 dark:text-gray-100 hover:bg-gray-700/10 dark:hover:bg-gray-700/20 px-2 sm:px-4 py-1 sm:py-2 text-xs sm:text-sm flex-1 sm:flex-none"
           >
-            <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4 ${refreshing ? 'animate-spin' : ''}`} />
             Actualiser
           </Button>
           <Button
-            className="bg-green-600 hover:bg-green-700 flex-1 sm:flex-none"
+            className="bg-green-600 hover:bg-green-700 flex-1 sm:flex-none px-2 sm:px-4 py-1 sm:py-2 text-xs sm:text-sm"
             onClick={() => navigate('/livreurs/ajouter')}
           >
-            <Plus className="mr-2 h-4 w-4" />
+            <Plus className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
             Ajouter un livreur
           </Button>
         </div>
@@ -447,9 +447,10 @@ export function Livreurs() {
 
       {/* Table */}
       <div className="space-y-4">
-        <div className="flex justify-between items-center">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Liste des Livreurs</h2>
-          <div className="flex items-center gap-4">
+        <div className="space-y-3 sm:space-y-0">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Liste des Livreurs</h2>
+            <div className="flex justify-between items-center sm:gap-4">
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-500 dark:text-gray-400">Afficher</span>
               <Select value={itemsPerPage.toString()} onValueChange={(value) => {
@@ -469,10 +470,11 @@ export function Livreurs() {
               <span className="text-sm text-gray-500 dark:text-gray-400">entrées</span>
             </div>
             <span className="text-sm text-gray-500 dark:text-gray-400">Total: {totalCount} livreurs</span>
+            </div>
           </div>
         </div>
         <div className="overflow-x-auto">
-          <Table>
+          <Table className="bg-transparent min-w-full">
           <TableHeader>
             <TableRow className="border-b border-gray-200 dark:border-gray-600" style={{ backgroundColor: 'hsl(210, 40%, 96.1%)' }}>
               <TableHead className="font-semibold text-gray-900">Nom</TableHead>

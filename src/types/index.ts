@@ -94,8 +94,28 @@ export interface Notification {
 
 export interface Bon {
   id: string;
-  livreur_id: string;
+  user_id: string; // Changed from livreur_id - can be any user
+  type: 'distribution' | 'paiement' | 'retour';
   date_creation: string;
-  nb_colis: number;
   statut: string;
+
+  // Distribution fields
+  nb_colis?: number; // Optional for non-distribution bons
+
+  // Paiement fields
+  client_id?: string; // For paiement and retour
+  montant?: number; // For paiement bons
+  date_echeance?: string; // Due date for payments
+
+  // Retour fields
+  colis_id?: string; // Specific colis being returned
+  motif?: string; // Reason for return
+
+  // Common fields
+  notes?: string; // Additional notes
+
+  // Relations (populated by joins)
+  user?: User; // The user who created/owns the bon
+  client?: Client; // For paiement/retour bons
+  colis?: Colis; // For retour bons
 }

@@ -324,27 +324,55 @@ export function Notifications() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between w-full">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Notifications</h1>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            onClick={handleRefresh}
-            disabled={refreshing}
-            className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700"
-          >
-            <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-            Actualiser
-          </Button>
-          {unreadCount > 0 && (
+      <div className="w-full">
+        {/* Desktop layout - only show on very large screens */}
+        <div className="hidden xl:flex xl:items-center xl:justify-between">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Notifications</h1>
+          <div className="flex items-center gap-2">
             <Button
-              onClick={markAllAsRead}
-              className="bg-blue-600 hover:bg-blue-700 flex-1 sm:flex-none"
+              variant="outline"
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700"
             >
-              <CheckCheck className="mr-2 h-4 w-4" />
-              Tout marquer comme lu
+              <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+              Actualiser
             </Button>
-          )}
+            {unreadCount > 0 && (
+              <Button
+                onClick={markAllAsRead}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                <CheckCheck className="mr-2 h-4 w-4" />
+                Tout marquer comme lu
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* Mobile layout - show on most screens */}
+        <div className="xl:hidden space-y-4">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Notifications</h1>
+          <div className="flex items-center gap-1 sm:gap-2 w-full">
+            <Button
+              variant="outline"
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700 px-2 sm:px-4 py-1 sm:py-2 text-xs sm:text-sm flex-1"
+            >
+              <RefreshCw className={`mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4 ${refreshing ? 'animate-spin' : ''}`} />
+              Actualiser
+            </Button>
+            {unreadCount > 0 && (
+              <Button
+                onClick={markAllAsRead}
+                className="bg-blue-600 hover:bg-blue-700 px-2 sm:px-4 py-1 sm:py-2 text-xs sm:text-sm flex-1"
+              >
+                <CheckCheck className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                Tout marquer comme lu
+              </Button>
+            )}
+          </div>
         </div>
       </div>
 

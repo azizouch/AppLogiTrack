@@ -338,13 +338,23 @@ export function Statuts() {
             Gestion des Statuts
           </h1>
         </div>
-        <Button
-          onClick={() => setIsAddModalOpen(true)}
-          className="bg-blue-600 hover:bg-blue-700 text-white"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Ajouter un statut
-        </Button>
+        <div className="flex items-center gap-1 sm:gap-2">
+          <Button
+            variant="outline"
+            onClick={fetchStatuts}
+            className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700 px-2 sm:px-4 py-1 sm:py-2 text-xs sm:text-sm"
+          >
+            <RotateCcw className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+            Actualiser
+          </Button>
+          <Button
+            onClick={() => setIsAddModalOpen(true)}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-2 sm:px-4 py-1 sm:py-2 text-xs sm:text-sm"
+          >
+            <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+            Ajouter un statut
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}
