@@ -1492,31 +1492,32 @@ export const api = {
   // Get recent activity for dashboard
   getRecentActivity: async (limit: number = 5) => {
     try {
+      // Use the same pattern as other working queries
       const { data, error } = await supabase
         .from('colis')
         .select(`
-          id,
-          numero_suivi,
-          statut,
-          date_mise_a_jour,
-          clients (nom, prenom),
-          utilisateurs (nom, prenom)
+          *,
+          client:clients(nom),
+          livreur:utilisateurs(nom, prenom)
         `)
         .order('date_mise_a_jour', { ascending: false })
         .limit(limit);
 
-      if (error) return { data: null, error };
+      if (error) {
+        console.error('getRecentActivity error:', error);
+        return { data: null, error };
+      }
 
       const activities = data?.map(colis => {
-        const client = Array.isArray(colis.clients) ? colis.clients[0] : colis.clients;
-        const livreur = Array.isArray(colis.utilisateurs) ? colis.utilisateurs[0] : colis.utilisateurs;
+        const client = Array.isArray(colis.client) ? colis.client[0] : colis.client;
+        const livreur = Array.isArray(colis.livreur) ? colis.livreur[0] : colis.livreur;
 
         return {
           id: colis.id,
-          numero_suivi: colis.numero_suivi,
+          numero_suivi: colis.id, // Use ID as tracking number
           statut: colis.statut,
           date_mise_a_jour: colis.date_mise_a_jour,
-          client_nom: client ? `${client.prenom || ''} ${client.nom || ''}`.trim() : 'Client inconnu',
+          client_nom: client ? client.nom || 'Client inconnu' : 'Client inconnu',
           livreur_nom: livreur ? `${livreur.prenom || ''} ${livreur.nom || ''}`.trim() : 'Non assigné'
         };
       }) || [];
