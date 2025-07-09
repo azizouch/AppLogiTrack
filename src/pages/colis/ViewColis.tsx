@@ -323,62 +323,122 @@ export function ViewColis() {
 
       {/* Title Section */}
       <div className="mb-8">
-        {/* Title Row */}
-        <div className="flex items-center gap-4 mb-4">
-          <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
-            <Package className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+        {/* Mobile Layout - Title and Buttons Separated */}
+        <div className="md:hidden">
+          {/* Title Row */}
+          <div className="flex items-center gap-4 mb-4">
+            <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
+              <Package className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{colis.id}</h1>
+              <p className="text-gray-500 dark:text-gray-400">
+                Créé le {new Intl.DateTimeFormat('fr-FR', {
+                  day: 'numeric',
+                  month: 'long',
+                  year: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                }).format(new Date(colis.date_creation))}
+              </p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{colis.id}</h1>
-            <p className="text-gray-500 dark:text-gray-400">
-              Créé le {new Intl.DateTimeFormat('fr-FR', {
-                day: 'numeric',
-                month: 'long',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-              }).format(new Date(colis.date_creation))}
-            </p>
+          {/* Buttons Row - 2x2 Grid */}
+          <div className="grid grid-cols-2 gap-3">
+            <Button
+              variant="outline"
+              onClick={() => navigate(`/colis/${id}/modifier`)}
+              className="flex items-center justify-center gap-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
+            >
+              <Edit className="h-4 w-4" />
+              Modifier
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => setShowDeleteModal(true)}
+              className="flex items-center justify-center gap-2 bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700"
+            >
+              <Trash2 className="h-4 w-4" />
+              Supprimer
+            </Button>
+            <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+              <SelectTrigger className="border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
+                {statuses.map((status) => (
+                  <SelectItem key={status.id} value={status.nom} className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">
+                    {status.nom}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button
+              onClick={handleStatusUpdate}
+              disabled={updating || selectedStatus === colis.statut}
+              className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {updating ? 'Mise à jour...' : 'Mettre à jour'}
+            </Button>
           </div>
         </div>
 
-        {/* Buttons Row */}
-        <div className="flex flex-wrap items-center gap-3">
-          <Button
-            variant="outline"
-            onClick={() => navigate(`/colis/${id}/modifier`)}
-            className="flex items-center gap-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
-          >
-            <Edit className="h-4 w-4" />
-            Modifier
-          </Button>
-          <Button
-            variant="destructive"
-            onClick={() => setShowDeleteModal(true)}
-            className="flex items-center gap-2 bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700"
-          >
-            <Trash2 className="h-4 w-4" />
-            Supprimer
-          </Button>
-          <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-            <SelectTrigger className="w-40 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
-              {statuses.map((status) => (
-                <SelectItem key={status.id} value={status.nom} className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">
-                  {status.nom}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Button
-            onClick={handleStatusUpdate}
-            disabled={updating || selectedStatus === colis.statut}
-            className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {updating ? 'Mise à jour...' : 'Mettre à jour'}
-          </Button>
+        {/* Desktop Layout - Title and Buttons on Same Line */}
+        <div className="hidden md:flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
+              <Package className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{colis.id}</h1>
+              <p className="text-gray-500 dark:text-gray-400">
+                Créé le {new Intl.DateTimeFormat('fr-FR', {
+                  day: 'numeric',
+                  month: 'long',
+                  year: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                }).format(new Date(colis.date_creation))}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              onClick={() => navigate(`/colis/${id}/modifier`)}
+              className="flex items-center gap-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
+            >
+              <Edit className="h-4 w-4" />
+              Modifier
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => setShowDeleteModal(true)}
+              className="flex items-center gap-2 bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700"
+            >
+              <Trash2 className="h-4 w-4" />
+              Supprimer
+            </Button>
+            <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+              <SelectTrigger className="w-40 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
+                {statuses.map((status) => (
+                  <SelectItem key={status.id} value={status.nom} className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">
+                    {status.nom}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button
+              onClick={handleStatusUpdate}
+              disabled={updating || selectedStatus === colis.statut}
+              className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {updating ? 'Mise à jour...' : 'Mettre à jour'}
+            </Button>
+          </div>
         </div>
       </div>
 

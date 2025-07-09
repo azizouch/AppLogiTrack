@@ -196,7 +196,7 @@ export function ClientDetails() {
   }
 
   return (
-    <div className="w-full p-6">
+    <div className="w-full">
       <div className="mb-6">
         <Button
           variant="ghost"
@@ -207,7 +207,44 @@ export function ClientDetails() {
           <ArrowLeft className="mr-2 h-4 w-4" />
           Retour à la liste
         </Button>
-        <div className="flex justify-between items-center">
+        {/* Mobile Layout - Title and Buttons Separated */}
+        <div className="md:hidden">
+          <div className="flex items-center mb-4">
+            <h1 className="text-2xl font-bold">Détails du Client</h1>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="ml-2"
+              onClick={handleRefresh}
+              disabled={refreshing}
+              title="Rafraîchir les données"
+            >
+              <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+            </Button>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <Button
+              variant="outline"
+              onClick={() => navigate(`/clients/${client.id}/modifier`)}
+              className="flex items-center justify-center gap-2"
+            >
+              <Edit className="h-4 w-4" />
+              Modifier
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={refreshing || deleting}
+              onClick={() => setShowDeleteDialog(true)}
+              className="flex items-center justify-center gap-2"
+            >
+              <Trash2 className="h-4 w-4" />
+              {deleting ? 'Suppression...' : 'Supprimer'}
+            </Button>
+          </div>
+        </div>
+
+        {/* Desktop Layout - Title and Buttons on Same Line */}
+        <div className="hidden md:flex items-center justify-between">
           <div className="flex items-center">
             <h1 className="text-2xl font-bold">Détails du Client</h1>
             <Button
@@ -221,20 +258,22 @@ export function ClientDetails() {
               <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
             </Button>
           </div>
-          <div className="flex space-x-2">
+          <div className="flex gap-3">
             <Button
               variant="outline"
               onClick={() => navigate(`/clients/${client.id}/modifier`)}
+              className="flex items-center gap-2"
             >
-              <Edit className="mr-2 h-4 w-4" />
+              <Edit className="h-4 w-4" />
               Modifier
             </Button>
             <Button
               variant="destructive"
               disabled={refreshing || deleting}
               onClick={() => setShowDeleteDialog(true)}
+              className="flex items-center gap-2"
             >
-              <Trash2 className="mr-2 h-4 w-4" />
+              <Trash2 className="h-4 w-4" />
               {deleting ? 'Suppression...' : 'Supprimer'}
             </Button>
           </div>
@@ -244,10 +283,10 @@ export function ClientDetails() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="md:col-span-2 space-y-6">
           <Card>
-            <CardHeader>
+            <CardHeader className="p-4 md:p-6">
               <CardTitle>Informations du client</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 p-4 md:p-6">
               <div className="flex items-center space-x-4">
                 <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
                   <User className="h-6 w-6 text-primary" />
@@ -331,7 +370,7 @@ export function ClientDetails() {
           </Card>
 
           <Card>
-            <CardHeader>
+            <CardHeader className="p-4 md:p-6">
               <div className="flex justify-between items-center">
                 <div>
                   <CardTitle>Colis</CardTitle>
@@ -344,7 +383,7 @@ export function ClientDetails() {
                 </Button>
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-4 md:p-6">
               {clientColis.length > 0 ? (
                 <div className="space-y-4">
                   {clientColis.map((item) => (
@@ -382,10 +421,10 @@ export function ClientDetails() {
 
         <div>
           <Card>
-            <CardHeader>
+            <CardHeader className="p-4 md:p-6">
               <CardTitle>Statistiques</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-4 md:p-6">
               <div className="space-y-4">
                 <div className="bg-muted p-4 rounded-md">
                   <h3 className="font-medium">Nombre de colis</h3>

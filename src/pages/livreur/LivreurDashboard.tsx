@@ -260,9 +260,13 @@ export function LivreurDashboard() {
     <div className="space-y-4 sm:space-y-6">
       {/* Header with date */}
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+        <button
+          className="text-2xl font-bold text-gray-900 dark:text-gray-100 cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 focus:outline-none focus:text-gray-900 dark:focus:text-gray-100 transition-colors select-none bg-transparent border-none p-0 m-0 text-left"
+          onClick={() => navigate('/')}
+          onMouseLeave={(e) => e.currentTarget.blur()}
+        >
           Tableau de bord Livreur
-        </h1>
+        </button>
         <p className="text-sm text-gray-500">
           {getCurrentDate()}
         </p>

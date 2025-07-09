@@ -250,7 +250,7 @@ export function Header() {
   return (
     <header className="sticky top-0 z-50 h-16 border-b bg-background border-border flex items-center px-4 sm:px-6 transition-colors">
       {/* Mobile/Tablet Layout */}
-      <div className="flex items-center justify-between w-full md:hidden">
+      <div className="flex items-center justify-between w-full lg:hidden">
         {/* Left side - Hamburger and Search */}
         <div className="flex items-center space-x-6">
           <button
@@ -267,15 +267,25 @@ export function Header() {
             onClick={() => setShowMobileSearch(!showMobileSearch)}
             className="h-4 w-4 p-0 hover:bg-transparent flex items-center justify-center"
           >
-            <Search className="h-4 w-4 text-gray-600 dark:text-white" />
+            {showMobileSearch ? (
+              <X className="h-4 w-4 text-gray-600 dark:text-white" />
+            ) : (
+              <Search className="h-4 w-4 text-gray-600 dark:text-white" />
+            )}
           </button>
         </div>
 
         {/* Center - LogiTrack Title */}
-        <h1 className="text-lg font-bold text-gray-900 dark:text-white absolute left-1/2 transform -translate-x-1/2">LogiTrack</h1>
+        <button
+          className="text-lg font-bold text-gray-900 dark:text-white absolute left-1/2 transform -translate-x-1/2 cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 focus:outline-none focus:text-gray-900 dark:focus:text-white transition-colors select-none bg-transparent border-none p-0 m-0"
+          onClick={() => navigate('/')}
+          onMouseLeave={(e) => e.currentTarget.blur()}
+        >
+          LogiTrack
+        </button>
 
         {/* Right side - Notification and User (Mobile Only) */}
-        <div className="flex items-center space-x-3 md:hidden">
+        <div className="flex items-center space-x-3 lg:hidden">
           {state.user && (
             <Popover open={showMobileNotifications} onOpenChange={setShowMobileNotifications}>
               <PopoverTrigger asChild>
@@ -458,17 +468,24 @@ export function Header() {
 
       {/* Mobile/Tablet Search Overlay - Below Header */}
       {showMobileSearch && (
-        <div className="absolute top-16 left-0 right-0 bg-background p-4 md:hidden z-40 border-b border-border">
-          <GlobalSearch
-            isMobile={true}
-            onClose={() => setShowMobileSearch(false)}
-            className="w-full"
+        <>
+          {/* Backdrop to close search when clicking outside */}
+          <div
+            className="fixed inset-0 z-30 lg:hidden"
+            onClick={() => setShowMobileSearch(false)}
           />
-        </div>
+          <div className="absolute top-16 left-0 right-0 bg-background p-4 lg:hidden z-40 border-b border-border">
+            <GlobalSearch
+              isMobile={true}
+              onClose={() => setShowMobileSearch(false)}
+              className="w-full"
+            />
+          </div>
+        </>
       )}
 
       {/* Desktop Layout */}
-      <div className="hidden md:flex items-center justify-between w-full">
+      <div className="hidden lg:flex items-center justify-between w-full">
         <div className="flex items-center">
           <GlobalSearch className="w-80 sm:w-96" />
         </div>
@@ -606,7 +623,7 @@ export function Header() {
             </Popover>
           )}
 
-          <DropdownMenu>
+          <DropdownMenu modal={false}>
             <DropdownMenuTrigger asChild>
               <div className="flex items-center space-x-2 cursor-pointer">
                 {/* Desktop: Show user info */}

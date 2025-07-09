@@ -332,8 +332,9 @@ export function LivreurDetails() {
       </div>
 
       {/* Livreur Info Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
+      <div className="mb-8">
+        {/* Title Row */}
+        <div className="flex items-center gap-4 mb-4">
           <Avatar className="w-12 h-12">
             <AvatarImage
               src={livreur.image_url}
@@ -352,28 +353,30 @@ export function LivreurDetails() {
             </Badge>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+
+        {/* Buttons Row */}
+        <div className="grid grid-cols-2 md:flex gap-3">
           <Button
             variant="default"
             onClick={openAssignModal}
-            className="bg-blue-600 hover:bg-blue-700"
+            className="w-full lg:w-auto bg-blue-600 hover:bg-blue-700 flex items-center justify-center gap-2"
           >
-            <User className="h-4 w-4 mr-2" />
+            <User className="h-4 w-4" />
             Assigner
           </Button>
           <Button
             variant="outline"
             onClick={() => navigate(`/livreurs/${livreur.id}/modifier`)}
-            className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
+            className="w-full lg:w-auto text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white flex items-center justify-center gap-2"
           >
-            <Edit className="h-4 w-4 mr-2" />
+            <Edit className="h-4 w-4" />
             Modifier
           </Button>
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button
                 variant="destructive"
-                className="bg-red-600 hover:bg-red-700"
+                className="w-full lg:w-auto bg-red-600 hover:bg-red-700 flex items-center justify-center gap-2"
                 disabled={deleting}
               >
                 {deleting ? (
@@ -415,7 +418,7 @@ export function LivreurDetails() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Left Column - Livreur Information */}
         <div className="space-y-6">
-          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 md:p-6">
             <div className="mb-6">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
                 Informations du livreur
@@ -556,7 +559,7 @@ export function LivreurDetails() {
         {/* Right Column - Colis and Bons */}
         <div className="space-y-6">
           {/* Colis associés */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 md:p-6">
             <div className="flex items-center gap-2 mb-4">
               <Package className="h-5 w-5 text-gray-600 dark:text-gray-400" />
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
@@ -593,7 +596,7 @@ export function LivreurDetails() {
           </div>
 
           {/* Bons de distribution */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 md:p-6">
             <div className="flex items-center gap-2 mb-4">
               <FileText className="h-5 w-5 text-gray-600 dark:text-gray-400" />
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">

@@ -285,9 +285,9 @@ export function MesColis() {
 
     setIsUpdating(true);
     try {
-      const { error } = await withRecovery(() => api.updateColis(selectedColis.id, {
+      const { error } = await api.updateColis(selectedColis.id, {
         statut: newStatus
-      }));
+      });
 
       if (error) {
         toast({

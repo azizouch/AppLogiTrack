@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { useNavigate } from 'react-router-dom';
 import {
   Package,
   Truck,
@@ -44,6 +45,7 @@ import { api } from '@/lib/supabase';
 
 export function AppSidebar() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { state, toggleSidebar } = useSidebar();
   const { state: authState } = useAuth();
   const isMobile = useIsMobile();
@@ -327,12 +329,21 @@ export function AppSidebar() {
       <SidebarHeader className="h-16 px-4 border-b border-sidebar-border">
         <div className={`h-full flex items-center w-full ${!isCollapsed ? 'justify-between' : 'justify-center'}`}>
           {!isCollapsed && (
-            <h1 className="text-xl font-bold text-sidebar-foreground flex items-center">
+            <button
+              className="text-xl font-bold text-sidebar-foreground flex items-center cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 focus:outline-none focus:text-sidebar-foreground transition-colors select-none bg-transparent border-none p-0 m-0"
+              onClick={() => {
+                navigate('/');
+                if (isMobile) {
+                  toggleSidebar();
+                }
+              }}
+              onMouseLeave={(e) => e.currentTarget.blur()}
+            >
               LogiTrack
-            </h1>
+            </button>
           )}
           <div
-            className="flex items-center justify-center p-2 rounded-lg transition-colors cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
+            className="flex items-center justify-center w-12 h-12 rounded-lg transition-colors cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
             onClick={toggleCollapse}
           >
             <ChevronLeft className={`h-4 w-4 transition-transform duration-300 text-sidebar-foreground ${isCollapsed ? 'rotate-180' : ''}`} />
@@ -362,7 +373,7 @@ export function AppSidebar() {
                             className={`flex items-center text-sm font-medium rounded-md transition-colors cursor-pointer ${
                               !isCollapsed
                                 ? 'w-full justify-start space-x-2 px-3 py-2.5'
-                                : 'w-10 h-10 justify-center'
+                                : 'w-12 h-12 justify-center'
                             } ${
                               isItemActive
                                 ? 'bg-sidebar-primary text-sidebar-primary-foreground active-item'
@@ -404,7 +415,7 @@ export function AppSidebar() {
                                 className={`flex items-center text-sm font-medium rounded-md transition-colors cursor-pointer ${
                                   !isCollapsed
                                     ? 'w-full justify-start space-x-2 px-3 py-2.5'
-                                    : 'w-10 h-10 justify-center'
+                                    : 'w-12 h-12 justify-center'
                                 } ${
                                   hasActiveChild
                                     ? 'bg-sidebar-primary text-sidebar-primary-foreground active-item'
@@ -491,7 +502,7 @@ export function AppSidebar() {
         <Button
           variant="ghost"
           size="icon"
-          className="h-10 w-10 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
+          className="h-12 w-12 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
           onClick={toggleDarkMode}
         >
           {isDarkMode ? (

@@ -223,42 +223,78 @@ export function EntrepriseDetails() {
       </div>
 
       {/* Title and Actions */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Détails de l'Entreprise</h1>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={handleRefresh}
-            disabled={refreshing}
-            className="text-gray-600 dark:text-gray-400 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800"
-          >
-            <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-            Actualiser
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => navigate(`/entreprises/${entreprise.id}/modifier`)}
-            className="text-gray-600 dark:text-gray-400 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800"
-          >
-            <Edit className="mr-2 h-4 w-4" />
-            Modifier
-          </Button>
-          <Button
-            variant="destructive"
-            onClick={showDeleteConfirmation}
-            disabled={deleting}
-            className="bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800"
-          >
-            <Trash2 className="mr-2 h-4 w-4" />
-            Supprimer
-          </Button>
+      <div>
+        {/* Mobile Layout - Title and Buttons Separated */}
+        <div className="md:hidden">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Détails de l'Entreprise</h1>
+          <div className="grid grid-cols-2 gap-3">
+            <Button
+              variant="outline"
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="flex items-center justify-center gap-2 text-gray-600 dark:text-gray-400 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800"
+            >
+              <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+              Actualiser
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => navigate(`/entreprises/${entreprise.id}/modifier`)}
+              className="flex items-center justify-center gap-2 text-gray-600 dark:text-gray-400 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800"
+            >
+              <Edit className="h-4 w-4" />
+              Modifier
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={showDeleteConfirmation}
+              disabled={deleting}
+              className="col-span-2 flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800"
+            >
+              <Trash2 className="h-4 w-4" />
+              Supprimer
+            </Button>
+          </div>
+        </div>
+
+        {/* Desktop Layout - Title and Buttons on Same Line */}
+        <div className="hidden md:flex items-center justify-between">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Détails de l'Entreprise</h1>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="text-gray-600 dark:text-gray-400 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800"
+            >
+              <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+              Actualiser
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => navigate(`/entreprises/${entreprise.id}/modifier`)}
+              className="text-gray-600 dark:text-gray-400 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800"
+            >
+              <Edit className="mr-2 h-4 w-4" />
+              Modifier
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={showDeleteConfirmation}
+              disabled={deleting}
+              className="bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800"
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Supprimer
+            </Button>
+          </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Entreprise Information */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-          <div className="p-6">
+          <div className="p-4 md:p-6">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">Informations de l'entreprise</h2>
 
             <div className="space-y-6">
@@ -342,7 +378,7 @@ export function EntrepriseDetails() {
 
         {/* Statistics */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-          <div className="p-6">
+          <div className="p-4 md:p-6">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">Statistiques</h2>
 
             <div className="space-y-6">
@@ -379,7 +415,7 @@ export function EntrepriseDetails() {
 
       {/* Colis Section */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-        <div className="p-6">
+        <div className="p-4 md:p-6">
           <div className="flex justify-between items-center mb-6">
             <div>
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Colis</h2>
