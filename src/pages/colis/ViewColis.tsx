@@ -322,8 +322,9 @@ export function ViewColis() {
       </div>
 
       {/* Title Section */}
-      <div className="flex items-center justify-between mb-8">
-        <div className="flex items-center gap-4">
+      <div className="mb-8">
+        {/* Title Row */}
+        <div className="flex items-center gap-4 mb-4">
           <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
             <Package className="h-6 w-6 text-blue-600 dark:text-blue-400" />
           </div>
@@ -341,7 +342,8 @@ export function ViewColis() {
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        {/* Buttons Row */}
+        <div className="flex flex-wrap items-center gap-3">
           <Button
             variant="outline"
             onClick={() => navigate(`/colis/${id}/modifier`)}
@@ -384,7 +386,7 @@ export function ViewColis() {
         {/* Left Column - Main Info */}
         <div className="lg:col-span-2 space-y-8">
           {/* Informations du colis */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 md:p-6">
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Informations du colis</h2>
             <p className="text-gray-600 dark:text-gray-400 mb-6">Détails et statut actuel du colis</p>
 
@@ -440,7 +442,7 @@ export function ViewColis() {
           </div>
 
           {/* Historique des statuts */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 md:p-6">
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">Historique des statuts</h2>
             {historique.length > 0 ? (
               <div className="space-y-4">
@@ -475,7 +477,7 @@ export function ViewColis() {
         {/* Right Column - Client, Entreprise, Livreur */}
         <div className="space-y-6">
           {/* Client */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 md:p-6">
             <div className="flex items-center gap-3 mb-4">
               <User className="h-5 w-5 text-gray-600 dark:text-gray-400" />
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Client</h2>
@@ -516,7 +518,7 @@ export function ViewColis() {
           </div>
 
           {/* Entreprise */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 md:p-6">
             <div className="flex items-center gap-3 mb-4">
               <Building className="h-5 w-5 text-gray-600 dark:text-gray-400" />
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Entreprise</h2>
@@ -559,7 +561,7 @@ export function ViewColis() {
           </div>
 
           {/* Livreur */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 md:p-6">
             <div className="flex items-center gap-3 mb-4">
               <Truck className="h-5 w-5 text-gray-600 dark:text-gray-400" />
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Livreur</h2>

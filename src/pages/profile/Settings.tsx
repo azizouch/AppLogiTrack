@@ -103,7 +103,7 @@ export function Settings() {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
         {/* Appearance Settings */}
         <Card>
           <CardHeader>
@@ -115,7 +115,7 @@ export function Settings() {
               Personnalisez l'apparence de l'application
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="p-4 md:p-6 space-y-3 md:space-y-4">
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
                 <Label>Mode sombre</Label>
@@ -159,7 +159,7 @@ export function Settings() {
               Gérez vos préférences de notification
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="p-4 md:p-6 space-y-3 md:space-y-4">
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
                 <Label>Notifications par email</Label>
@@ -225,7 +225,7 @@ export function Settings() {
               Gérez vos paramètres de sécurité et mot de passe
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="p-4 md:p-6 space-y-3 md:space-y-4">
             <div className="space-y-2">
               <Label htmlFor="current-password">Mot de passe actuel</Label>
               <div className="relative">
@@ -341,7 +341,7 @@ export function Settings() {
               Contrôlez la visibilité de vos informations
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="p-4 md:p-6 space-y-3 md:space-y-4">
             <div className="space-y-2">
               <Label>Visibilité du profil</Label>
               <Select value={profileVisibility} onValueChange={setProfileVisibility}>

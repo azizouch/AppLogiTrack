@@ -285,7 +285,7 @@ export function Profile() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
         {/* Profile Card */}
         <Card className="lg:col-span-1">
           <CardHeader className="text-center">
@@ -349,7 +349,7 @@ export function Profile() {
               {getRoleBadge(state.user.role)}
             </div>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="p-4 md:p-6 space-y-3 md:space-y-4">
             <div className="flex items-center gap-3 text-sm">
               <Mail className="h-4 w-4 text-gray-500" />
               <span className="text-gray-600 dark:text-gray-400">{profileData.email}</span>
@@ -383,9 +383,9 @@ export function Profile() {
               Mettez à jour vos informations personnelles et de contact
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
+          <CardContent className="p-4 md:p-6 space-y-4 md:space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
+              <div className="space-y-1 md:space-y-2">
                 <Label htmlFor="prenom">Prénom</Label>
                 {isEditing ? (
                   <Input
@@ -401,7 +401,7 @@ export function Profile() {
                 )}
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-1 md:space-y-2">
                 <Label htmlFor="nom">Nom</Label>
                 {isEditing ? (
                   <Input
@@ -418,8 +418,8 @@ export function Profile() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
+              <div className="space-y-1 md:space-y-2">
                 <Label htmlFor="email">Email</Label>
                 {isEditing ? (
                   <Input
@@ -436,7 +436,7 @@ export function Profile() {
                 )}
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-1 md:space-y-2">
                 <Label htmlFor="telephone">Téléphone</Label>
                 {isEditing ? (
                   <Input
@@ -453,7 +453,7 @@ export function Profile() {
               </div>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1 md:space-y-2">
               <Label htmlFor="adresse">Adresse</Label>
               {isEditing ? (
                 <Input
@@ -469,7 +469,7 @@ export function Profile() {
               )}
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1 md:space-y-2">
               <Label htmlFor="ville">Ville</Label>
               {isEditing ? (
                 <Input

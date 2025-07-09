@@ -118,14 +118,14 @@ export function AddEntreprise() {
       </div>
 
       {/* Form Card */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 md:p-6">
         <div className="mb-6">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Informations de l'entreprise</h2>
           <p className="text-gray-600 dark:text-gray-400">Remplissez les informations pour créer une nouvelle entreprise</p>
         </div>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 md:space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
               {/* ID */}
               <FormField
                 control={form.control}
@@ -244,7 +244,7 @@ export function AddEntreprise() {
                 control={form.control}
                 name="adresse"
                 render={({ field }) => (
-                  <FormItem className="md:col-span-2">
+                  <FormItem className="col-span-1 md:col-span-2">
                     <FormLabel>Adresse</FormLabel>
                     <FormControl>
                       <Input
@@ -262,7 +262,7 @@ export function AddEntreprise() {
                 control={form.control}
                 name="description"
                 render={({ field }) => (
-                  <FormItem className="md:col-span-2">
+                  <FormItem className="col-span-1 md:col-span-2">
                     <FormLabel>Description</FormLabel>
                     <FormControl>
                       <Textarea
@@ -302,6 +302,7 @@ export function AddEntreprise() {
                 variant="outline"
                 onClick={() => navigate('/entreprises')}
                 disabled={loading}
+                className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
               >
                 Annuler
               </Button>

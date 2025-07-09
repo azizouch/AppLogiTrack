@@ -212,7 +212,7 @@ export function EditEntreprise() {
         <p className="text-gray-600 dark:text-gray-400">Modifier les informations de {entreprise.nom}</p>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 md:p-6">
         <div className="mb-6">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
             <Building2 className="h-5 w-5 text-purple-600" />
@@ -221,8 +221,8 @@ export function EditEntreprise() {
           <p className="text-gray-600 dark:text-gray-400">Modifiez les informations de l'entreprise</p>
         </div>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 md:space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
               {/* Nom */}
               <FormField
                 control={form.control}
@@ -324,7 +324,7 @@ export function EditEntreprise() {
                 control={form.control}
                 name="adresse"
                 render={({ field }) => (
-                  <FormItem className="md:col-span-2">
+                  <FormItem className="col-span-1 md:col-span-2">
                     <FormLabel className="text-base font-semibold">Adresse</FormLabel>
                     <FormControl>
                       <Input
@@ -343,7 +343,7 @@ export function EditEntreprise() {
                 control={form.control}
                 name="description"
                 render={({ field }) => (
-                  <FormItem className="md:col-span-2">
+                  <FormItem className="col-span-1 md:col-span-2">
                     <FormLabel className="text-base font-semibold">Description</FormLabel>
                     <FormControl>
                       <Textarea
@@ -386,6 +386,7 @@ export function EditEntreprise() {
                 variant="outline"
                 onClick={() => navigate('/entreprises')}
                 disabled={loading}
+                className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
               >
                 Annuler
               </Button>

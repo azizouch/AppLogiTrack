@@ -127,7 +127,7 @@ export function General() {
   };
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Paramètres</h1>
@@ -138,7 +138,7 @@ export function General() {
       <div className="flex space-x-1 bg-gray-100 dark:bg-gray-800 p-1 rounded-lg w-fit">
         <button
           onClick={() => setActiveTab('general')}
-          className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+          className={`px-2 py-1.5 md:px-4 md:py-2 rounded-md text-sm font-medium transition-colors ${
             activeTab === 'general'
               ? 'bg-gray-900 dark:bg-gray-700 text-white'
               : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
@@ -148,7 +148,7 @@ export function General() {
         </button>
         <button
           onClick={() => setActiveTab('numerotation')}
-          className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+          className={`px-2 py-1.5 md:px-4 md:py-2 rounded-md text-sm font-medium transition-colors ${
             activeTab === 'numerotation'
               ? 'bg-gray-900 dark:bg-gray-700 text-white'
               : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
@@ -159,9 +159,9 @@ export function General() {
       </div>
 
       {activeTab === 'general' && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
           {/* Company Information */}
-          <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+          <div className="bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 md:p-6">
             <div className="mb-6">
               <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Informations de l'entreprise</h2>
               <p className="text-gray-600 dark:text-gray-400 text-sm">Ces informations apparaîtront sur les bons de distribution et autres documents</p>
@@ -240,7 +240,7 @@ export function General() {
           </div>
 
           {/* System Preferences */}
-          <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+          <div className="bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 md:p-6">
             <div className="mb-6">
               <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Préférences système</h2>
               <p className="text-gray-600 dark:text-gray-400 text-sm">Configurez les préférences générales du système</p>
@@ -329,10 +329,10 @@ export function General() {
           </div>
 
           {/* Format des numéros de colis */}
-          <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+          <div className="bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 md:p-6">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Format des numéros de colis</h3>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
               {/* Prefix */}
               <div>
                 <Label htmlFor="colis-prefix" className="text-sm font-medium text-gray-900 dark:text-white">
@@ -424,10 +424,10 @@ export function General() {
           </div>
 
           {/* Format des numéros de bons de distribution */}
-          <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+          <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 md:p-6 border border-gray-200 dark:border-gray-700">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Format des numéros de bons de distribution</h3>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
               {/* Prefix */}
               <div>
                 <Label htmlFor="bd-prefix" className="text-sm font-medium text-gray-900 dark:text-white">

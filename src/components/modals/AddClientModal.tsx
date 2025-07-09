@@ -187,6 +187,7 @@ export function AddClientModal({ open, onOpenChange, onClientCreated }: AddClien
               variant="outline"
               onClick={() => onOpenChange(false)}
               disabled={loading}
+              className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
             >
               Annuler
             </Button>

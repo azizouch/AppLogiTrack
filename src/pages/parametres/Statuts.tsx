@@ -331,27 +331,27 @@ export function Statuts() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
-            <Settings className="h-7 w-7 text-blue-600 dark:text-blue-400" />
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
+            <Settings className="h-6 w-6 sm:h-7 sm:w-7 text-blue-600 dark:text-blue-400" />
             Gestion des Statuts
           </h1>
         </div>
-        <div className="flex items-center gap-1 sm:gap-2">
+        <div className="flex items-center gap-1 sm:gap-2 w-full sm:w-auto">
           <Button
             variant="outline"
             onClick={fetchStatuts}
-            className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700 px-2 sm:px-4 py-1 sm:py-2 text-xs sm:text-sm"
+            className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700 px-2 sm:px-4 py-1 sm:py-2 text-xs sm:text-sm flex-1 sm:flex-none"
           >
             <RotateCcw className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
             Actualiser
           </Button>
           <Button
             onClick={() => setIsAddModalOpen(true)}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-2 sm:px-4 py-1 sm:py-2 text-xs sm:text-sm"
+            className="bg-blue-600 hover:bg-blue-700 px-2 sm:px-4 py-1 sm:py-2 text-xs sm:text-sm flex-1 sm:flex-none"
           >
-            <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+            <Plus className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
             Ajouter un statut
           </Button>
         </div>
@@ -420,121 +420,132 @@ export function Statuts() {
 
       {/* Status List */}
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Liste des statuts</h2>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-500 dark:text-gray-400">Afficher</span>
-              <Select value={itemsPerPage.toString()} onValueChange={(value) => {
-                setItemsPerPage(parseInt(value));
-                setCurrentPage(1);
-              }}>
-                <SelectTrigger className="w-16 h-8 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
-                  <SelectValue placeholder={itemsPerPage.toString()} />
-                </SelectTrigger>
-                <SelectContent className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
-                  <SelectItem value="5" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">5</SelectItem>
-                  <SelectItem value="10" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">10</SelectItem>
-                  <SelectItem value="25" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">25</SelectItem>
-                  <SelectItem value="50" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">50</SelectItem>
-                </SelectContent>
-              </Select>
-              <span className="text-sm text-gray-500 dark:text-gray-400">entrées</span>
+        <div className="space-y-3 sm:space-y-0">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+            <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">Liste des statuts</h2>
+            <div className="flex justify-between items-center sm:gap-4">
+              <div className="flex items-center gap-2">
+                <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Afficher</span>
+                <Select value={itemsPerPage.toString()} onValueChange={(value) => {
+                  setItemsPerPage(parseInt(value));
+                  setCurrentPage(1);
+                }}>
+                  <SelectTrigger className="w-16 h-8 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+                    <SelectValue placeholder={itemsPerPage.toString()} />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
+                    <SelectItem value="5" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">5</SelectItem>
+                    <SelectItem value="10" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">10</SelectItem>
+                    <SelectItem value="25" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">25</SelectItem>
+                    <SelectItem value="50" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">50</SelectItem>
+                  </SelectContent>
+                </Select>
+                <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">entrées</span>
+              </div>
+              <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
+                Total: {filteredStatuts.length} statuts
+              </span>
             </div>
-            <span className="text-sm text-gray-500 dark:text-gray-400">
-              Total: {filteredStatuts.length} statuts
-            </span>
           </div>
         </div>
 
-        {/* Table Header */}
-        <div className="grid grid-cols-6 gap-4 p-4 border-b border-gray-200 dark:border-gray-700 text-sm font-medium text-gray-900" style={{ backgroundColor: 'hsl(210, 40%, 96.1%)' }}>
-          <div>Nom</div>
-          <div>Couleur</div>
-          <div>Type</div>
-          <div>Ordre</div>
-          <div>Actif</div>
-          <div>Actions</div>
-        </div>
+        {/* Table with horizontal scroll for mobile */}
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[600px]">
+            <thead>
+              <tr className="border-b border-gray-200 dark:border-gray-700 text-sm font-medium text-gray-900" style={{ backgroundColor: 'hsl(210, 40%, 96.1%)' }}>
+                <th className="text-left p-4">Nom</th>
+                <th className="text-left p-4">Couleur</th>
+                <th className="text-left p-4">Type</th>
+                <th className="text-left p-4">Ordre</th>
+                <th className="text-left p-4">Actif</th>
+                <th className="text-left p-4">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
 
-        {/* Table Body */}
-        <div className="divide-y divide-gray-200 dark:divide-gray-700">
-          {paginatedStatuts.length > 0 ? (
-            paginatedStatuts.map((statut) => (
-              <div key={statut.id} className="grid grid-cols-6 gap-4 p-4 items-center hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors bg-white dark:bg-transparent">
-                {/* Name */}
-                <div>
-                  <Badge className={`${getColorClass(statut.couleur || 'gray')} border-0 text-xs`}>
-                    {statut.nom}
-                  </Badge>
-                </div>
+              {paginatedStatuts.length > 0 ? (
+                paginatedStatuts.map((statut) => (
+                  <tr key={statut.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors bg-white dark:bg-transparent">
+                    {/* Name */}
+                    <td className="p-4">
+                      <Badge className={`${getColorClass(statut.couleur || 'gray')} border-0 text-xs`}>
+                        {statut.nom}
+                      </Badge>
+                    </td>
 
-                {/* Color */}
-                <div className="capitalize text-sm text-gray-700 dark:text-gray-300">
-                  {COLORS.find(c => c.value === statut.couleur)?.name || statut.couleur}
-                </div>
+                    {/* Color */}
+                    <td className="p-4 capitalize text-sm text-gray-700 dark:text-gray-300">
+                      {COLORS.find(c => c.value === statut.couleur)?.name || statut.couleur}
+                    </td>
 
-                {/* Type */}
-                <div className="capitalize text-sm text-gray-700 dark:text-gray-300">
-                  {STATUS_TYPES.find(t => t.value === statut.type)?.label || statut.type}
-                </div>
+                    {/* Type */}
+                    <td className="p-4 capitalize text-sm text-gray-700 dark:text-gray-300">
+                      {STATUS_TYPES.find(t => t.value === statut.type)?.label || statut.type}
+                    </td>
 
-                {/* Order */}
-                <div className="text-sm text-gray-700 dark:text-gray-300">
-                  {statut.ordre || 1}
-                </div>
+                    {/* Order */}
+                    <td className="p-4 text-sm text-gray-700 dark:text-gray-300">
+                      {statut.ordre || 1}
+                    </td>
 
-                {/* Active */}
-                <div>
-                  <Switch
-                    checked={statut.actif ?? true}
-                    onCheckedChange={async (checked) => {
-                      try {
-                        await api.updateStatut(statut.id, { actif: checked });
-                        fetchStatuts();
-                        toast({
-                          title: 'Succès',
-                          description: `Statut ${checked ? 'activé' : 'désactivé'} avec succès`,
-                        });
-                      } catch (error) {
-                        toast({
-                          title: 'Erreur',
-                          description: 'Impossible de modifier le statut',
-                          variant: 'destructive',
-                        });
-                      }
-                    }}
-                    className="data-[state=checked]:bg-blue-600 scale-75"
-                  />
-                </div>
+                    {/* Active */}
+                    <td className="p-4">
+                      <Switch
+                        checked={statut.actif ?? true}
+                        onCheckedChange={async (checked) => {
+                          try {
+                            await api.updateStatut(statut.id, { actif: checked });
+                            fetchStatuts();
+                            toast({
+                              title: 'Succès',
+                              description: `Statut ${checked ? 'activé' : 'désactivé'} avec succès`,
+                            });
+                          } catch (error) {
+                            toast({
+                              title: 'Erreur',
+                              description: 'Impossible de modifier le statut',
+                              variant: 'destructive',
+                            });
+                          }
+                        }}
+                        className="data-[state=checked]:bg-blue-600 scale-75"
+                      />
+                    </td>
 
-                {/* Actions */}
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => openEditModal(statut)}
-                    className="h-8 w-8 p-0 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-600"
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleDeleteStatut(statut.id)}
-                    className="h-8 w-8 p-0 text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            ))
-          ) : (
-            <div className="p-8 text-center text-gray-500 dark:text-gray-400">
-              <Search className="h-12 w-12 mx-auto mb-4 text-gray-400 dark:text-gray-600" />
-              <p>Aucun statut trouvé</p>
-            </div>
-          )}
+                    {/* Actions */}
+                    <td className="p-4">
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => openEditModal(statut)}
+                          className="h-8 w-8 p-0 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-600"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteStatut(statut.id)}
+                          className="h-8 w-8 p-0 text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={6} className="p-8 text-center text-gray-500 dark:text-gray-400">
+                    <Search className="h-12 w-12 mx-auto mb-4 text-gray-400 dark:text-gray-600" />
+                    <p>Aucun statut trouvé</p>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
 
       </div>

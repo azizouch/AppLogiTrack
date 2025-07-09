@@ -208,14 +208,14 @@ export function EditClient() {
       </div>
 
       {/* Form */}
-      <div className="bg-white rounded-lg shadow-sm border p-6">
+      <div className="bg-white rounded-lg shadow-sm border p-4 md:p-6">
         <div className="mb-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-2">Informations du client</h2>
           <p className="text-gray-600">Modifiez les informations du client</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <form onSubmit={handleSubmit} className="space-y-4 md:space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
             <div className="space-y-2">
               <Label htmlFor="id">ID Client</Label>
               <Input
@@ -326,6 +326,7 @@ export function EditClient() {
               type="button"
               variant="outline"
               onClick={() => navigate(`/clients/${id}`)}
+              className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
             >
               Annuler
             </Button>

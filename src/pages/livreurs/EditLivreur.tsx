@@ -301,7 +301,7 @@ export function EditLivreur() {
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Modifier le Livreur</h1>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 md:p-6">
         <div className="mb-6">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
             Informations du livreur
@@ -312,8 +312,8 @@ export function EditLivreur() {
         </div>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <div className="space-y-6">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 md:space-y-6">
+            <div className="space-y-4 md:space-y-6">
               {/* ID Livreur (Editable) */}
               <FormField
                 control={form.control}
@@ -336,7 +336,7 @@ export function EditLivreur() {
               />
 
               {/* Nom et Prénom */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                 <FormField
                   control={form.control}
                   name="nom"
@@ -373,7 +373,7 @@ export function EditLivreur() {
               </div>
 
               {/* Téléphone et Ville */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                 <FormField
                   control={form.control}
                   name="telephone"
@@ -410,7 +410,7 @@ export function EditLivreur() {
               </div>
 
               {/* Véhicule et Zone */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                 <FormField
                   control={form.control}
                   name="vehicule"
@@ -466,7 +466,7 @@ export function EditLivreur() {
               />
 
               {/* Email et Statut */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                 <FormField
                   control={form.control}
                   name="email"
@@ -524,7 +524,7 @@ export function EditLivreur() {
                   Laissez vide pour conserver le mot de passe actuel. Modification disponible pour les administrateurs.
                 </p>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                   <FormField
                     control={form.control}
                     name="newPassword"
@@ -624,7 +624,7 @@ export function EditLivreur() {
                 variant="outline"
                 onClick={() => navigate(`/livreurs/${id}`)}
                 disabled={loading}
-                className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
+                className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
               >
                 Annuler
               </Button>

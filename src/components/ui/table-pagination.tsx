@@ -61,76 +61,151 @@ export function TablePagination(props: TablePaginationProps) {
   const endItem = Math.min(currentPage * (itemsPerPage || 10), totalItems || 0);
 
   return (
-    <div className="flex items-center justify-between py-4 px-2">
-      {/* Left: Items info */}
-      <div className="text-sm text-gray-500 dark:text-gray-400">
-        {totalItems && itemsPerPage ? (
-          `Affichage de ${startItem} à ${endItem} sur ${totalItems} résultats`
-        ) : (
-          ''
-        )}
-      </div>
-
-      {/* Center: Pagination controls */}
-      <div className="flex items-center space-x-1">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => onPageChange(currentPage - 1)}
-          disabled={!hasPrevPage || loading}
-          className="h-9 px-3 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-        >
-          <ChevronLeft className="h-4 w-4 mr-1" />
-          Précédent
-        </Button>
-
-        <div className="flex items-center space-x-1">
-          {visiblePages.map((page, index) =>
-            page === '...' ? (
-              <span key={`ellipsis-${index}`} className="px-3 py-2 text-gray-500 dark:text-gray-400">...</span>
-            ) : (
-              <Button
-                key={`page-${page}`}
-                variant={page === currentPage ? "default" : "ghost"}
-                size="sm"
-                onClick={() => onPageChange(page as number)}
-                disabled={loading}
-                className={
-                  page === currentPage
-                    ? "h-9 w-9 bg-blue-600 hover:bg-blue-700 text-white border-0"
-                    : "h-9 w-9 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800"
-                }
-              >
-                {page}
-              </Button>
-            )
+    <div className="py-4 px-2">
+      {/* Desktop Layout */}
+      <div className="hidden sm:flex items-center justify-between">
+        {/* Left: Items info */}
+        <div className="text-sm text-gray-500 dark:text-gray-400">
+          {totalItems && itemsPerPage ? (
+            `Affichage de ${startItem} à ${endItem} sur ${totalItems} résultats`
+          ) : (
+            ''
           )}
         </div>
 
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => onPageChange(currentPage + 1)}
-          disabled={!hasNextPage || loading}
-          className="h-9 px-3 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-        >
-          Suivant
-          <ChevronRight className="h-4 w-4 ml-1" />
-        </Button>
+        {/* Center: Pagination controls */}
+        <div className="flex items-center space-x-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onPageChange(currentPage - 1)}
+            disabled={!hasPrevPage || loading}
+            className="h-9 px-3 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+          >
+            <ChevronLeft className="h-4 w-4 mr-1" />
+            Précédent
+          </Button>
+
+          <div className="flex items-center space-x-1">
+            {visiblePages.map((page, index) =>
+              page === '...' ? (
+                <span key={`ellipsis-${index}`} className="px-3 py-2 text-gray-500 dark:text-gray-400">...</span>
+              ) : (
+                <Button
+                  key={`page-${page}`}
+                  variant={page === currentPage ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => onPageChange(page as number)}
+                  disabled={loading}
+                  className={
+                    page === currentPage
+                      ? "h-9 w-9 bg-blue-600 hover:bg-blue-700 text-white border-0"
+                      : "h-9 w-9 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800"
+                  }
+                >
+                  {page}
+                </Button>
+              )
+            )}
+          </div>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onPageChange(currentPage + 1)}
+            disabled={!hasNextPage || loading}
+            className="h-9 px-3 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+          >
+            Suivant
+            <ChevronRight className="h-4 w-4 ml-1" />
+          </Button>
+        </div>
+
+        {/* Right: Page info with up arrow */}
+        <div className="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
+          <span>Page {currentPage} sur {totalPages}</span>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            className="h-6 w-6 p-0 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+            title="Retour en haut"
+          >
+            <ArrowUp className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
-      {/* Right: Page info with up arrow */}
-      <div className="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
-        <span>Page {currentPage} sur {totalPages}</span>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-          className="h-6 w-6 p-0 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-          title="Retour en haut"
-        >
-          <ArrowUp className="h-4 w-4" />
-        </Button>
+      {/* Mobile Layout */}
+      <div className="sm:hidden space-y-3">
+        {/* Items info */}
+        <div className="text-center text-sm text-gray-500 dark:text-gray-400">
+          {totalItems && itemsPerPage ? (
+            `Affichage de ${startItem} à ${endItem} sur ${totalItems} résultats`
+          ) : (
+            ''
+          )}
+        </div>
+
+        {/* Pagination controls */}
+        <div className="flex items-center justify-center space-x-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onPageChange(currentPage - 1)}
+            disabled={!hasPrevPage || loading}
+            className="h-8 px-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+
+          <div className="flex items-center space-x-1">
+            {visiblePages.map((page, index) =>
+              page === '...' ? (
+                <span key={`ellipsis-${index}`} className="px-2 py-1 text-gray-500 dark:text-gray-400 text-sm">...</span>
+              ) : (
+                <Button
+                  key={`page-${page}`}
+                  variant={page === currentPage ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => onPageChange(page as number)}
+                  disabled={loading}
+                  className={
+                    page === currentPage
+                      ? "h-8 w-8 bg-blue-600 hover:bg-blue-700 text-white border-0 text-sm"
+                      : "h-8 w-8 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 text-sm"
+                  }
+                >
+                  {page}
+                </Button>
+              )
+            )}
+          </div>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onPageChange(currentPage + 1)}
+            disabled={!hasNextPage || loading}
+            className="h-8 px-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+
+        {/* Page info with up arrow */}
+        <div className="flex items-center justify-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
+          <span>Page {currentPage} sur {totalPages}</span>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            className="h-6 w-6 p-0 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+            title="Retour en haut"
+          >
+            <ArrowUp className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
     </div>
   );

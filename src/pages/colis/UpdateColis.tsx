@@ -278,13 +278,13 @@ export function UpdateColis() {
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)}>
           <Card>
-            <CardHeader>
+            <CardHeader className="p-4 md:p-6">
               <CardTitle>Informations du colis</CardTitle>
               <CardDescription>Modifiez les informations du colis</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="space-y-4 md:space-y-6 p-4 md:p-6 pt-0">
               {/* ID Colis and Status Row */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                 <FormField
                   control={form.control}
                   name="id"
@@ -336,7 +336,7 @@ export function UpdateColis() {
               </div>
 
               {/* Prix and Frais Row */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                 <FormField
                   control={form.control}
                   name="prix"
@@ -383,7 +383,7 @@ export function UpdateColis() {
               </div>
 
               {/* Client and Entreprise Row */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                 {/* Client Selection */}
                 <FormField
                   control={form.control}
@@ -500,7 +500,7 @@ export function UpdateColis() {
                 )}
               />
             </CardContent>
-            <CardFooter className="flex justify-between">
+            <CardFooter className="flex justify-between p-4 md:p-6 pt-0">
               <Button
                 type="button"
                 variant="outline"

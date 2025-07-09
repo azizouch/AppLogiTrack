@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, Search, Save } from 'lucide-react';
+import { ClientCombobox } from '@/components/ui/client-combobox';
+import { AddClientModal } from '@/components/modals/AddClientModal';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
@@ -23,7 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+
 import { api } from '@/lib/supabase';
 import { Client, Entreprise, Statut, User } from '@/types';
 import { z } from 'zod';
@@ -45,7 +47,9 @@ type FormValues = z.infer<typeof formSchema>;
 
 export function AddColis() {
   const navigate = useNavigate();
-  const { toast } = useToast();  type PartialLivreur = Pick<User, 'id' | 'nom' | 'prenom' | 'statut'>;
+  const { toast } = useToast();
+
+  type PartialLivreur = Pick<User, 'id' | 'nom' | 'prenom' | 'statut'>;
   type PartialStatut = Pick<Statut, 'id' | 'nom' | 'type' | 'couleur' | 'ordre' | 'actif'>;
   
   const [clients, setClients] = useState<Client[]>([]);
@@ -53,7 +57,7 @@ export function AddColis() {
   const [livreurs, setLivreurs] = useState<PartialLivreur[]>([]);
   const [statuses, setStatuses] = useState<PartialStatut[]>([]);
   const [loading, setLoading] = useState(false);
-  const [searchClient, setSearchClient] = useState('');
+  const [showAddClientModal, setShowAddClientModal] = useState(false);
 
   // Initialize form
   const form = useForm<FormValues>({
@@ -136,48 +140,51 @@ export function AddColis() {
     }
   };
 
+  const handleClientCreated = (newClient: Client) => {
+    setClients(prev => [...prev, newClient]);
+    form.setValue('client_id', newClient.id);
+    setShowAddClientModal(false);
+  };
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate('/colis')}
-            className="h-8 w-8"
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Ajouter un Colis</h1>
-        </div>
+      <div className="space-y-2">
+        <Button
+          variant="ghost"
+          onClick={() => navigate('/colis')}
+          className="inline-flex h-9 items-center justify-center gap-2 whitespace-nowrap rounded-md px-3 text-sm font-medium transition-colors ring-offset-background text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Retour à la liste
+        </Button>
+
+        {/* Title */}
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Ajouter un Colis</h1>
       </div>
 
-      <Card className="bg-white shadow-sm border-0">
-        <CardHeader className="pb-4">
-          <CardTitle>Informations du colis</CardTitle>
-          <CardDescription>
-            Remplissez les informations pour créer un nouveau colis
-          </CardDescription>
-        </CardHeader>
+      {/* Form Card */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 md:p-6">
+        <div className="mb-6">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Informations du colis</h2>
+          <p className="text-gray-600 dark:text-gray-400">Remplissez les informations pour créer un nouveau colis</p>
+        </div>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)}>
-            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Ref Colis */}
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+              {/* ID Colis */}
               <FormField
                 control={form.control}
                 name="ref_colis"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-base font-semibold">Ref Colis *</FormLabel>
+                    <FormLabel>ID Colis *</FormLabel>
                     <FormControl>
                       <Input
                         {...field}
-                        className="bg-white"
+
                       />
                     </FormControl>
-                    <FormDescription className="text-sm text-gray-500">
-                      Référence générée automatiquement (modifiable)
-                    </FormDescription>
+                    <p className="text-sm text-muted-foreground">Identifiant unique du colis</p>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -189,13 +196,13 @@ export function AddColis() {
                 name="statut"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-base font-semibold">Statut *</FormLabel>
+                    <FormLabel>Statut</FormLabel>
                     <Select
                       onValueChange={field.onChange}
                       defaultValue={field.value}
                     >
                       <FormControl>
-                        <SelectTrigger className="bg-white">
+                        <SelectTrigger>
                           <SelectValue placeholder="Sélectionner un statut" />
                         </SelectTrigger>
                       </FormControl>
@@ -218,19 +225,17 @@ export function AddColis() {
                 name="prix"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-base font-semibold">Prix (DH)</FormLabel>
+                    <FormLabel>Prix (DH)</FormLabel>
                     <FormControl>
                       <Input
                         type="number"
                         step="0.01"
                         placeholder="0"
-                        className="bg-white"
+
                         {...field}
                       />
                     </FormControl>
-                    <FormDescription className="text-sm text-gray-500">
-                      Montant à payer par le client
-                    </FormDescription>
+                    <p className="text-sm text-muted-foreground">Montant à payer par le client</p>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -242,79 +247,56 @@ export function AddColis() {
                 name="frais"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-base font-semibold">Frais de livraison (DH)</FormLabel>
+                    <FormLabel>Frais de livraison (DH)</FormLabel>
                     <FormControl>
                       <Input
                         type="number"
                         step="0.01"
                         placeholder="0"
-                        className="bg-white"
+
                         {...field}
                       />
                     </FormControl>
-                    <FormDescription className="text-sm text-gray-500">
-                      Frais supplémentaires de livraison
-                    </FormDescription>
+                    <p className="text-sm text-muted-foreground">Frais supplémentaires de livraison</p>
                     <FormMessage />
                   </FormItem>
                 )}
               />
 
               {/* Client Selection */}
-              <div className="flex items-center gap-2">
-                <FormField
-                  control={form.control}
-                  name="client_id"
-                  render={({ field }) => (
-                    <FormItem className="flex-1">
-                      <FormLabel className="text-base font-semibold">Client *</FormLabel>
-                      <div className="relative">
-                        <FormControl>
-                          <Input
-                            placeholder="Rechercher un client..."
-                            value={searchClient}
-                            onChange={(e) => setSearchClient(e.target.value)}
-                            className="bg-white"
-                          />
-                        </FormControl>
-                        {searchClient && (
-                          <div className="absolute w-full mt-1 bg-white border rounded-md shadow-lg z-50 max-h-64 overflow-auto">
-                            {clients
-                              .filter(client =>
-                                client.nom.toLowerCase().includes(searchClient.toLowerCase()) ||
-                                (client.telephone && client.telephone.includes(searchClient))
-                              )
-                              .map((client) => (
-                                <div
-                                  key={client.id}
-                                  className="p-2 hover:bg-gray-100 cursor-pointer"
-                                  onClick={() => {
-                                    field.onChange(client.id);
-                                    setSearchClient(client.nom);
-                                  }}
-                                >
-                                  <div className="font-medium">{client.nom}</div>
-                                  {client.telephone && (
-                                    <div className="text-sm text-gray-500">{client.telephone}</div>
-                                  )}
-                                </div>
-                              ))}
-                          </div>
-                        )}
-                      </div>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="mt-8"
-                  onClick={() => navigate('/clients/new')}
-                >
-                  Nouveau Client
-                </Button>
-              </div>
+              <FormField
+                control={form.control}
+                name="client_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <div className="flex justify-between items-center">
+                      <FormLabel>
+                        Client <span className="text-red-500">*</span>
+                      </FormLabel>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowAddClientModal(true)}
+                        className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
+                      >
+                        <Plus className="h-4 w-4 mr-1" />
+                        Nouveau Client
+                      </Button>
+                    </div>
+                    <FormControl>
+                      <ClientCombobox
+                        clients={clients}
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        onNewClientClick={() => setShowAddClientModal(true)}
+                        placeholder="Rechercher un client..."
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               {/* Entreprise Selection */}
               <FormField
@@ -322,13 +304,13 @@ export function AddColis() {
                 name="entreprise_id"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-base font-semibold">Entreprise (optionnel)</FormLabel>
+                    <FormLabel>Entreprise (optionnel)</FormLabel>
                     <Select
                       onValueChange={field.onChange}
                       defaultValue={field.value}
                     >
                       <FormControl>
-                        <SelectTrigger className="bg-white">
+                        <SelectTrigger>
                           <SelectValue placeholder="Aucune" />
                         </SelectTrigger>
                       </FormControl>
@@ -351,13 +333,13 @@ export function AddColis() {
                 name="livreur_id"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-base font-semibold">Livreur (optionnel)</FormLabel>
+                    <FormLabel>Livreur (optionnel)</FormLabel>
                     <Select
                       onValueChange={field.onChange}
                       defaultValue={field.value}
                     >
                       <FormControl>
-                        <SelectTrigger className="bg-white">
+                        <SelectTrigger>
                           <SelectValue placeholder="Aucun" />
                         </SelectTrigger>
                       </FormControl>
@@ -379,12 +361,12 @@ export function AddColis() {
                 control={form.control}
                 name="notes"
                 render={({ field }) => (
-                  <FormItem className="col-span-2">
-                    <FormLabel className="text-base font-semibold">Notes (optionnel - fonctionnalité future)</FormLabel>
+                  <FormItem className="col-span-1 md:col-span-2">
+                    <FormLabel>Notes (optionnel)</FormLabel>
                     <FormControl>
                       <Textarea
                         placeholder="Informations supplémentaires sur le colis..."
-                        className="resize-none bg-white"
+                        className="resize-none"
                         {...field}
                       />
                     </FormControl>
@@ -395,35 +377,45 @@ export function AddColis() {
                   </FormItem>
                 )}
               />
-            </CardContent>
-            <CardFooter className="flex justify-between space-x-4 pt-6">
+            </div>
+
+            <div className="flex gap-4 mt-6">
               <Button
-                type="button"
-                variant="outline"
-                onClick={() => navigate('/colis')}
+                type="submit"
                 disabled={loading}
-                className="border-t-0"
-              >
-                Annuler
-              </Button>
-              <Button 
-                type="submit" 
-                disabled={loading}
-                className="border-t-0"
+                className="bg-blue-600 hover:bg-blue-700"
               >
                 {loading ? (
-                  'Création...'
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Création...
+                  </>
                 ) : (
                   <>
-                    <Save className="w-4 h-4 mr-2" />
+                    <Save className="mr-2 h-4 w-4" />
                     Enregistrer
                   </>
                 )}
               </Button>
-            </CardFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => navigate('/colis')}
+                className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
+              >
+                Annuler
+              </Button>
+            </div>
           </form>
         </Form>
-      </Card>
+      </div>
+
+      {/* Add Client Modal */}
+      <AddClientModal
+        open={showAddClientModal}
+        onOpenChange={setShowAddClientModal}
+        onClientCreated={handleClientCreated}
+      />
     </div>
   );
 }

@@ -13,9 +13,12 @@ html, body {
   max-width: 100vw !important;
 }
 
-/* Ensure all elements respect viewport width */
-* {
+/* Ensure all elements respect viewport width - exclude dialog/modal components */
+*:not([data-radix-dialog-content]):not([role="dialog"]):not(.max-w-sm):not(.max-w-md):not(.max-w-lg):not(.max-w-xl):not(.max-w-2xl):not(.max-w-3xl):not(.max-w-4xl):not(.max-w-5xl):not(.max-w-6xl):not(.max-w-7xl) {
   max-width: 100% !important;
+}
+
+* {
   box-sizing: border-box !important;
 }
 
