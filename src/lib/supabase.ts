@@ -314,8 +314,10 @@ export const auth = {
 
   // Password reset functionality
   resetPassword: async (email: string) => {
+    // Use environment variable for production, fallback to current origin
+    const baseUrl = import.meta.env.VITE_APP_URL || window.location.origin;
     const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
+      redirectTo: `${baseUrl}/reset-password`,
     })
     return { data, error }
   },
