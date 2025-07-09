@@ -758,7 +758,7 @@ export function MesColis() {
               rows={5}
             />
           </div>
-          <DialogFooter>
+          <DialogFooter className="flex-row gap-2">
             <Button variant="outline" onClick={() => setShowReclamationModal(false)}>
               Annuler
             </Button>
