@@ -656,7 +656,7 @@ export function LivreurDetails() {
 
           <div className="flex-1 flex flex-col space-y-4 min-h-0">
             {/* Search and New Colis Button */}
-            <div className="flex items-center gap-4 flex-shrink-0">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 flex-shrink-0">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                 <Input
@@ -668,7 +668,7 @@ export function LivreurDetails() {
               </div>
               <Button
                 onClick={() => setShowAddColisModal(true)}
-                className="bg-blue-600 hover:bg-blue-700"
+                className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto"
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Nouveau colis

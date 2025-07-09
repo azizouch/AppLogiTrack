@@ -320,6 +320,11 @@ export function Statuts() {
     resetForm();
   };
 
+  // Handle close with form reset
+  const handleCloseModal = () => {
+    closeModals();
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -564,13 +569,13 @@ export function Statuts() {
       )}
 
       {/* Add Status Modal */}
-      <Dialog open={isAddModalOpen} onOpenChange={closeModals}>
-        <DialogContent className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white max-w-md">
+      <Dialog open={isAddModalOpen} onOpenChange={handleCloseModal}>
+        <DialogContent
+          className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white max-w-md max-h-[90vh] overflow-y-auto"
+          preventOutsideClick={true}
+        >
           <DialogHeader>
             <DialogTitle className="text-xl font-semibold text-gray-900 dark:text-white">Ajouter un statut</DialogTitle>
-            <DialogDescription className="text-gray-600 dark:text-gray-400">
-              Créez un nouveau statut pour les colis
-            </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
@@ -681,7 +686,7 @@ export function Statuts() {
           <DialogFooter className="flex gap-2">
             <Button
               variant="outline"
-              onClick={closeModals}
+              onClick={handleCloseModal}
               disabled={saving}
               className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
             >
@@ -699,13 +704,13 @@ export function Statuts() {
       </Dialog>
 
       {/* Edit Status Modal */}
-      <Dialog open={isEditModalOpen} onOpenChange={closeModals}>
-        <DialogContent className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white max-w-md">
+      <Dialog open={isEditModalOpen} onOpenChange={handleCloseModal}>
+        <DialogContent
+          className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white max-w-md max-h-[90vh] overflow-y-auto"
+          preventOutsideClick={true}
+        >
           <DialogHeader>
             <DialogTitle className="text-xl font-semibold text-gray-900 dark:text-white">Modifier un statut</DialogTitle>
-            <DialogDescription className="text-gray-600 dark:text-gray-400">
-              Modifiez les informations du statut
-            </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
@@ -816,7 +821,7 @@ export function Statuts() {
           <DialogFooter className="flex gap-2">
             <Button
               variant="outline"
-              onClick={closeModals}
+              onClick={handleCloseModal}
               disabled={saving}
               className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
             >
