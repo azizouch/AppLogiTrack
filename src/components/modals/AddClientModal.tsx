@@ -41,12 +41,44 @@ export function AddClientModal({ open, onOpenChange, onClientCreated }: AddClien
     entreprise: ''
   });
 
+  const resetForm = () => {
+    setFormData({
+      id: generateClientId(),
+      nom: '',
+      email: '',
+      telephone: '',
+      adresse: '',
+      entreprise: ''
+    });
+  };
+
+  const resetForm = () => {
+    setFormData({
+      id: generateClientId(),
+      nom: '',
+      email: '',
+      telephone: '',
+      adresse: '',
+      entreprise: ''
+    });
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: value
     }));
+  };
+
+  const handleClose = () => {
+    resetForm();
+    onOpenChange(false);
+  };
+
+  const handleClose = () => {
+    resetForm();
+    onOpenChange(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -78,14 +110,7 @@ export function AddClientModal({ open, onOpenChange, onClientCreated }: AddClien
         });
         
         // Reset form
-        setFormData({
-          id: generateClientId(),
-          nom: '',
-          email: '',
-          telephone: '',
-          adresse: '',
-          entreprise: ''
-        });
+        resetForm();
         
         // Call the callback with the created client
         onClientCreated(data);
@@ -105,8 +130,11 @@ export function AddClientModal({ open, onOpenChange, onClientCreated }: AddClien
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+    <Dialog open={open} onOpenChange={handleClose}>
+      <DialogContent
+        className="max-w-md bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
+        preventOutsideClick={true}
+      >
         <DialogHeader>
           <DialogTitle className="text-lg font-semibold text-gray-900 dark:text-white">
             Nouveau Client
@@ -185,7 +213,7 @@ export function AddClientModal({ open, onOpenChange, onClientCreated }: AddClien
             <Button
               type="button"
               variant="outline"
-              onClick={() => onOpenChange(false)}
+              onClick={handleClose}
               disabled={loading}
               className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
             >

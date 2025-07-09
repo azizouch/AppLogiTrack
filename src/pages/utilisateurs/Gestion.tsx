@@ -744,7 +744,10 @@ export function Gestion() {
 
       {/* Add User Modal */}
       <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+        <DialogContent
+          className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
+          preventOutsideClick={true}
+        >
         <DialogHeader>
           <DialogTitle className="text-lg font-semibold text-gray-900 dark:text-white">
             Ajouter un nouvel utilisateur
@@ -1017,7 +1020,10 @@ export function Gestion() {
 
       {/* Edit User Modal */}
       <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+        <DialogContent
+          className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
+          preventOutsideClick={true}
+        >
         <DialogHeader>
           <DialogTitle className="text-lg font-semibold text-gray-900 dark:text-white">
             Modifier l'utilisateur

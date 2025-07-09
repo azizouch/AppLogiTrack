@@ -84,7 +84,10 @@ export function ForgotPasswordModal({ open, onOpenChange }: ForgotPasswordModalP
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+      <DialogContent
+        className="sm:max-w-md bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
+        preventOutsideClick={true}
+      >
         <DialogHeader>
           <DialogTitle className="text-gray-900 dark:text-white flex items-center gap-2">
             <Mail className="h-5 w-5 text-blue-600 dark:text-blue-400" />

@@ -618,7 +618,10 @@ export function Livreurs() {
 
       {/* Assignment Modal */}
       <Dialog open={showAssignModal} onOpenChange={closeAssignModal}>
-        <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
+        <DialogContent
+          className="max-w-4xl max-h-[90vh] flex flex-col"
+          preventOutsideClick={true}
+        >
           <DialogHeader className="flex-shrink-0">
             <DialogTitle className="flex items-center gap-2">
               <User className="h-5 w-5" />

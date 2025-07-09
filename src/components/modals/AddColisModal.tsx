@@ -167,7 +167,14 @@ export function AddColisModal({ open, onOpenChange, livreurId, livreurName, onCo
       onColisCreated(colisData);
       
       // Reset form and close modal
-      form.reset();
+      form.reset({
+        id: 'COL-' + new Date().getFullYear() + '-' + Math.floor(Math.random() * 10000),
+        statut: 'En cours',
+        client_id: '',
+        entreprise_id: '',
+        prix: undefined,
+        frais: undefined,
+      });
       onOpenChange(false);
     } catch (error) {
       console.error('Error creating colis:', error);
@@ -182,14 +189,24 @@ export function AddColisModal({ open, onOpenChange, livreurId, livreurName, onCo
   };
 
   const handleClose = () => {
-    form.reset();
+    form.reset({
+      id: 'COL-' + new Date().getFullYear() + '-' + Math.floor(Math.random() * 10000),
+      statut: 'En cours',
+      client_id: '',
+      entreprise_id: '',
+      prix: undefined,
+      frais: undefined,
+    });
     onOpenChange(false);
   };
 
   return (
     <>
       <Dialog open={open} onOpenChange={handleClose}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent
+          className="max-w-4xl max-h-[90vh] overflow-y-auto"
+          preventOutsideClick={true}
+        >
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Package className="h-5 w-5 text-blue-600" />
