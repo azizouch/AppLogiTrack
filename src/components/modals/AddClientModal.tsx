@@ -52,28 +52,12 @@ export function AddClientModal({ open, onOpenChange, onClientCreated }: AddClien
     });
   };
 
-  const resetForm = () => {
-    setFormData({
-      id: generateClientId(),
-      nom: '',
-      email: '',
-      telephone: '',
-      adresse: '',
-      entreprise: ''
-    });
-  };
-
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: value
     }));
-  };
-
-  const handleClose = () => {
-    resetForm();
-    onOpenChange(false);
   };
 
   const handleClose = () => {
