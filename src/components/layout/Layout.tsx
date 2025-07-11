@@ -16,7 +16,7 @@ export function Layout({ children }: LayoutProps) {
       <AppSidebar />
       <SidebarInset>
         <Header />
-        <main className="flex-1 p-4 sm:p-6 bg-background">
+        <main className="flex-1 px-4 pb-4 sm:px-6 sm:pb-6 bg-background" style={{paddingTop: '5.5rem'}}>
           {children}
         </main>
         <ScrollToTop />

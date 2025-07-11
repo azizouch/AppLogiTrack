@@ -30,22 +30,8 @@ export function ResetPasswordPage() {
       const type = urlParams.get('type') || hashParams.get('type');
       const token = urlParams.get('token') || hashParams.get('token');
 
-      // Debug: log all URL information
-      console.log('Reset Password Debug:', {
-        currentURL: window.location.href,
-        search: window.location.search,
-        hash: window.location.hash,
-        accessToken,
-        refreshToken,
-        type,
-        token,
-        searchParams: Object.fromEntries(urlParams.entries()),
-        hashParams: Object.fromEntries(hashParams.entries())
-      });
-
       // Check if this is a password recovery request
       if (type === 'recovery' || accessToken) {
-        console.log('Valid reset password request detected');
 
         // If we have tokens, try to set the session
         if (accessToken && refreshToken) {

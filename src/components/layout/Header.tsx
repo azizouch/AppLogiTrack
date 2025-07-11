@@ -189,10 +189,11 @@ export function Header() {
     const interval = setInterval(() => {
       // Check if body has pointer-events: none but no modal is open
       if (document.body.style.pointerEvents === 'none' && !showLogoutConfirm) {
-        // Check if there are any open modals/dialogs
+        // Check if there are any open modals/dialogs/selects
         const hasOpenModal = document.querySelector('[role="alertdialog"][data-state="open"]') ||
                             document.querySelector('[role="dialog"][data-state="open"]') ||
-                            document.querySelector('[data-radix-popper-content-wrapper]');
+                            document.querySelector('[data-radix-popper-content-wrapper]') ||
+                            document.querySelector('[data-radix-select-content][data-state="open"]');
 
         if (!hasOpenModal) {
           // No modals open, safe to remove pointer-events
@@ -248,7 +249,7 @@ export function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-50 h-16 border-b bg-background border-border flex items-center px-4 sm:px-6 transition-colors">
+    <header className="fixed top-0 z-50 h-16 border-b bg-background border-border flex items-center px-4 sm:px-6 transition-colors left-[--sidebar-width] right-0 md:left-[--sidebar-width-desktop]" style={{"--sidebar-width": "16rem", "--sidebar-width-desktop": "16rem"} as React.CSSProperties}>
       {/* Mobile/Tablet Layout */}
       <div className="flex items-center justify-between w-full lg:hidden">
         {/* Left side - Hamburger and Search */}

@@ -31,7 +31,6 @@ export function ProtectedRoute({ children, roles }: ProtectedRouteProps) {
     const allowedRoles = roles.map(role => role.toLowerCase().trim());
 
     if (!allowedRoles.includes(userRole)) {
-      console.log('Access denied - Required roles:', roles, 'User role:', state.user?.role, 'User:', state.user);
       return (
         <div className="min-h-screen flex items-center justify-center bg-white dark:bg-gray-900">
           <div className="text-center p-8">

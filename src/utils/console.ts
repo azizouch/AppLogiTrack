@@ -27,7 +27,13 @@ export const suppressExpectedAuthErrors = () => {
       'Authenticating with Supabase...',
       'Checking initial session...',
       'Auth state change:',
-      'Reset Password Debug:'
+      'Reset Password Debug:',
+      'Checking bons table structure...',
+      'Fetched bons data:',
+      'Fetched retour bons data:',
+      'Admin/Gestionnaire users found:',
+      'Access denied - Required roles:',
+      'Valid reset password request detected'
     ];
 
     // Check if this is an expected error

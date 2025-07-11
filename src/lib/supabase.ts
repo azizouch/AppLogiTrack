@@ -1895,7 +1895,6 @@ export const api = {
           index === self.findIndex(u => u.id === user.id)
         ) : [];
 
-        console.log('Admin/Gestionnaire users found:', uniqueUsers);
         return { data: uniqueUsers, error: errorNoStatus };
       }
 
@@ -1904,7 +1903,6 @@ export const api = {
         index === self.findIndex(u => u.id === user.id)
       ) : [];
 
-      console.log('Admin/Gestionnaire users found:', uniqueUsers);
       return { data: uniqueUsers, error };
     } catch (error) {
       console.error('Error fetching admin/gestionnaire users:', error);
@@ -1919,7 +1917,6 @@ export const api = {
       .select('*')
       .limit(1);
 
-    console.log('Bons table structure check:', { data, error });
     return { data, error };
   },
 
@@ -1989,9 +1986,6 @@ export const api = {
     query = query.range(from, to);
 
     const { data, error, count } = await query;
-
-    // Debug logging
-    console.log('getBons query result:', { data, error, count, params });
 
     const totalPages = count ? Math.ceil(count / limit) : 0;
     const hasNextPage = page < totalPages;
