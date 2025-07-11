@@ -1,12 +1,9 @@
 import React, { useState } from 'react';
-import { 
-  Settings as SettingsIcon, 
-  Moon, 
-  Sun, 
-  Bell, 
-  Shield, 
-  Key, 
-  Globe, 
+import {
+  Settings as SettingsIcon,
+  Bell,
+  Shield,
+  Key,
   Smartphone,
   Mail,
   Save,
@@ -27,9 +24,7 @@ export function Settings() {
   const { state } = useAuth();
   const { toast } = useToast();
 
-  // Theme and appearance settings
-  const [darkMode, setDarkMode] = useState(false);
-  const [language, setLanguage] = useState('fr');
+
 
   // Notification settings
   const [emailNotifications, setEmailNotifications] = useState(true);
@@ -44,7 +39,6 @@ export function Settings() {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
 
   // Privacy settings
   const [profileVisibility, setProfileVisibility] = useState('private');
@@ -56,6 +50,8 @@ export function Settings() {
       description: "Vos préférences ont été mises à jour avec succès",
     });
   };
+
+
 
   const handleChangePassword = () => {
     if (newPassword !== confirmPassword) {
@@ -104,49 +100,7 @@ export function Settings() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
-        {/* Appearance Settings */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Sun className="h-5 w-5" />
-              Apparence
-            </CardTitle>
-            <CardDescription>
-              Personnalisez l'apparence de l'application
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="p-4 md:p-6 space-y-3 md:space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>Mode sombre</Label>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Activer le thème sombre
-                </p>
-              </div>
-              <Switch
-                checked={darkMode}
-                onCheckedChange={setDarkMode}
-              />
-            </div>
 
-            <Separator />
-
-            <div className="space-y-2">
-              <Label>Langue</Label>
-              <Select value={language} onValueChange={setLanguage}>
-                <SelectTrigger>
-                  <Globe className="mr-2 h-4 w-4" />
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="fr">Français</SelectItem>
-                  <SelectItem value="en">English</SelectItem>
-                  <SelectItem value="ar">العربية</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </CardContent>
-        </Card>
 
         {/* Notification Settings */}
         <Card>
@@ -313,20 +267,7 @@ export function Settings() {
               Changer le mot de passe
             </Button>
 
-            <Separator />
 
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>Authentification à deux facteurs</Label>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Ajouter une couche de sécurité supplémentaire
-                </p>
-              </div>
-              <Switch
-                checked={twoFactorEnabled}
-                onCheckedChange={setTwoFactorEnabled}
-              />
-            </div>
           </CardContent>
         </Card>
 

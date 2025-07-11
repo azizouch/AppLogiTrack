@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Sun, Globe, Building, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,6 +11,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 
 export function General() {
@@ -33,6 +36,12 @@ export function General() {
     historique_statuts: true,
     langue: 'francais',
   });
+
+  // Theme and appearance settings
+  const [darkMode, setDarkMode] = useState(() => {
+    return document.documentElement.classList.contains('dark');
+  });
+  const [language, setLanguage] = useState('fr');
 
   // Numbering format state
   const [numberingFormat, setNumberingFormat] = useState({
@@ -89,6 +98,17 @@ export function General() {
       });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleDarkModeToggle = (checked: boolean) => {
+    setDarkMode(checked);
+    if (checked) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
     }
   };
 
@@ -161,63 +181,67 @@ export function General() {
       {activeTab === 'general' && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
           {/* Company Information */}
-          <div className="bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 md:p-6">
-            <div className="mb-6">
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Informations de l'entreprise</h2>
-              <p className="text-gray-600 dark:text-gray-400 text-sm">Ces informations apparaîtront sur les bons de distribution et autres documents</p>
-            </div>
-
-            <div className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Building className="h-5 w-5" />
+                Informations de l'entreprise
+              </CardTitle>
+              <CardDescription>
+                Ces informations apparaîtront sur les bons de distribution et autres documents
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-4 md:p-6 space-y-3 md:space-y-4">
               <div>
-                <Label htmlFor="nom" className="text-sm font-medium text-gray-900 dark:text-white">
+                <Label htmlFor="nom">
                   Nom de l'entreprise
                 </Label>
                 <Input
                   id="nom"
                   value={companyInfo.nom}
                   onChange={(e) => setCompanyInfo({ ...companyInfo, nom: e.target.value })}
-                  className="mt-1 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
+                  className="mt-1"
                 />
               </div>
 
               <div>
-                <Label htmlFor="adresse" className="text-sm font-medium text-gray-900 dark:text-white">
+                <Label htmlFor="adresse">
                   Adresse
                 </Label>
                 <Input
                   id="adresse"
                   value={companyInfo.adresse}
                   onChange={(e) => setCompanyInfo({ ...companyInfo, adresse: e.target.value })}
-                  className="mt-1 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
+                  className="mt-1"
                 />
               </div>
 
               <div>
-                <Label htmlFor="ville" className="text-sm font-medium text-gray-900 dark:text-white">
+                <Label htmlFor="ville">
                   Ville
                 </Label>
                 <Input
                   id="ville"
                   value={companyInfo.ville}
                   onChange={(e) => setCompanyInfo({ ...companyInfo, ville: e.target.value })}
-                  className="mt-1 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
+                  className="mt-1"
                 />
               </div>
 
               <div>
-                <Label htmlFor="telephone" className="text-sm font-medium text-gray-900 dark:text-white">
+                <Label htmlFor="telephone">
                   Téléphone
                 </Label>
                 <Input
                   id="telephone"
                   value={companyInfo.telephone}
                   onChange={(e) => setCompanyInfo({ ...companyInfo, telephone: e.target.value })}
-                  className="mt-1 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
+                  className="mt-1"
                 />
               </div>
 
               <div>
-                <Label htmlFor="email" className="text-sm font-medium text-gray-900 dark:text-white">
+                <Label htmlFor="email">
                   Email
                 </Label>
                 <Input
@@ -225,7 +249,7 @@ export function General() {
                   type="email"
                   value={companyInfo.email}
                   onChange={(e) => setCompanyInfo({ ...companyInfo, email: e.target.value })}
-                  className="mt-1 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
+                  className="mt-1"
                 />
               </div>
 
@@ -236,22 +260,26 @@ export function General() {
               >
                 {saving ? 'Enregistrement...' : 'Enregistrer'}
               </Button>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
 
           {/* System Preferences */}
-          <div className="bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 md:p-6">
-            <div className="mb-6">
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Préférences système</h2>
-              <p className="text-gray-600 dark:text-gray-400 text-sm">Configurez les préférences générales du système</p>
-            </div>
-
-            <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Settings className="h-5 w-5" />
+                Préférences système
+              </CardTitle>
+              <CardDescription>
+                Configurez les préférences générales du système
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-4 md:p-6 space-y-3 md:space-y-4">
               {/* Email Notifications */}
               <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-medium text-gray-900 dark:text-white">Notifications par email</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Envoyer des notifications par email lors des changements de statut</p>
+                <div className="space-y-0.5">
+                  <Label>Notifications par email</Label>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Envoyer des notifications par email lors des changements de statut</p>
                 </div>
                 <Switch
                   checked={systemPrefs.notifications_email}
@@ -263,9 +291,9 @@ export function General() {
 
               {/* Electronic Signature */}
               <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-medium text-gray-900 dark:text-white">Signature électronique</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Activer la signature électronique pour les bons de distribution</p>
+                <div className="space-y-0.5">
+                  <Label>Signature électronique</Label>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Activer la signature électronique pour les bons de distribution</p>
                 </div>
                 <Switch
                   checked={systemPrefs.signature_electronique}
@@ -277,9 +305,9 @@ export function General() {
 
               {/* Status History */}
               <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-medium text-gray-900 dark:text-white">Historique des statuts</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Conserver l'historique des changements de statut</p>
+                <div className="space-y-0.5">
+                  <Label>Historique des statuts</Label>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Conserver l'historique des changements de statut</p>
                 </div>
                 <Switch
                   checked={systemPrefs.historique_statuts}
@@ -289,26 +317,6 @@ export function General() {
                 />
               </div>
 
-              {/* Language */}
-              <div>
-                <Label htmlFor="langue" className="text-sm font-medium text-gray-900 dark:text-white">
-                  Langue
-                </Label>
-                <Select
-                  value={systemPrefs.langue}
-                  onValueChange={(value) => setSystemPrefs({ ...systemPrefs, langue: value })}
-                >
-                  <SelectTrigger className="mt-1 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="francais">Français</SelectItem>
-                    <SelectItem value="english">English</SelectItem>
-                    <SelectItem value="espanol">Español</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
               <Button
                 onClick={handleSaveSystemPrefs}
                 disabled={saving}
@@ -316,8 +324,52 @@ export function General() {
               >
                 {saving ? 'Enregistrement...' : 'Enregistrer'}
               </Button>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
+
+          {/* Appearance Settings */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Sun className="h-5 w-5" />
+                Apparence
+              </CardTitle>
+              <CardDescription>
+                Personnalisez l'apparence de l'application
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-4 md:p-6 space-y-3 md:space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label>Mode sombre</Label>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Activer le thème sombre
+                  </p>
+                </div>
+                <Switch
+                  checked={darkMode}
+                  onCheckedChange={handleDarkModeToggle}
+                />
+              </div>
+
+              <Separator />
+
+              <div className="space-y-2">
+                <Label>Langue</Label>
+                <Select value={language} onValueChange={setLanguage}>
+                  <SelectTrigger>
+                    <Globe className="mr-2 h-4 w-4" />
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="fr">Français</SelectItem>
+                    <SelectItem value="en">English</SelectItem>
+                    <SelectItem value="ar">العربية</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       )}
 

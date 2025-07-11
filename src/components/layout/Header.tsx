@@ -34,6 +34,7 @@ import { SidebarTrigger, useSidebar } from '@/components/ui/sidebar';
 import { GlobalSearch } from '@/components/ui/global-search';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { useAuth } from '@/contexts/AuthContext';
+import { useIsMobile } from '@/hooks/use-mobile';
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
@@ -42,10 +43,11 @@ import { Notification } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 
 export function Header() {
-  const { toggleSidebar } = useSidebar();
+  const { toggleSidebar, state: sidebarState } = useSidebar();
   const { state, logout } = useAuth();
   const navigate = useNavigate();
   const { toast: showToast } = useToast();
+  const isMobile = useIsMobile();
   const [showMobileSearch, setShowMobileSearch] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
@@ -248,8 +250,25 @@ export function Header() {
     }
   };
 
+  // Dynamic sidebar width based on state and screen size
+  const getSidebarWidth = () => {
+    if (isMobile) {
+      return '0rem'; // On mobile, sidebar is overlay so header starts from left edge
+    }
+    return sidebarState === 'collapsed' ? '5rem' : '16rem';
+  };
+
+  const sidebarWidth = getSidebarWidth();
+
   return (
-    <header className="fixed top-0 z-50 h-16 border-b bg-background border-border flex items-center px-4 sm:px-6 transition-colors left-[--sidebar-width] right-0 md:left-[--sidebar-width-desktop]" style={{"--sidebar-width": "16rem", "--sidebar-width-desktop": "16rem"} as React.CSSProperties}>
+    <header
+      className="fixed top-0 z-50 h-16 border-b bg-background border-border flex items-center px-4 sm:px-6 transition-all duration-200 ease-linear right-0"
+      style={{
+        left: sidebarWidth,
+        '--sidebar-width': sidebarWidth,
+        '--sidebar-width-desktop': sidebarWidth
+      } as React.CSSProperties}
+    >
       {/* Mobile/Tablet Layout */}
       <div className="flex items-center justify-between w-full lg:hidden">
         {/* Left side - Hamburger and Search */}

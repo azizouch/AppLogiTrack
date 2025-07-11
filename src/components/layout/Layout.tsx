@@ -1,5 +1,6 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Header } from './Header';
 import { AppSidebar } from './Sidebar';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
@@ -11,6 +12,13 @@ interface LayoutProps {
 }
 
 export function Layout({ children }: LayoutProps) {
+  const location = useLocation();
+
+  // Scroll to top when route changes
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
+
   return (
     <SidebarProvider>
       <AppSidebar />

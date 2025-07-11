@@ -343,7 +343,7 @@ export function AppSidebar() {
             </button>
           )}
           <div
-            className="flex items-center justify-center w-12 h-12 rounded-lg transition-colors cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
+            className="flex items-center justify-center w-10 h-10 rounded-lg transition-colors cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
             onClick={toggleCollapse}
           >
             <ChevronLeft className={`h-4 w-4 transition-transform duration-300 text-sidebar-foreground ${isCollapsed ? 'rotate-180' : ''}`} />
@@ -373,7 +373,7 @@ export function AppSidebar() {
                             className={`flex items-center text-sm font-medium rounded-md transition-colors cursor-pointer ${
                               !isCollapsed
                                 ? 'w-full justify-start space-x-2 px-3 py-2.5'
-                                : 'w-12 h-12 justify-center'
+                                : 'w-10 h-10 justify-center'
                             } ${
                               isItemActive
                                 ? 'bg-sidebar-primary text-sidebar-primary-foreground active-item'
@@ -415,7 +415,7 @@ export function AppSidebar() {
                                 className={`flex items-center text-sm font-medium rounded-md transition-colors cursor-pointer ${
                                   !isCollapsed
                                     ? 'w-full justify-start space-x-2 px-3 py-2.5'
-                                    : 'w-12 h-12 justify-center'
+                                    : 'w-10 h-10 justify-center'
                                 } ${
                                   hasActiveChild
                                     ? 'bg-sidebar-primary text-sidebar-primary-foreground active-item'
@@ -502,7 +502,7 @@ export function AppSidebar() {
         <Button
           variant="ghost"
           size="icon"
-          className="h-12 w-12 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
+          className="h-10 w-10 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
           onClick={toggleDarkMode}
         >
           {isDarkMode ? (
