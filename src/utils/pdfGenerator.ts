@@ -131,60 +131,60 @@ const generatePDFContent = (bon: Bon): string => {
   const totalGeneral = totalPrix + totalFrais;
 
   return `
-    <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background: white;">
+    <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background: white; font-size: 12px; line-height: 1.4;">
       <!-- Header -->
-      <div style="text-align: center; margin-bottom: 30px; border-bottom: 3px solid #2563eb; padding-bottom: 20px;">
-        <h1 style="color: #2563eb; font-size: 28px; margin-bottom: 10px; margin-top: 0;">BON DE DISTRIBUTION</h1>
-        <p style="color: #666; font-size: 16px; margin: 0;">LogiTrack - Système de gestion logistique</p>
+      <div style="text-align: center; margin-bottom: 25px; border-bottom: 3px solid #2563eb; padding-bottom: 15px;">
+        <h1 style="color: #2563eb; font-size: 24px; margin-bottom: 8px; margin-top: 0; font-weight: bold;">BON DE DISTRIBUTION</h1>
+        <p style="color: #666; font-size: 14px; margin: 0;">LogiTrack - Système de gestion logistique</p>
       </div>
 
       <!-- Bon Info -->
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 30px;">
-        <div style="background: #f8fafc; padding: 20px; border-radius: 8px; border-left: 4px solid #2563eb;">
-          <h3 style="color: #2563eb; margin-bottom: 15px; font-size: 18px; margin-top: 0;">Informations générales</h3>
-          <div style="margin-bottom: 10px;">
+      <div style="display: flex; justify-content: space-between; gap: 20px; margin-bottom: 25px;">
+        <div style="flex: 1; background: #f8fafc; padding: 15px; border-radius: 6px; border-left: 4px solid #2563eb;">
+          <h3 style="color: #2563eb; margin-bottom: 12px; font-size: 16px; margin-top: 0; font-weight: bold;">Informations générales</h3>
+          <div style="margin-bottom: 8px; font-size: 12px;">
             <strong style="color: #475569;">ID Bon:</strong> <span style="color: #1e293b;">${bon.id}</span>
           </div>
-          <div style="margin-bottom: 10px;">
+          <div style="margin-bottom: 8px; font-size: 12px;">
             <strong style="color: #475569;">Type:</strong> <span style="color: #1e293b;">${bon.type.charAt(0).toUpperCase() + bon.type.slice(1)}</span>
           </div>
-          <div style="margin-bottom: 10px;">
+          <div style="margin-bottom: 8px; font-size: 12px;">
             <strong style="color: #475569;">Statut:</strong>
-            <span style="display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; text-transform: uppercase; background: #dbeafe; color: #1e40af;">${getStatusText(bon.statut)}</span>
+            <span style="display: inline-block; padding: 4px 10px; border-radius: 15px; font-size: 11px; font-weight: 600; text-transform: uppercase; background: #dbeafe; color: #1e40af;">${getStatusText(bon.statut)}</span>
           </div>
-          <div style="margin-bottom: 10px;">
+          <div style="margin-bottom: 8px; font-size: 12px;">
             <strong style="color: #475569;">Date de création:</strong> <span style="color: #1e293b;">${formatDate(bon.date_creation)}</span>
           </div>
           ${bon.nb_colis ? `
-          <div style="margin-bottom: 10px;">
+          <div style="margin-bottom: 8px; font-size: 12px;">
             <strong style="color: #475569;">Nombre de colis:</strong> <span style="color: #1e293b;">${bon.nb_colis} colis</span>
           </div>
           ` : ''}
         </div>
 
         ${bon.user ? `
-        <div style="background: #f8fafc; padding: 20px; border-radius: 8px; border-left: 4px solid #2563eb;">
-          <h3 style="color: #2563eb; margin-bottom: 15px; font-size: 18px; margin-top: 0;">Livreur assigné</h3>
-          <div style="margin-bottom: 10px;">
+        <div style="flex: 1; background: #f8fafc; padding: 15px; border-radius: 6px; border-left: 4px solid #2563eb;">
+          <h3 style="color: #2563eb; margin-bottom: 12px; font-size: 16px; margin-top: 0; font-weight: bold;">Livreur assigné</h3>
+          <div style="margin-bottom: 8px; font-size: 12px;">
             <strong style="color: #475569;">Nom:</strong> <span style="color: #1e293b;">${bon.user.nom} ${bon.user.prenom || ''}</span>
           </div>
           ${bon.user.email ? `
-          <div style="margin-bottom: 10px;">
+          <div style="margin-bottom: 8px; font-size: 12px;">
             <strong style="color: #475569;">Email:</strong> <span style="color: #1e293b;">${bon.user.email}</span>
           </div>
           ` : ''}
           ${bon.user.telephone ? `
-          <div style="margin-bottom: 10px;">
+          <div style="margin-bottom: 8px; font-size: 12px;">
             <strong style="color: #475569;">Téléphone:</strong> <span style="color: #1e293b;">${bon.user.telephone}</span>
           </div>
           ` : ''}
           ${bon.user.vehicule ? `
-          <div style="margin-bottom: 10px;">
+          <div style="margin-bottom: 8px; font-size: 12px;">
             <strong style="color: #475569;">Véhicule:</strong> <span style="color: #1e293b;">${bon.user.vehicule}</span>
           </div>
           ` : ''}
           ${bon.user.zone ? `
-          <div style="margin-bottom: 10px;">
+          <div style="margin-bottom: 8px; font-size: 12px;">
             <strong style="color: #475569;">Zone:</strong> <span style="color: #1e293b;">${bon.user.zone}</span>
           </div>
           ` : ''}
@@ -193,8 +193,8 @@ const generatePDFContent = (bon: Bon): string => {
       </div>
 
       <!-- Colis Table -->
-      <div style="margin: 30px 0;">
-        <h3 style="color: #2563eb; margin-bottom: 15px; font-size: 18px;">Liste des Colis (${sampleColis.length} colis)</h3>
+      <div style="margin: 25px 0;">
+        <h3 style="color: #2563eb; margin-bottom: 15px; font-size: 18px; font-weight: bold;">Liste des Colis (${sampleColis.length} colis)</h3>
         <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);">
           <thead>
             <tr style="background: #2563eb; color: white;">
@@ -231,14 +231,14 @@ const generatePDFContent = (bon: Bon): string => {
       </div>
 
       ${bon.notes ? `
-      <div style="margin-top: 30px; padding: 20px; background: #f1f5f9; border-radius: 8px;">
-        <h3 style="color: #2563eb; margin-bottom: 10px; margin-top: 0;">Notes</h3>
-        <p style="margin: 0;">${bon.notes}</p>
+      <div style="margin-top: 25px; padding: 15px; background: #f1f5f9; border-radius: 8px;">
+        <h3 style="color: #2563eb; margin-bottom: 10px; margin-top: 0; font-size: 16px;">Notes</h3>
+        <p style="margin: 0; font-size: 12px;">${bon.notes}</p>
       </div>
       ` : ''}
 
-      <div style="margin-top: 40px; text-align: center; padding-top: 20px; border-top: 1px solid #e2e8f0; color: #64748b; font-size: 14px;">
-        <p style="margin: 0 0 10px 0;">Document généré le ${formatDate(new Date().toISOString())} par LogiTrack</p>
+      <div style="margin-top: 30px; text-align: center; padding-top: 15px; border-top: 1px solid #e2e8f0; color: #64748b; font-size: 12px;">
+        <p style="margin: 0 0 8px 0;">Document généré le ${formatDate(new Date().toISOString())} par LogiTrack</p>
         <p style="margin: 0;"><strong>Total des colis: ${sampleColis.length} | Montant total: ${totalGeneral.toFixed(2)} DH</strong></p>
       </div>
     </div>
@@ -253,10 +253,12 @@ export const downloadBonAsPDF = async (bon: Bon): Promise<void> => {
     tempContainer.style.position = 'absolute';
     tempContainer.style.left = '-9999px';
     tempContainer.style.top = '-9999px';
-    tempContainer.style.width = '800px';
+    tempContainer.style.width = '800px'; // Use fixed width for consistent rendering
     tempContainer.style.backgroundColor = 'white';
     tempContainer.style.padding = '20px';
     tempContainer.style.fontFamily = 'Arial, sans-serif';
+    tempContainer.style.fontSize = '12px';
+    tempContainer.style.lineHeight = '1.4';
 
     // Generate the content for PDF
     const pdfContent = generatePDFContent(bon);
