@@ -115,7 +115,21 @@ export function Distribution() {
     try {
       setDownloadingPdf(bon.id);
 
-      await downloadBonAsPDF(bon);
+      // Add user data to bon object like in the details page
+      const bonWithUser = {
+        ...bon,
+        user: {
+          id: 'user-1',
+          nom: 'Alami',
+          prenom: 'Mohammed',
+          email: 'mohammed.alami@logitrack.ma',
+          telephone: '+212 6 12 34 56 78',
+          vehicule: 'Renault Kangoo - AB-1234-CD',
+          zone: 'Casablanca Centre'
+        }
+      };
+
+      await downloadBonAsPDF(bonWithUser);
 
       toast({
         title: 'PDF téléchargé',
