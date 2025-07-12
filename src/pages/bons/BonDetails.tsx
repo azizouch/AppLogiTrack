@@ -8,7 +8,7 @@ import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { api } from '@/lib/supabase';
 import { Bon } from '@/types';
-import { downloadBonAsPDF, printBon } from '@/utils/pdfGenerator';
+import { downloadBonAsPDF, downloadMobileBonAsPDF, printBon } from '@/utils/pdfGenerator';
 
 export function BonDetails() {
   const { id } = useParams<{ id: string }>();
@@ -17,6 +17,7 @@ export function BonDetails() {
   const [bon, setBon] = useState<Bon | null>(null);
   const [loading, setLoading] = useState(true);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const [downloadingMobilePdf, setDownloadingMobilePdf] = useState(false);
   const [printing, setPrinting] = useState(false);
 
   useEffect(() => {
@@ -99,6 +100,11 @@ export function BonDetails() {
     });
   };
 
+  // Check if user is on mobile device
+  const isMobile = () => {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  };
+
   const handleDownloadPdf = async () => {
     if (!bon) return;
 
@@ -121,6 +127,31 @@ export function BonDetails() {
       });
     } finally {
       setDownloadingPdf(false);
+    }
+  };
+
+  const handleDownloadMobilePdf = async () => {
+    if (!bon) return;
+
+    try {
+      setDownloadingMobilePdf(true);
+
+      await downloadMobileBonAsPDF(bon);
+
+      toast({
+        title: 'PDF Mobile téléchargé',
+        description: 'Le fichier PDF optimisé mobile a été téléchargé dans votre dossier Téléchargements',
+      });
+
+    } catch (error) {
+      console.error('Error downloading mobile PDF:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Impossible de générer le PDF mobile',
+        variant: 'destructive',
+      });
+    } finally {
+      setDownloadingMobilePdf(false);
     }
   };
 
@@ -225,23 +256,43 @@ export function BonDetails() {
             )}
           </Button>
 
-          <Button
-            onClick={handleDownloadPdf}
-            disabled={downloadingPdf}
-            className="bg-blue-600 hover:bg-blue-700 flex-1 sm:flex-none"
-          >
-            {downloadingPdf ? (
-              <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                Téléchargement...
-              </>
-            ) : (
-              <>
-                <Download className="mr-2 h-4 w-4" />
-                <span className="hidden min-[340px]:inline">Télécharger </span>PDF
-              </>
-            )}
-          </Button>
+          {isMobile() ? (
+            <Button
+              onClick={handleDownloadMobilePdf}
+              disabled={downloadingMobilePdf}
+              className="bg-blue-600 hover:bg-blue-700 flex-1 sm:flex-none"
+            >
+              {downloadingMobilePdf ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Téléchargement...
+                </>
+              ) : (
+                <>
+                  <Download className="mr-2 h-4 w-4" />
+                  <span className="hidden min-[340px]:inline">Télécharger </span>PDF
+                </>
+              )}
+            </Button>
+          ) : (
+            <Button
+              onClick={handleDownloadPdf}
+              disabled={downloadingPdf}
+              className="bg-blue-600 hover:bg-blue-700 flex-1 sm:flex-none"
+            >
+              {downloadingPdf ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Téléchargement...
+                </>
+              ) : (
+                <>
+                  <Download className="mr-2 h-4 w-4" />
+                  <span className="hidden min-[340px]:inline">Télécharger </span>PDF
+                </>
+              )}
+            </Button>
+          )}
         </div>
       </div>
 

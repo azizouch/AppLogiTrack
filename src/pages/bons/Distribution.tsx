@@ -10,7 +10,7 @@ import { api } from '@/lib/supabase';
 import { Bon } from '@/types';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useToast } from '@/hooks/use-toast';
-import { downloadBonAsPDF, printBon } from '@/utils/pdfGenerator';
+import { downloadBonAsPDF, downloadMobileBonAsPDF, printBon } from '@/utils/pdfGenerator';
 
 export function Distribution() {
   const navigate = useNavigate();
@@ -111,6 +111,11 @@ export function Distribution() {
     return new Date(dateString).toLocaleDateString('fr-FR');
   };
 
+  // Check if user is on mobile device
+  const isMobile = () => {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  };
+
   const handleDownloadPdf = async (bon: Bon) => {
     try {
       setDownloadingPdf(bon.id);
@@ -129,12 +134,20 @@ export function Distribution() {
         }
       };
 
-      await downloadBonAsPDF(bonWithUser);
-
-      toast({
-        title: 'PDF téléchargé',
-        description: 'Le fichier PDF a été téléchargé dans votre dossier Téléchargements',
-      });
+      // Use mobile PDF if on mobile device
+      if (isMobile()) {
+        await downloadMobileBonAsPDF(bonWithUser);
+        toast({
+          title: 'PDF Mobile téléchargé',
+          description: 'Le fichier PDF optimisé mobile a été téléchargé dans votre dossier Téléchargements',
+        });
+      } else {
+        await downloadBonAsPDF(bonWithUser);
+        toast({
+          title: 'PDF téléchargé',
+          description: 'Le fichier PDF a été téléchargé dans votre dossier Téléchargements',
+        });
+      }
 
     } catch (error) {
       console.error('Error downloading PDF:', error);
