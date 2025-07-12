@@ -180,29 +180,37 @@ export function BonDetails() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="space-y-2">
-          <Button
-            variant="ghost"
-            onClick={() => navigate('/bons/distribution')}
-            className="inline-flex h-9 items-center justify-center gap-2 whitespace-nowrap rounded-md px-3 text-sm font-medium transition-colors ring-offset-background hover:bg-gray-100 dark:hover:bg-gray-800"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Retour à la liste
-          </Button>
+          {/* Return button and status on same line for small screens */}
+          <div className="flex items-center justify-between sm:block">
+            <Button
+              variant="ghost"
+              onClick={() => navigate('/bons/distribution')}
+              className="inline-flex h-9 items-center justify-center gap-2 whitespace-nowrap rounded-md px-3 text-sm font-medium transition-colors ring-offset-background hover:bg-gray-100 dark:hover:bg-gray-800"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Retour à la liste
+            </Button>
+            <div className="sm:hidden">
+              {getStatusBadge(bon.statut)}
+            </div>
+          </div>
           <div className="flex items-center gap-3">
             <Truck className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-              Bon de Distribution #{bon.id}
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
+              Bon : {bon.id}
             </h1>
-            {getStatusBadge(bon.statut)}
+            <div className="hidden sm:block">
+              {getStatusBadge(bon.statut)}
+            </div>
           </div>
         </div>
 
-        <div className="flex gap-3">
+        <div className="flex gap-2 w-full sm:w-auto sm:gap-3">
           <Button
             onClick={handlePrint}
             disabled={printing}
             variant="outline"
-            className="border-blue-600 text-blue-600 hover:bg-blue-50"
+            className="border-blue-600 text-blue-600 hover:bg-blue-50 flex-1 sm:flex-none"
           >
             {printing ? (
               <>
@@ -220,7 +228,7 @@ export function BonDetails() {
           <Button
             onClick={handleDownloadPdf}
             disabled={downloadingPdf}
-            className="bg-blue-600 hover:bg-blue-700"
+            className="bg-blue-600 hover:bg-blue-700 flex-1 sm:flex-none"
           >
             {downloadingPdf ? (
               <>
@@ -230,7 +238,7 @@ export function BonDetails() {
             ) : (
               <>
                 <Download className="mr-2 h-4 w-4" />
-                Télécharger PDF
+                <span className="hidden min-[340px]:inline">Télécharger </span>PDF
               </>
             )}
           </Button>
