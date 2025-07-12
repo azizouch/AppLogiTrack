@@ -262,9 +262,8 @@ export function Header() {
 
   return (
     <header
-      className="fixed top-0 z-50 h-16 border-b bg-background border-border flex items-center px-4 sm:px-6 transition-all duration-200 ease-linear right-0"
+      className="header-responsive fixed top-0 z-50 h-16 border-b bg-background border-border flex items-center px-4 sm:px-6 right-0"
       style={{
-        left: sidebarWidth,
         '--sidebar-width': sidebarWidth,
         '--sidebar-width-desktop': sidebarWidth
       } as React.CSSProperties}

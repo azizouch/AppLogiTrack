@@ -55,7 +55,42 @@ export function AppSidebar() {
   const [dropdownPopup, setDropdownPopup] = useState<{ items: any[]; x: number; y: number } | null>(null);
   const [badgeCounts, setBadgeCounts] = useState<Record<string, number>>({});
 
+  // Initialize theme on component mount and listen for changes
+  useEffect(() => {
+    const updateTheme = () => {
+      const savedTheme = localStorage.getItem('theme');
+      const isDark = savedTheme === 'dark' || (!savedTheme && document.documentElement.classList.contains('dark'));
+      setIsDarkMode(isDark);
 
+      // Ensure document class matches the state
+      if (isDark) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    };
+
+    // Initial theme setup
+    updateTheme();
+
+    // Listen for localStorage changes from other components (like settings page)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'theme') {
+        updateTheme();
+      }
+    };
+
+    // Listen for storage changes from other tabs/components
+    window.addEventListener('storage', handleStorageChange);
+
+    // Also check for theme changes periodically to catch same-tab changes
+    const interval = setInterval(updateTheme, 100);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      clearInterval(interval);
+    };
+  }, []);
 
   // CSS variables will handle the styling properly
 
@@ -271,12 +306,16 @@ export function AppSidebar() {
   };
 
   const toggleDarkMode = () => {
-    setIsDarkMode(!isDarkMode);
+    const newDarkMode = !isDarkMode;
+    setIsDarkMode(newDarkMode);
+
     // Apply dark mode to document
-    if (!isDarkMode) {
+    if (newDarkMode) {
       document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
     } else {
       document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
     }
   };
 

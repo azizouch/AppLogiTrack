@@ -53,6 +53,19 @@ body[style*="margin-right"] {
   }
 }
 
+/* Header responsive positioning - pure CSS without JavaScript */
+.header-responsive {
+  left: 0 !important; /* Mobile: always start from left edge */
+}
+
+/* Desktop: adjust based on sidebar state */
+@media (min-width: 1024px) {
+  .header-responsive {
+    left: var(--sidebar-width) !important;
+    transition: left 200ms ease-linear;
+  }
+}
+
 
 
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Sun, Globe, Building, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -39,8 +39,37 @@ export function General() {
 
   // Theme and appearance settings
   const [darkMode, setDarkMode] = useState(() => {
-    return document.documentElement.classList.contains('dark');
+    const savedTheme = localStorage.getItem('theme');
+    return savedTheme === 'dark' || (!savedTheme && document.documentElement.classList.contains('dark'));
   });
+
+  // Listen for theme changes from other components (like sidebar)
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'theme') {
+        const isDark = e.newValue === 'dark';
+        setDarkMode(isDark);
+      }
+    };
+
+    // Listen for localStorage changes from other tabs/components
+    window.addEventListener('storage', handleStorageChange);
+
+    // Also listen for direct localStorage changes in the same tab
+    const checkTheme = () => {
+      const savedTheme = localStorage.getItem('theme');
+      const isDark = savedTheme === 'dark' || (!savedTheme && document.documentElement.classList.contains('dark'));
+      setDarkMode(isDark);
+    };
+
+    // Check theme periodically to catch changes from sidebar
+    const interval = setInterval(checkTheme, 100);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      clearInterval(interval);
+    };
+  }, []);
   const [language, setLanguage] = useState('fr');
 
   // Numbering format state
