@@ -24,6 +24,7 @@ import { FilteredColisView } from "@/pages/colis/FilteredColisView";
 import { Profile } from "@/pages/profile/Profile";
 import { Settings } from "@/pages/profile/Settings";
 import { Distribution } from "@/pages/bons/Distribution";
+import { BonDetails } from "@/pages/bons/BonDetails";
 import { Paiement } from "@/pages/bons/Paiement";
 import { Retour } from "@/pages/bons/Retour";
 import { Clients } from "@/pages/Clients";
@@ -174,6 +175,13 @@ const App = () => (
             <ProtectedRoute>
               <Layout>
                 <Distribution />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/bons/distribution/:id" element={
+            <ProtectedRoute>
+              <Layout>
+                <BonDetails />
               </Layout>
             </ProtectedRoute>
           } />

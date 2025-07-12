@@ -500,14 +500,7 @@ export function UpdateColis() {
                 )}
               />
             </CardContent>
-            <CardFooter className="flex justify-between p-4 md:p-6 pt-0">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => navigate(`/colis/${form.getValues('id') || id}`)}
-              >
-                Annuler
-              </Button>
+            <CardFooter className="flex justify-start gap-3 px-4 md:px-6 pb-4 md:pb-6">
               <Button
                 type="submit"
                 disabled={saving}
@@ -523,6 +516,13 @@ export function UpdateColis() {
                     Enregistrer
                   </>
                 )}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => navigate(`/colis/${form.getValues('id') || id}`)}
+              >
+                Annuler
               </Button>
             </CardFooter>
           </Card>

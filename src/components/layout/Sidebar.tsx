@@ -282,7 +282,42 @@ export function AppSidebar() {
   };
 
   const isParentActive = (items: any[]) => {
-    return items.some(item => location.pathname === item.url);
+    const currentPath = location.pathname;
+
+    return items.some(item => {
+      // Check for exact match first
+      if (currentPath === item.url) return true;
+
+      // Specific exclusions to prevent conflicts
+      if (item.url === '/parametres' && currentPath.startsWith('/parametres/compte')) {
+        // Don't highlight main "Paramètres" when on account settings
+        return false;
+      }
+
+      if (item.url === '/parametres/compte' && currentPath === '/parametres') {
+        // Don't highlight account settings when on main settings
+        return false;
+      }
+
+      // Handle sub-routes by checking if current path starts with item URL + "/"
+      if (currentPath.startsWith(item.url + '/')) {
+        return true;
+      }
+
+      // Special handling for bons routes to catch detail pages
+      if (item.url.startsWith('/bons/') && currentPath.startsWith('/bons/')) {
+        // Check if we're on a bon detail page or other bon sub-route
+        const bonRoutePattern = /^\/bons\/[^\/]+/; // Matches /bons/distribution, /bons/paiement, etc.
+        const currentBonRoute = currentPath.match(bonRoutePattern)?.[0];
+        const itemBonRoute = item.url.match(bonRoutePattern)?.[0];
+
+        if (currentBonRoute && itemBonRoute && currentBonRoute === itemBonRoute) {
+          return true;
+        }
+      }
+
+      return false;
+    });
   };
 
   const toggleExpanded = (itemTitle: string) => {

@@ -1,15 +1,20 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TablePagination } from '@/components/ui/table-pagination';
-import { Plus, Search, Download, Eye, Truck, RefreshCw } from 'lucide-react';
+import { Plus, Search, Download, Eye, Printer, Truck, RefreshCw } from 'lucide-react';
 import { api } from '@/lib/supabase';
 import { Bon } from '@/types';
 import { useDebounce } from '@/hooks/useDebounce';
+import { useToast } from '@/hooks/use-toast';
+import { downloadBonAsPDF, printBon } from '@/utils/pdfGenerator';
 
 export function Distribution() {
+  const navigate = useNavigate();
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [bons, setBons] = useState<Bon[]>([]);
   const [loading, setLoading] = useState(true);
@@ -20,6 +25,8 @@ export function Distribution() {
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [hasNextPage, setHasNextPage] = useState(false);
   const [hasPrevPage, setHasPrevPage] = useState(false);
+  const [downloadingPdf, setDownloadingPdf] = useState<string | null>(null);
+  const [printing, setPrinting] = useState<string | null>(null);
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
   // Fetch bons data
@@ -102,6 +109,52 @@ export function Distribution() {
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('fr-FR');
+  };
+
+  const handleDownloadPdf = async (bon: Bon) => {
+    try {
+      setDownloadingPdf(bon.id);
+
+      await downloadBonAsPDF(bon);
+
+      toast({
+        title: 'PDF téléchargé',
+        description: 'Le fichier PDF a été téléchargé dans votre dossier Téléchargements',
+      });
+
+    } catch (error) {
+      console.error('Error downloading PDF:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Impossible de générer le PDF',
+        variant: 'destructive',
+      });
+    } finally {
+      setDownloadingPdf(null);
+    }
+  };
+
+  const handlePrint = async (bon: Bon) => {
+    try {
+      setPrinting(bon.id);
+
+      await printBon(bon);
+
+      toast({
+        title: 'Impression',
+        description: 'Le bon de distribution a été ouvert pour impression',
+      });
+
+    } catch (error) {
+      console.error('Error printing bon:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Impossible d\'ouvrir l\'impression',
+        variant: 'destructive',
+      });
+    } finally {
+      setPrinting(null);
+    }
   };
 
   return (
@@ -241,12 +294,43 @@ export function Distribution() {
                         {formatDate(bon.date_creation)}
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex items-center space-x-2">
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                        <div className="flex items-center space-x-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0"
+                            onClick={() => navigate(`/bons/distribution/${bon.id}`)}
+                            title="Voir les détails"
+                          >
                             <Eye className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                            <Download className="h-4 w-4" />
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0"
+                            onClick={() => handlePrint(bon)}
+                            disabled={printing === bon.id}
+                            title="Imprimer"
+                          >
+                            {printing === bon.id ? (
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600"></div>
+                            ) : (
+                              <Printer className="h-4 w-4" />
+                            )}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0"
+                            onClick={() => handleDownloadPdf(bon)}
+                            disabled={downloadingPdf === bon.id}
+                            title="Télécharger PDF"
+                          >
+                            {downloadingPdf === bon.id ? (
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600"></div>
+                            ) : (
+                              <Download className="h-4 w-4" />
+                            )}
                           </Button>
                         </div>
                       </td>

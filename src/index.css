@@ -66,6 +66,25 @@ body[style*="margin-right"] {
   }
 }
 
+/* Hide scrollbar in sidebar while keeping scroll functionality */
+[data-sidebar="sidebar"] {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* Internet Explorer 10+ */
+}
+
+[data-sidebar="sidebar"]::-webkit-scrollbar {
+  display: none; /* WebKit browsers (Chrome, Safari, Edge) */
+}
+
+[data-sidebar="content"] {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* Internet Explorer 10+ */
+}
+
+[data-sidebar="content"]::-webkit-scrollbar {
+  display: none; /* WebKit browsers (Chrome, Safari, Edge) */
+}
+
 
 
 
