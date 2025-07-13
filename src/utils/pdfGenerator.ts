@@ -451,17 +451,17 @@ const generateMobilePDFContent = (bon: Bon): string => {
   const totalGeneral = totalPrix + totalFrais;
 
   return `
-    <div style="font-family: Arial, sans-serif; max-width: 100%; margin: 0 auto; padding: 20px; background: white; font-size: 16px; line-height: 1.5;">
+    <div style="font-family: Arial, sans-serif; width: 100%; margin: 0; padding: 15px; background: white; font-size: 18px; line-height: 1.4;">
       <!-- Header -->
-      <div style="text-align: center; margin-bottom: 25px; border-bottom: 3px solid #2563eb; padding-bottom: 20px;">
-        <h1 style="color: #2563eb; font-size: 24px; margin-bottom: 10px; margin-top: 0; font-weight: bold;">BON DE DISTRIBUTION</h1>
-        <p style="color: #666; font-size: 14px; margin: 0;">LogiTrack - Système de gestion logistique</p>
+      <div style="text-align: center; margin-bottom: 30px; border-bottom: 3px solid #2563eb; padding-bottom: 20px; page-break-inside: avoid;">
+        <h1 style="color: #2563eb; font-size: 28px; margin-bottom: 10px; margin-top: 0; font-weight: bold;">BON DE DISTRIBUTION</h1>
+        <p style="color: #666; font-size: 16px; margin: 0;">LogiTrack - Système de gestion logistique</p>
       </div>
 
       <!-- Bon Info - Stacked for mobile -->
-      <div style="margin-bottom: 25px;">
-        <div style="background: #f8fafc; padding: 20px; border-radius: 8px; border-left: 4px solid #2563eb; margin-bottom: 15px;">
-          <h3 style="color: #2563eb; margin-bottom: 15px; font-size: 18px; margin-top: 0; font-weight: bold;">Informations générales</h3>
+      <div style="margin-bottom: 25px; page-break-inside: avoid;">
+        <div style="background: #f8fafc; padding: 20px; border-radius: 8px; border-left: 4px solid #2563eb; margin-bottom: 15px; page-break-inside: avoid;">
+          <h3 style="color: #2563eb; margin-bottom: 15px; font-size: 20px; margin-top: 0; font-weight: bold; page-break-after: avoid;">Informations générales</h3>
           <div style="margin-bottom: 10px; font-size: 16px;">
             <strong style="color: #475569;">ID Bon:</strong><br/>
             <span style="color: #1e293b; font-size: 18px;">${bon.id}</span>
@@ -487,8 +487,8 @@ const generateMobilePDFContent = (bon: Bon): string => {
         </div>
 
         ${bon.user ? `
-        <div style="background: #f8fafc; padding: 20px; border-radius: 8px; border-left: 4px solid #2563eb;">
-          <h3 style="color: #2563eb; margin-bottom: 15px; font-size: 18px; margin-top: 0; font-weight: bold;">Livreur assigné</h3>
+        <div style="background: #f8fafc; padding: 20px; border-radius: 8px; border-left: 4px solid #2563eb; page-break-inside: avoid;">
+          <h3 style="color: #2563eb; margin-bottom: 15px; font-size: 20px; margin-top: 0; font-weight: bold; page-break-after: avoid;">Livreur assigné</h3>
           <div style="margin-bottom: 10px; font-size: 16px;">
             <strong style="color: #475569;">Nom:</strong><br/>
             <span style="color: #1e293b; font-size: 18px;">${bon.user.nom} ${bon.user.prenom || ''}</span>
@@ -522,8 +522,8 @@ const generateMobilePDFContent = (bon: Bon): string => {
       </div>
 
       <!-- Colis Cards - Mobile friendly -->
-      <div style="margin: 25px 0;">
-        <h3 style="color: #2563eb; margin-bottom: 20px; font-size: 20px; font-weight: bold;">Liste des Colis (${sampleColis.length} colis)</h3>
+      <div style="margin: 25px 0; page-break-inside: avoid;">
+        <h3 style="color: #2563eb; margin-bottom: 20px; font-size: 22px; font-weight: bold; page-break-after: avoid;">Liste des Colis (${sampleColis.length} colis)</h3>
 
         ${sampleColis.map((colis, index) => `
           <div style="background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);">
@@ -591,17 +591,17 @@ const generateMobilePDFContent = (bon: Bon): string => {
 // Download mobile-optimized PDF (same content as print/download but optimized for mobile viewing)
 export const downloadMobileBonAsPDF = async (bon: Bon): Promise<void> => {
   try {
-    // Create a temporary container with mobile-optimized settings
+    // Create a temporary container optimized for full-width mobile PDF
     const tempContainer = document.createElement('div');
     tempContainer.style.position = 'absolute';
     tempContainer.style.left = '-9999px';
     tempContainer.style.top = '-9999px';
-    tempContainer.style.width = '1200px'; // Much wider for mobile PDF to fill page
+    tempContainer.style.width = '210mm'; // Full A4 width
     tempContainer.style.backgroundColor = 'white';
-    tempContainer.style.padding = '10px'; // Reduced padding for more content space
+    tempContainer.style.padding = '5mm'; // Minimal padding for full page utilization
     tempContainer.style.fontFamily = 'Arial, sans-serif';
-    tempContainer.style.fontSize = '16px'; // Larger font for mobile
-    tempContainer.style.lineHeight = '1.5';
+    tempContainer.style.fontSize = '20px'; // Larger font for mobile readability
+    tempContainer.style.lineHeight = '1.3';
 
     // Generate mobile-optimized content
     const pdfContent = generateMobilePDFContent(bon);
@@ -610,46 +610,46 @@ export const downloadMobileBonAsPDF = async (bon: Bon): Promise<void> => {
     document.body.appendChild(tempContainer);
 
     // Wait for rendering
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise(resolve => setTimeout(resolve, 200));
 
-    // Convert to canvas optimized for mobile layout
+    // Convert to canvas optimized for full-width mobile PDF
     const canvas = await html2canvas(tempContainer, {
-      scale: 2.5, // Higher scale for mobile to fill page better
+      scale: 1.5, // Optimized scale for mobile full-width
       useCORS: true,
       allowTaint: true,
       backgroundColor: '#ffffff',
-      width: 1200, // Match container width
+      width: tempContainer.offsetWidth, // Use actual container width
       height: tempContainer.scrollHeight,
       logging: false,
       imageTimeout: 0,
       removeContainer: true
     });
 
-    // Create PDF optimized for mobile viewing
+    // Create PDF with full page width utilization for mobile
     const pdf = new jsPDF('p', 'mm', 'a4');
-    const pdfWidth = 210;
-    const pdfHeight = 297;
-    const pdfMargin = 5; // Minimal margin for mobile PDF
-    const availableWidth = pdfWidth - (pdfMargin * 2);
-    const canvasHeight = (canvas.height * availableWidth) / canvas.width;
-    let remainingHeight = canvasHeight;
-    let yPosition = 0;
+    const pdfWidth = 210; // A4 width in mm
+    const pdfHeight = 297; // A4 height in mm
+    const margin = 2; // Minimal margin for maximum content space
+    const contentWidth = pdfWidth - (margin * 2);
+    const contentHeight = (canvas.height * contentWidth) / canvas.width;
 
-    // Add image to PDF with maximum quality and minimal margins
+    // Add image to PDF with full width utilization and proper page breaks
     const imageData = canvas.toDataURL('image/png', 1.0); // Maximum quality
-    pdf.addImage(imageData, 'PNG', pdfMargin, yPosition + pdfMargin, availableWidth, canvasHeight, undefined, 'FAST');
-    remainingHeight -= pdfHeight;
 
-    // Add additional pages if needed
-    while (remainingHeight >= 0) {
-      yPosition = remainingHeight - canvasHeight;
-      pdf.addPage();
-      pdf.addImage(imageData, 'PNG', pdfMargin, yPosition + pdfMargin, availableWidth, canvasHeight);
-      remainingHeight -= pdfHeight;
+    // Calculate how many pages we need
+    const pagesNeeded = Math.ceil(contentHeight / (pdfHeight - margin * 2));
+
+    for (let page = 0; page < pagesNeeded; page++) {
+      if (page > 0) {
+        pdf.addPage();
+      }
+
+      const yOffset = -(page * (pdfHeight - margin * 2));
+      pdf.addImage(imageData, 'PNG', margin, yOffset + margin, contentWidth, contentHeight, undefined, 'FAST');
     }
 
     // Generate filename
-    const filename = `Bon_Distribution_${bon.id}_${new Date().toISOString().split('T')[0]}.pdf`;
+    const filename = `Bon_Distribution_Mobile_${bon.id}_${new Date().toISOString().split('T')[0]}.pdf`;
 
     // Download the PDF
     pdf.save(filename);
