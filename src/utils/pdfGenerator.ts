@@ -596,7 +596,7 @@ export const downloadMobileBonAsPDF = async (bon: Bon): Promise<void> => {
     tempContainer.style.position = 'absolute';
     tempContainer.style.left = '-9999px';
     tempContainer.style.top = '-9999px';
-    tempContainer.style.width = '600px'; // Narrower width for mobile-friendly layout
+    tempContainer.style.width = '800px'; // Full width for mobile PDF
     tempContainer.style.backgroundColor = 'white';
     tempContainer.style.padding = '20px';
     tempContainer.style.fontFamily = 'Arial, sans-serif';
@@ -614,11 +614,11 @@ export const downloadMobileBonAsPDF = async (bon: Bon): Promise<void> => {
 
     // Convert to canvas optimized for mobile layout
     const canvas = await html2canvas(tempContainer, {
-      scale: 2, // Good quality for mobile
+      scale: 2.5, // Higher scale for mobile to fill page better
       useCORS: true,
       allowTaint: true,
       backgroundColor: '#ffffff',
-      width: 600, // Match container width
+      width: 800, // Match container width
       height: tempContainer.scrollHeight,
       logging: false,
       imageTimeout: 0,
