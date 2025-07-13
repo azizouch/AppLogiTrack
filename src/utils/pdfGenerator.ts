@@ -596,9 +596,9 @@ export const downloadMobileBonAsPDF = async (bon: Bon): Promise<void> => {
     tempContainer.style.position = 'absolute';
     tempContainer.style.left = '-9999px';
     tempContainer.style.top = '-9999px';
-    tempContainer.style.width = '800px'; // Full width for mobile PDF
+    tempContainer.style.width = '1200px'; // Much wider for mobile PDF to fill page
     tempContainer.style.backgroundColor = 'white';
-    tempContainer.style.padding = '20px';
+    tempContainer.style.padding = '10px'; // Reduced padding for more content space
     tempContainer.style.fontFamily = 'Arial, sans-serif';
     tempContainer.style.fontSize = '16px'; // Larger font for mobile
     tempContainer.style.lineHeight = '1.5';
@@ -618,7 +618,7 @@ export const downloadMobileBonAsPDF = async (bon: Bon): Promise<void> => {
       useCORS: true,
       allowTaint: true,
       backgroundColor: '#ffffff',
-      width: 800, // Match container width
+      width: 1200, // Match container width
       height: tempContainer.scrollHeight,
       logging: false,
       imageTimeout: 0,
@@ -627,23 +627,25 @@ export const downloadMobileBonAsPDF = async (bon: Bon): Promise<void> => {
 
     // Create PDF optimized for mobile viewing
     const pdf = new jsPDF('p', 'mm', 'a4');
-    const imgWidth = 210;
-    const pageHeight = 297;
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
-    let heightLeft = imgHeight;
-    let position = 0;
+    const pdfWidth = 210;
+    const pdfHeight = 297;
+    const pdfMargin = 5; // Minimal margin for mobile PDF
+    const availableWidth = pdfWidth - (pdfMargin * 2);
+    const canvasHeight = (canvas.height * availableWidth) / canvas.width;
+    let remainingHeight = canvasHeight;
+    let yPosition = 0;
 
-    // Add image to PDF with maximum quality
-    const imgData = canvas.toDataURL('image/png', 1.0); // Maximum quality
-    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight, undefined, 'FAST');
-    heightLeft -= pageHeight;
+    // Add image to PDF with maximum quality and minimal margins
+    const imageData = canvas.toDataURL('image/png', 1.0); // Maximum quality
+    pdf.addImage(imageData, 'PNG', pdfMargin, yPosition + pdfMargin, availableWidth, canvasHeight, undefined, 'FAST');
+    remainingHeight -= pdfHeight;
 
     // Add additional pages if needed
-    while (heightLeft >= 0) {
-      position = heightLeft - imgHeight;
+    while (remainingHeight >= 0) {
+      yPosition = remainingHeight - canvasHeight;
       pdf.addPage();
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
+      pdf.addImage(imageData, 'PNG', pdfMargin, yPosition + pdfMargin, availableWidth, canvasHeight);
+      remainingHeight -= pdfHeight;
     }
 
     // Generate filename
