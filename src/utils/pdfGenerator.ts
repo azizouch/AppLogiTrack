@@ -451,70 +451,70 @@ const generateMobilePDFContent = (bon: Bon): string => {
   const totalGeneral = totalPrix + totalFrais;
 
   return `
-    <div style="font-family: Arial, sans-serif; width: 100%; margin: 0; padding: 5px; background: white; font-size: 18px; line-height: 1.4;">
+    <div style="font-family: Arial, sans-serif; width: 100%; margin: 0; padding: 8px; background: white; font-size: 14px; line-height: 1.3;">
       <!-- Header -->
-      <div style="text-align: center; margin-bottom: 20px; border-bottom: 3px solid #2563eb; padding-bottom: 15px; page-break-inside: avoid;">
-        <h1 style="color: #2563eb; font-size: 26px; margin-bottom: 8px; margin-top: 0; font-weight: bold;">BON DE DISTRIBUTION</h1>
-        <p style="color: #666; font-size: 15px; margin: 0;">LogiTrack - Système de gestion logistique</p>
+      <div style="text-align: center; margin-bottom: 15px; border-bottom: 2px solid #2563eb; padding-bottom: 10px; page-break-inside: avoid;">
+        <h1 style="color: #2563eb; font-size: 20px; margin-bottom: 5px; margin-top: 0; font-weight: bold;">BON DE DISTRIBUTION</h1>
+        <p style="color: #666; font-size: 12px; margin: 0;">LogiTrack - Système de gestion logistique</p>
       </div>
 
       <!-- Bon Info - Stacked for mobile -->
-      <div style="margin-bottom: 20px; page-break-inside: avoid;">
-        <div style="background: #f8fafc; padding: 15px; border-radius: 8px; border-left: 4px solid #2563eb; margin-bottom: 12px; page-break-inside: avoid;">
-          <h3 style="color: #2563eb; margin-bottom: 12px; font-size: 19px; margin-top: 0; font-weight: bold; page-break-after: avoid;">Informations générales</h3>
-          <div style="margin-bottom: 10px; font-size: 16px;">
-            <strong style="color: #475569;">ID Bon:</strong><br/>
-            <span style="color: #1e293b; font-size: 18px;">${bon.id}</span>
+      <div style="margin-bottom: 12px; page-break-inside: avoid;">
+        <div style="background: #f8fafc; padding: 10px; border-radius: 6px; border-left: 3px solid #2563eb; margin-bottom: 8px; page-break-inside: avoid;">
+          <h3 style="color: #2563eb; margin-bottom: 8px; font-size: 16px; margin-top: 0; font-weight: bold; page-break-after: avoid;">Informations générales</h3>
+          <div style="margin-bottom: 6px; font-size: 13px;">
+            <strong style="color: #475569;">ID Bon:</strong>
+            <span style="color: #1e293b; font-size: 14px; margin-left: 5px;">${bon.id}</span>
           </div>
-          <div style="margin-bottom: 10px; font-size: 16px;">
-            <strong style="color: #475569;">Type:</strong><br/>
-            <span style="color: #1e293b; font-size: 18px;">${bon.type.charAt(0).toUpperCase() + bon.type.slice(1)}</span>
+          <div style="margin-bottom: 6px; font-size: 13px;">
+            <strong style="color: #475569;">Type:</strong>
+            <span style="color: #1e293b; font-size: 14px; margin-left: 5px;">${bon.type.charAt(0).toUpperCase() + bon.type.slice(1)}</span>
           </div>
-          <div style="margin-bottom: 10px; font-size: 16px;">
-            <strong style="color: #475569;">Statut:</strong><br/>
-            <span style="display: inline-block; padding: 6px 12px; border-radius: 12px; font-size: 14px; font-weight: 600; text-transform: uppercase; background: #dbeafe; color: #1e40af; margin-top: 5px;">${getStatusText(bon.statut)}</span>
+          <div style="margin-bottom: 6px; font-size: 13px;">
+            <strong style="color: #475569;">Statut:</strong>
+            <span style="display: inline-block; padding: 3px 8px; border-radius: 8px; font-size: 11px; font-weight: 600; text-transform: uppercase; background: #dbeafe; color: #1e40af; margin-left: 5px;">${getStatusText(bon.statut)}</span>
           </div>
-          <div style="margin-bottom: 10px; font-size: 16px;">
-            <strong style="color: #475569;">Date de création:</strong><br/>
-            <span style="color: #1e293b; font-size: 18px;">${formatDate(bon.date_creation)}</span>
+          <div style="margin-bottom: 6px; font-size: 13px;">
+            <strong style="color: #475569;">Date de création:</strong>
+            <span style="color: #1e293b; font-size: 14px; margin-left: 5px;">${formatDate(bon.date_creation)}</span>
           </div>
           ${bon.nb_colis ? `
-          <div style="margin-bottom: 10px; font-size: 16px;">
-            <strong style="color: #475569;">Nombre de colis:</strong><br/>
-            <span style="color: #1e293b; font-size: 18px;">${bon.nb_colis} colis</span>
+          <div style="margin-bottom: 6px; font-size: 13px;">
+            <strong style="color: #475569;">Nombre de colis:</strong>
+            <span style="color: #1e293b; font-size: 14px; margin-left: 5px;">${bon.nb_colis} colis</span>
           </div>
           ` : ''}
         </div>
 
         ${bon.user ? `
-        <div style="background: #f8fafc; padding: 15px; border-radius: 8px; border-left: 4px solid #2563eb; page-break-inside: avoid;">
-          <h3 style="color: #2563eb; margin-bottom: 12px; font-size: 19px; margin-top: 0; font-weight: bold; page-break-after: avoid;">Livreur assigné</h3>
-          <div style="margin-bottom: 10px; font-size: 16px;">
-            <strong style="color: #475569;">Nom:</strong><br/>
-            <span style="color: #1e293b; font-size: 18px;">${bon.user.nom} ${bon.user.prenom || ''}</span>
+        <div style="background: #f8fafc; padding: 10px; border-radius: 6px; border-left: 3px solid #2563eb; page-break-inside: avoid;">
+          <h3 style="color: #2563eb; margin-bottom: 8px; font-size: 16px; margin-top: 0; font-weight: bold; page-break-after: avoid;">Livreur assigné</h3>
+          <div style="margin-bottom: 6px; font-size: 13px;">
+            <strong style="color: #475569;">Nom:</strong>
+            <span style="color: #1e293b; font-size: 14px; margin-left: 5px;">${bon.user.nom} ${bon.user.prenom || ''}</span>
           </div>
           ${bon.user.email ? `
-          <div style="margin-bottom: 10px; font-size: 16px;">
-            <strong style="color: #475569;">Email:</strong><br/>
-            <span style="color: #1e293b; font-size: 18px;">${bon.user.email}</span>
+          <div style="margin-bottom: 6px; font-size: 13px;">
+            <strong style="color: #475569;">Email:</strong>
+            <span style="color: #1e293b; font-size: 14px; margin-left: 5px;">${bon.user.email}</span>
           </div>
           ` : ''}
           ${bon.user.telephone ? `
-          <div style="margin-bottom: 10px; font-size: 16px;">
-            <strong style="color: #475569;">Téléphone:</strong><br/>
-            <span style="color: #1e293b; font-size: 18px;">${bon.user.telephone}</span>
+          <div style="margin-bottom: 6px; font-size: 13px;">
+            <strong style="color: #475569;">Téléphone:</strong>
+            <span style="color: #1e293b; font-size: 14px; margin-left: 5px;">${bon.user.telephone}</span>
           </div>
           ` : ''}
           ${bon.user.vehicule ? `
-          <div style="margin-bottom: 10px; font-size: 16px;">
-            <strong style="color: #475569;">Véhicule:</strong><br/>
-            <span style="color: #1e293b; font-size: 18px;">${bon.user.vehicule}</span>
+          <div style="margin-bottom: 6px; font-size: 13px;">
+            <strong style="color: #475569;">Véhicule:</strong>
+            <span style="color: #1e293b; font-size: 14px; margin-left: 5px;">${bon.user.vehicule}</span>
           </div>
           ` : ''}
           ${bon.user.zone ? `
-          <div style="margin-bottom: 10px; font-size: 16px;">
-            <strong style="color: #475569;">Zone:</strong><br/>
-            <span style="color: #1e293b; font-size: 18px;">${bon.user.zone}</span>
+          <div style="margin-bottom: 6px; font-size: 13px;">
+            <strong style="color: #475569;">Zone:</strong>
+            <span style="color: #1e293b; font-size: 14px; margin-left: 5px;">${bon.user.zone}</span>
           </div>
           ` : ''}
         </div>
@@ -522,67 +522,69 @@ const generateMobilePDFContent = (bon: Bon): string => {
       </div>
 
       <!-- Colis Cards - Mobile friendly -->
-      <div style="margin: 20px 0; page-break-inside: avoid;">
-        <h3 style="color: #2563eb; margin-bottom: 15px; font-size: 21px; font-weight: bold; page-break-after: avoid;">Liste des Colis (${sampleColis.length} colis)</h3>
+      <div style="margin: 12px 0; page-break-inside: avoid;">
+        <h3 style="color: #2563eb; margin-bottom: 10px; font-size: 17px; font-weight: bold; page-break-after: avoid;">Liste des Colis (${sampleColis.length} colis)</h3>
 
         ${sampleColis.map((colis, index) => `
-          <div style="background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);">
-            <div style="margin-bottom: 12px;">
-              <strong style="color: #2563eb; font-size: 18px;">Référence:</strong><br/>
-              <span style="color: #1e293b; font-size: 20px; font-weight: 600;">${colis.reference}</span>
+          <div style="background: white; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px; margin-bottom: 8px; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1); page-break-inside: avoid;">
+            <div style="margin-bottom: 6px;">
+              <strong style="color: #2563eb; font-size: 14px;">Référence:</strong>
+              <span style="color: #1e293b; font-size: 15px; font-weight: 600; margin-left: 5px;">${colis.reference}</span>
             </div>
-            <div style="margin-bottom: 12px;">
-              <strong style="color: #475569; font-size: 16px;">Client:</strong><br/>
-              <span style="color: #1e293b; font-size: 18px;">${colis.client}</span>
+            <div style="margin-bottom: 6px;">
+              <strong style="color: #475569; font-size: 13px;">Client:</strong>
+              <span style="color: #1e293b; font-size: 14px; margin-left: 5px;">${colis.client}</span>
             </div>
-            <div style="margin-bottom: 12px;">
-              <strong style="color: #475569; font-size: 16px;">Entreprise:</strong><br/>
-              <span style="color: #1e293b; font-size: 18px;">${colis.entreprise}</span>
+            <div style="margin-bottom: 6px;">
+              <strong style="color: #475569; font-size: 13px;">Entreprise:</strong>
+              <span style="color: #1e293b; font-size: 14px; margin-left: 5px;">${colis.entreprise}</span>
             </div>
-            <div style="margin-bottom: 12px;">
-              <strong style="color: #475569; font-size: 16px;">Adresse:</strong><br/>
-              <span style="color: #1e293b; font-size: 18px;">${colis.adresse}</span>
+            <div style="margin-bottom: 6px;">
+              <strong style="color: #475569; font-size: 13px;">Adresse:</strong>
+              <span style="color: #1e293b; font-size: 14px; margin-left: 5px;">${colis.adresse}</span>
             </div>
-            <div style="margin-bottom: 12px;">
-              <strong style="color: #475569; font-size: 16px;">Prix:</strong><br/>
-              <span style="color: #059669; font-size: 20px; font-weight: 600;">${colis.prix.toFixed(2)} DH</span>
-            </div>
-            <div style="margin-bottom: 0;">
-              <strong style="color: #475569; font-size: 16px;">Frais:</strong><br/>
-              <span style="color: #059669; font-size: 20px; font-weight: 600;">${colis.frais.toFixed(2)} DH</span>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 0;">
+              <div>
+                <strong style="color: #475569; font-size: 13px;">Prix:</strong>
+                <span style="color: #059669; font-size: 15px; font-weight: 600; margin-left: 5px;">${colis.prix.toFixed(2)} DH</span>
+              </div>
+              <div>
+                <strong style="color: #475569; font-size: 13px;">Frais:</strong>
+                <span style="color: #059669; font-size: 15px; font-weight: 600; margin-left: 5px;">${colis.frais.toFixed(2)} DH</span>
+              </div>
             </div>
           </div>
         `).join('')}
 
         <!-- Totals -->
-        <div style="background: #f1f5f9; border: 2px solid #2563eb; border-radius: 8px; padding: 15px; margin-top: 15px;">
-          <div style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #cbd5e1;">
-            <strong style="color: #2563eb; font-size: 18px;">TOTAL PRIX:</strong><br/>
-            <span style="color: #059669; font-size: 24px; font-weight: 700;">${totalPrix.toFixed(2)} DH</span>
+        <div style="background: #f1f5f9; border: 2px solid #2563eb; border-radius: 6px; padding: 10px; margin-top: 10px; page-break-inside: avoid;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #cbd5e1;">
+            <strong style="color: #2563eb; font-size: 14px;">TOTAL PRIX:</strong>
+            <span style="color: #059669; font-size: 16px; font-weight: 700;">${totalPrix.toFixed(2)} DH</span>
           </div>
-          <div style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #cbd5e1;">
-            <strong style="color: #2563eb; font-size: 18px;">TOTAL FRAIS:</strong><br/>
-            <span style="color: #059669; font-size: 24px; font-weight: 700;">${totalFrais.toFixed(2)} DH</span>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #cbd5e1;">
+            <strong style="color: #2563eb; font-size: 14px;">TOTAL FRAIS:</strong>
+            <span style="color: #059669; font-size: 16px; font-weight: 700;">${totalFrais.toFixed(2)} DH</span>
           </div>
-          <div style="margin-bottom: 0;">
-            <strong style="color: #2563eb; font-size: 20px;">TOTAL GÉNÉRAL:</strong><br/>
-            <span style="color: #059669; font-size: 28px; font-weight: 700;">${totalGeneral.toFixed(2)} DH</span>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 0;">
+            <strong style="color: #2563eb; font-size: 16px;">TOTAL GÉNÉRAL:</strong>
+            <span style="color: #059669; font-size: 18px; font-weight: 700;">${totalGeneral.toFixed(2)} DH</span>
           </div>
         </div>
       </div>
 
       <!-- Notes -->
-      <div style="margin-top: 20px; padding: 15px; background: #f8fafc; border-radius: 8px; border-left: 4px solid #2563eb;">
-        <h4 style="color: #2563eb; margin-bottom: 8px; font-size: 17px; margin-top: 0;">Notes</h4>
-        <p style="color: #475569; margin: 0; font-size: 15px; line-height: 1.5;">
+      <div style="margin-top: 12px; padding: 8px; background: #f8fafc; border-radius: 6px; border-left: 3px solid #2563eb; page-break-inside: avoid;">
+        <h4 style="color: #2563eb; margin-bottom: 5px; font-size: 14px; margin-top: 0;">Notes</h4>
+        <p style="color: #475569; margin: 0; font-size: 12px; line-height: 1.4;">
           Livraison prioritaire - Contacter le client avant livraison
         </p>
       </div>
 
       <!-- Footer -->
-      <div style="text-align: center; margin-top: 20px; padding-top: 15px; border-top: 1px solid #e2e8f0; color: #64748b; font-size: 13px;">
+      <div style="text-align: center; margin-top: 15px; padding-top: 10px; border-top: 1px solid #e2e8f0; color: #64748b; font-size: 11px; page-break-inside: avoid;">
         <p style="margin: 0;">Document généré le ${formatDate(new Date().toISOString())} par LogiTrack</p>
-        <p style="margin: 3px 0 0 0;">Total des colis: ${sampleColis.length} | Montant total: ${totalGeneral.toFixed(2)} DH</p>
+        <p style="margin: 2px 0 0 0;">Total des colis: ${sampleColis.length} | Montant total: ${totalGeneral.toFixed(2)} DH</p>
       </div>
     </div>
   `;
@@ -598,10 +600,10 @@ export const downloadMobileBonAsPDF = async (bon: Bon): Promise<void> => {
     tempContainer.style.top = '-9999px';
     tempContainer.style.width = '800px'; // Optimal width for A4 PDF generation
     tempContainer.style.backgroundColor = 'white';
-    tempContainer.style.padding = '5px'; // Minimal padding for maximum width utilization
+    tempContainer.style.padding = '8px'; // Minimal padding for maximum width utilization
     tempContainer.style.fontFamily = 'Arial, sans-serif';
-    tempContainer.style.fontSize = '18px'; // Larger font for mobile readability
-    tempContainer.style.lineHeight = '1.4';
+    tempContainer.style.fontSize = '14px'; // Optimized font size for mobile PDF
+    tempContainer.style.lineHeight = '1.3';
 
     // Generate mobile-optimized content
     const pdfContent = generateMobilePDFContent(bon);
@@ -614,7 +616,7 @@ export const downloadMobileBonAsPDF = async (bon: Bon): Promise<void> => {
 
     // Convert to canvas optimized for full-width mobile PDF
     const canvas = await html2canvas(tempContainer, {
-      scale: 2.5, // Higher scale for better quality
+      scale: 2, // Balanced scale for quality and size
       useCORS: true,
       allowTaint: true,
       backgroundColor: '#ffffff',
