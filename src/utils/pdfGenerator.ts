@@ -451,17 +451,17 @@ const generateMobilePDFContent = (bon: Bon): string => {
   const totalGeneral = totalPrix + totalFrais;
 
   return `
-    <div style="font-family: Arial, sans-serif; width: 100%; margin: 0; padding: 15px; background: white; font-size: 18px; line-height: 1.4;">
+    <div style="font-family: Arial, sans-serif; width: 100%; margin: 0; padding: 5px; background: white; font-size: 18px; line-height: 1.4;">
       <!-- Header -->
-      <div style="text-align: center; margin-bottom: 30px; border-bottom: 3px solid #2563eb; padding-bottom: 20px; page-break-inside: avoid;">
-        <h1 style="color: #2563eb; font-size: 28px; margin-bottom: 10px; margin-top: 0; font-weight: bold;">BON DE DISTRIBUTION</h1>
-        <p style="color: #666; font-size: 16px; margin: 0;">LogiTrack - Système de gestion logistique</p>
+      <div style="text-align: center; margin-bottom: 20px; border-bottom: 3px solid #2563eb; padding-bottom: 15px; page-break-inside: avoid;">
+        <h1 style="color: #2563eb; font-size: 26px; margin-bottom: 8px; margin-top: 0; font-weight: bold;">BON DE DISTRIBUTION</h1>
+        <p style="color: #666; font-size: 15px; margin: 0;">LogiTrack - Système de gestion logistique</p>
       </div>
 
       <!-- Bon Info - Stacked for mobile -->
-      <div style="margin-bottom: 25px; page-break-inside: avoid;">
-        <div style="background: #f8fafc; padding: 20px; border-radius: 8px; border-left: 4px solid #2563eb; margin-bottom: 15px; page-break-inside: avoid;">
-          <h3 style="color: #2563eb; margin-bottom: 15px; font-size: 20px; margin-top: 0; font-weight: bold; page-break-after: avoid;">Informations générales</h3>
+      <div style="margin-bottom: 20px; page-break-inside: avoid;">
+        <div style="background: #f8fafc; padding: 15px; border-radius: 8px; border-left: 4px solid #2563eb; margin-bottom: 12px; page-break-inside: avoid;">
+          <h3 style="color: #2563eb; margin-bottom: 12px; font-size: 19px; margin-top: 0; font-weight: bold; page-break-after: avoid;">Informations générales</h3>
           <div style="margin-bottom: 10px; font-size: 16px;">
             <strong style="color: #475569;">ID Bon:</strong><br/>
             <span style="color: #1e293b; font-size: 18px;">${bon.id}</span>
@@ -487,8 +487,8 @@ const generateMobilePDFContent = (bon: Bon): string => {
         </div>
 
         ${bon.user ? `
-        <div style="background: #f8fafc; padding: 20px; border-radius: 8px; border-left: 4px solid #2563eb; page-break-inside: avoid;">
-          <h3 style="color: #2563eb; margin-bottom: 15px; font-size: 20px; margin-top: 0; font-weight: bold; page-break-after: avoid;">Livreur assigné</h3>
+        <div style="background: #f8fafc; padding: 15px; border-radius: 8px; border-left: 4px solid #2563eb; page-break-inside: avoid;">
+          <h3 style="color: #2563eb; margin-bottom: 12px; font-size: 19px; margin-top: 0; font-weight: bold; page-break-after: avoid;">Livreur assigné</h3>
           <div style="margin-bottom: 10px; font-size: 16px;">
             <strong style="color: #475569;">Nom:</strong><br/>
             <span style="color: #1e293b; font-size: 18px;">${bon.user.nom} ${bon.user.prenom || ''}</span>
@@ -522,11 +522,11 @@ const generateMobilePDFContent = (bon: Bon): string => {
       </div>
 
       <!-- Colis Cards - Mobile friendly -->
-      <div style="margin: 25px 0; page-break-inside: avoid;">
-        <h3 style="color: #2563eb; margin-bottom: 20px; font-size: 22px; font-weight: bold; page-break-after: avoid;">Liste des Colis (${sampleColis.length} colis)</h3>
+      <div style="margin: 20px 0; page-break-inside: avoid;">
+        <h3 style="color: #2563eb; margin-bottom: 15px; font-size: 21px; font-weight: bold; page-break-after: avoid;">Liste des Colis (${sampleColis.length} colis)</h3>
 
         ${sampleColis.map((colis, index) => `
-          <div style="background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);">
+          <div style="background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);">
             <div style="margin-bottom: 12px;">
               <strong style="color: #2563eb; font-size: 18px;">Référence:</strong><br/>
               <span style="color: #1e293b; font-size: 20px; font-weight: 600;">${colis.reference}</span>
@@ -555,7 +555,7 @@ const generateMobilePDFContent = (bon: Bon): string => {
         `).join('')}
 
         <!-- Totals -->
-        <div style="background: #f1f5f9; border: 2px solid #2563eb; border-radius: 8px; padding: 20px; margin-top: 20px;">
+        <div style="background: #f1f5f9; border: 2px solid #2563eb; border-radius: 8px; padding: 15px; margin-top: 15px;">
           <div style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #cbd5e1;">
             <strong style="color: #2563eb; font-size: 18px;">TOTAL PRIX:</strong><br/>
             <span style="color: #059669; font-size: 24px; font-weight: 700;">${totalPrix.toFixed(2)} DH</span>
@@ -572,17 +572,17 @@ const generateMobilePDFContent = (bon: Bon): string => {
       </div>
 
       <!-- Notes -->
-      <div style="margin-top: 25px; padding: 20px; background: #f8fafc; border-radius: 8px; border-left: 4px solid #2563eb;">
-        <h4 style="color: #2563eb; margin-bottom: 10px; font-size: 18px; margin-top: 0;">Notes</h4>
-        <p style="color: #475569; margin: 0; font-size: 16px; line-height: 1.6;">
+      <div style="margin-top: 20px; padding: 15px; background: #f8fafc; border-radius: 8px; border-left: 4px solid #2563eb;">
+        <h4 style="color: #2563eb; margin-bottom: 8px; font-size: 17px; margin-top: 0;">Notes</h4>
+        <p style="color: #475569; margin: 0; font-size: 15px; line-height: 1.5;">
           Livraison prioritaire - Contacter le client avant livraison
         </p>
       </div>
 
       <!-- Footer -->
-      <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0; color: #64748b; font-size: 14px;">
+      <div style="text-align: center; margin-top: 20px; padding-top: 15px; border-top: 1px solid #e2e8f0; color: #64748b; font-size: 13px;">
         <p style="margin: 0;">Document généré le ${formatDate(new Date().toISOString())} par LogiTrack</p>
-        <p style="margin: 5px 0 0 0;">Total des colis: ${sampleColis.length} | Montant total: ${totalGeneral.toFixed(2)} DH</p>
+        <p style="margin: 3px 0 0 0;">Total des colis: ${sampleColis.length} | Montant total: ${totalGeneral.toFixed(2)} DH</p>
       </div>
     </div>
   `;
@@ -596,12 +596,12 @@ export const downloadMobileBonAsPDF = async (bon: Bon): Promise<void> => {
     tempContainer.style.position = 'absolute';
     tempContainer.style.left = '-9999px';
     tempContainer.style.top = '-9999px';
-    tempContainer.style.width = '210mm'; // Full A4 width
+    tempContainer.style.width = '800px'; // Optimal width for A4 PDF generation
     tempContainer.style.backgroundColor = 'white';
-    tempContainer.style.padding = '5mm'; // Minimal padding for full page utilization
+    tempContainer.style.padding = '5px'; // Minimal padding for maximum width utilization
     tempContainer.style.fontFamily = 'Arial, sans-serif';
-    tempContainer.style.fontSize = '20px'; // Larger font for mobile readability
-    tempContainer.style.lineHeight = '1.3';
+    tempContainer.style.fontSize = '18px'; // Larger font for mobile readability
+    tempContainer.style.lineHeight = '1.4';
 
     // Generate mobile-optimized content
     const pdfContent = generateMobilePDFContent(bon);
@@ -614,38 +614,37 @@ export const downloadMobileBonAsPDF = async (bon: Bon): Promise<void> => {
 
     // Convert to canvas optimized for full-width mobile PDF
     const canvas = await html2canvas(tempContainer, {
-      scale: 1.5, // Optimized scale for mobile full-width
+      scale: 2.5, // Higher scale for better quality
       useCORS: true,
       allowTaint: true,
       backgroundColor: '#ffffff',
-      width: tempContainer.offsetWidth, // Use actual container width
+      width: 800, // Match container width
       height: tempContainer.scrollHeight,
       logging: false,
       imageTimeout: 0,
       removeContainer: true
     });
 
-    // Create PDF with full page width utilization for mobile
+    // Create PDF with maximum page width utilization for mobile
     const pdf = new jsPDF('p', 'mm', 'a4');
     const pdfWidth = 210; // A4 width in mm
     const pdfHeight = 297; // A4 height in mm
-    const margin = 2; // Minimal margin for maximum content space
-    const contentWidth = pdfWidth - (margin * 2);
+    const margin = 2; // Very minimal margin for maximum width
+    const contentWidth = pdfWidth - (margin * 2); // Almost full width
     const contentHeight = (canvas.height * contentWidth) / canvas.width;
 
-    // Add image to PDF with full width utilization and proper page breaks
+    // Add image to PDF with maximum width utilization
     const imageData = canvas.toDataURL('image/png', 1.0); // Maximum quality
+    pdf.addImage(imageData, 'PNG', margin, margin, contentWidth, contentHeight, undefined, 'FAST');
 
-    // Calculate how many pages we need
-    const pagesNeeded = Math.ceil(contentHeight / (pdfHeight - margin * 2));
+    let remainingHeight = contentHeight - (pdfHeight - margin * 2);
 
-    for (let page = 0; page < pagesNeeded; page++) {
-      if (page > 0) {
-        pdf.addPage();
-      }
-
-      const yOffset = -(page * (pdfHeight - margin * 2));
+    // Add additional pages if content is longer than one page
+    while (remainingHeight > 0) {
+      pdf.addPage();
+      const yOffset = -(contentHeight - remainingHeight);
       pdf.addImage(imageData, 'PNG', margin, yOffset + margin, contentWidth, contentHeight, undefined, 'FAST');
+      remainingHeight -= (pdfHeight - margin * 2);
     }
 
     // Generate filename
