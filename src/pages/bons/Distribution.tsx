@@ -134,9 +134,9 @@ export function Distribution() {
         }
       };
 
-      // Use new mobile PDF generator if on mobile device
+      // Use mobile PDF generator if on mobile device
       if (isMobile()) {
-        await downloadMobileBonAsPDFNew(bonWithUser);
+        await downloadMobileBonAsPDF(bonWithUser);
         toast({
           title: 'PDF Mobile téléchargé',
           description: 'Le fichier PDF optimisé mobile a été téléchargé dans votre dossier Téléchargements',

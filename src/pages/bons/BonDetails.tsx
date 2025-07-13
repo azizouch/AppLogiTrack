@@ -136,8 +136,8 @@ export function BonDetails() {
     try {
       setDownloadingMobilePdf(true);
 
-      // Use the simple html2pdf.js generator for testing
-      await downloadMobileBonAsPDFSimple(bon);
+      // Use the original mobile PDF generator
+      await downloadMobileBonAsPDF(bon);
 
       toast({
         title: 'PDF Mobile téléchargé',
