@@ -452,118 +452,118 @@ const generateMobilePDFContent = (bon: Bon): string => {
   const totalGeneral = totalPrix + totalFrais;
 
   return `
-    <div style="font-family: Arial, sans-serif; width: 100%; margin: 0; padding: 0; background: white; font-size: 14px; line-height: 1.3;">
+    <div style="font-family: Arial, sans-serif; width: 100%; margin: 0; padding: 5px; background: white; font-size: 12px; line-height: 1.2;">
       <!-- Header -->
-      <div style="text-align: center; margin-bottom: 15px; border-bottom: 2px solid #2563eb; padding-bottom: 10px;">
-        <h1 style="color: #2563eb; font-size: 20px; margin-bottom: 5px; margin-top: 0; font-weight: bold;">BON DE DISTRIBUTION</h1>
-        <p style="color: #666; font-size: 12px; margin: 0;">LogiTrack - Système de gestion logistique</p>
+      <div style="text-align: center; margin-bottom: 12px; border-bottom: 2px solid #2563eb; padding-bottom: 8px;">
+        <h1 style="color: #2563eb; font-size: 16px; margin-bottom: 3px; margin-top: 0; font-weight: bold;">BON DE DISTRIBUTION</h1>
+        <p style="color: #666; font-size: 10px; margin: 0;">LogiTrack - Système de gestion logistique</p>
       </div>
 
-      <!-- Bon Info - Full width optimized -->
-      <div style="margin-bottom: 15px;">
-        <div style="background: #f8fafc; padding: 12px; border-radius: 6px; border-left: 4px solid #2563eb; margin-bottom: 10px;">
-          <h3 style="color: #2563eb; margin-bottom: 10px; font-size: 16px; margin-top: 0; font-weight: bold;">Informations générales</h3>
-          <div style="margin-bottom: 6px; font-size: 13px;">
-            <strong style="color: #475569;">ID Bon:</strong>
-            <span style="color: #1e293b; margin-left: 5px;">${bon.id}</span>
+      <!-- Bon Info - Compact but full width -->
+      <div style="margin-bottom: 10px;">
+        <div style="background: #f8fafc; padding: 8px; border-radius: 4px; border-left: 3px solid #2563eb; margin-bottom: 6px;">
+          <h3 style="color: #2563eb; margin-bottom: 6px; font-size: 13px; margin-top: 0; font-weight: bold;">Informations générales</h3>
+          <div style="margin-bottom: 4px; font-size: 11px;">
+            <strong style="color: #475569;">ID:</strong>
+            <span style="color: #1e293b; margin-left: 3px;">${bon.id}</span>
           </div>
-          <div style="margin-bottom: 6px; font-size: 13px;">
+          <div style="margin-bottom: 4px; font-size: 11px;">
             <strong style="color: #475569;">Type:</strong>
-            <span style="color: #1e293b; margin-left: 5px;">${bon.type.charAt(0).toUpperCase() + bon.type.slice(1)}</span>
+            <span style="color: #1e293b; margin-left: 3px;">${bon.type.charAt(0).toUpperCase() + bon.type.slice(1)}</span>
           </div>
-          <div style="margin-bottom: 6px; font-size: 13px;">
+          <div style="margin-bottom: 4px; font-size: 11px;">
             <strong style="color: #475569;">Statut:</strong>
-            <span style="display: inline-block; padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 600; background: #dbeafe; color: #1e40af; margin-left: 5px;">${getStatusText(bon.statut)}</span>
+            <span style="display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: 600; background: #dbeafe; color: #1e40af; margin-left: 3px;">${getStatusText(bon.statut)}</span>
           </div>
-          <div style="margin-bottom: 6px; font-size: 13px;">
-            <strong style="color: #475569;">Date de création:</strong>
-            <span style="color: #1e293b; margin-left: 5px;">${formatDate(bon.date_creation)}</span>
+          <div style="margin-bottom: 4px; font-size: 11px;">
+            <strong style="color: #475569;">Date:</strong>
+            <span style="color: #1e293b; margin-left: 3px;">${formatDate(bon.date_creation)}</span>
           </div>
           ${bon.nb_colis ? `
-          <div style="font-size: 13px;">
-            <strong style="color: #475569;">Nombre de colis:</strong>
-            <span style="color: #1e293b; margin-left: 5px;">${bon.nb_colis}</span>
+          <div style="font-size: 11px;">
+            <strong style="color: #475569;">Colis:</strong>
+            <span style="color: #1e293b; margin-left: 3px;">${bon.nb_colis}</span>
           </div>
           ` : ''}
         </div>
 
         ${bon.user ? `
-        <div style="background: #f8fafc; padding: 12px; border-radius: 6px; border-left: 4px solid #2563eb;">
-          <h3 style="color: #2563eb; margin-bottom: 10px; font-size: 16px; margin-top: 0; font-weight: bold;">Livreur assigné</h3>
-          <div style="margin-bottom: 6px; font-size: 13px;">
+        <div style="background: #f8fafc; padding: 8px; border-radius: 4px; border-left: 3px solid #2563eb;">
+          <h3 style="color: #2563eb; margin-bottom: 6px; font-size: 13px; margin-top: 0; font-weight: bold;">Livreur assigné</h3>
+          <div style="margin-bottom: 4px; font-size: 11px;">
             <strong style="color: #475569;">Nom:</strong>
-            <span style="color: #1e293b; margin-left: 5px;">${bon.user.nom} ${bon.user.prenom || ''}</span>
+            <span style="color: #1e293b; margin-left: 3px;">${bon.user.nom} ${bon.user.prenom || ''}</span>
           </div>
           ${bon.user.email ? `
-          <div style="margin-bottom: 6px; font-size: 13px;">
+          <div style="margin-bottom: 4px; font-size: 11px;">
             <strong style="color: #475569;">Email:</strong>
-            <span style="color: #1e293b; margin-left: 5px;">${bon.user.email}</span>
+            <span style="color: #1e293b; margin-left: 3px;">${bon.user.email}</span>
           </div>
           ` : ''}
           ${bon.user.telephone ? `
-          <div style="margin-bottom: 6px; font-size: 13px;">
-            <strong style="color: #475569;">Téléphone:</strong>
-            <span style="color: #1e293b; margin-left: 5px;">${bon.user.telephone}</span>
+          <div style="margin-bottom: 4px; font-size: 11px;">
+            <strong style="color: #475569;">Tél:</strong>
+            <span style="color: #1e293b; margin-left: 3px;">${bon.user.telephone}</span>
           </div>
           ` : ''}
           ${bon.user.vehicule ? `
-          <div style="margin-bottom: 6px; font-size: 13px;">
+          <div style="margin-bottom: 4px; font-size: 11px;">
             <strong style="color: #475569;">Véhicule:</strong>
-            <span style="color: #1e293b; margin-left: 5px;">${bon.user.vehicule}</span>
+            <span style="color: #1e293b; margin-left: 3px;">${bon.user.vehicule}</span>
           </div>
           ` : ''}
           ${bon.user.zone ? `
-          <div style="font-size: 13px;">
+          <div style="font-size: 11px;">
             <strong style="color: #475569;">Zone:</strong>
-            <span style="color: #1e293b; margin-left: 5px;">${bon.user.zone}</span>
+            <span style="color: #1e293b; margin-left: 3px;">${bon.user.zone}</span>
           </div>
           ` : ''}
         </div>
         ` : ''}
       </div>
 
-      <!-- Colis Cards - Full width optimized -->
-      <div style="margin: 15px 0;">
-        <h3 style="color: #2563eb; margin-bottom: 12px; font-size: 16px; font-weight: bold;">Liste des Colis (${sampleColis.length} colis)</h3>
+      <!-- Colis List - Compact but full width -->
+      <div style="margin: 10px 0;">
+        <h3 style="color: #2563eb; margin-bottom: 8px; font-size: 13px; font-weight: bold;">Liste des Colis (${sampleColis.length} colis)</h3>
 
         ${sampleColis.map((colis, index) => `
-          <div style="background: white; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px; margin-bottom: 8px;">
-            <div style="margin-bottom: 5px; font-size: 12px;">
-              <strong style="color: #2563eb;">Référence:</strong>
-              <span style="color: #1e293b; font-weight: 600; margin-left: 5px;">${colis.reference}</span>
+          <div style="background: white; border: 1px solid #e2e8f0; border-radius: 4px; padding: 6px; margin-bottom: 4px;">
+            <div style="margin-bottom: 3px; font-size: 10px;">
+              <strong style="color: #2563eb;">Réf:</strong>
+              <span style="color: #1e293b; font-weight: 600; margin-left: 3px;">${colis.reference}</span>
             </div>
-            <div style="margin-bottom: 5px; font-size: 12px;">
+            <div style="margin-bottom: 3px; font-size: 10px;">
               <strong style="color: #475569;">Client:</strong>
-              <span style="color: #1e293b; margin-left: 5px;">${colis.client}</span>
+              <span style="color: #1e293b; margin-left: 3px;">${colis.client}</span>
             </div>
-            <div style="margin-bottom: 5px; font-size: 12px;">
+            <div style="margin-bottom: 3px; font-size: 10px;">
               <strong style="color: #475569;">Entreprise:</strong>
-              <span style="color: #1e293b; margin-left: 5px;">${colis.entreprise}</span>
+              <span style="color: #1e293b; margin-left: 3px;">${colis.entreprise}</span>
             </div>
-            <div style="margin-bottom: 5px; font-size: 12px;">
+            <div style="margin-bottom: 3px; font-size: 10px;">
               <strong style="color: #475569;">Adresse:</strong>
-              <span style="color: #1e293b; margin-left: 5px;">${colis.adresse}</span>
+              <span style="color: #1e293b; margin-left: 3px;">${colis.adresse}</span>
             </div>
-            <div style="font-size: 12px;">
+            <div style="font-size: 10px;">
               <strong style="color: #059669;">Prix:</strong>
-              <span style="color: #059669; font-weight: 600; margin-left: 5px;">${colis.prix.toFixed(2)} DH</span>
-              <strong style="color: #059669; margin-left: 15px;">Frais:</strong>
-              <span style="color: #059669; font-weight: 600; margin-left: 5px;">${colis.frais.toFixed(2)} DH</span>
+              <span style="color: #059669; font-weight: 600; margin-left: 3px;">${colis.prix.toFixed(2)} DH</span>
+              <strong style="color: #059669; margin-left: 10px;">Frais:</strong>
+              <span style="color: #059669; font-weight: 600; margin-left: 3px;">${colis.frais.toFixed(2)} DH</span>
             </div>
           </div>
         `).join('')}
 
         <!-- Totals -->
-        <div style="background: #f1f5f9; border: 2px solid #2563eb; border-radius: 6px; padding: 12px; margin-top: 12px;">
-          <div style="margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #cbd5e1; font-size: 13px;">
+        <div style="background: #f1f5f9; border: 2px solid #2563eb; border-radius: 4px; padding: 8px; margin-top: 8px;">
+          <div style="margin-bottom: 4px; padding-bottom: 4px; border-bottom: 1px solid #cbd5e1; font-size: 11px;">
             <strong style="color: #2563eb;">TOTAL PRIX:</strong>
             <span style="color: #059669; font-weight: 700; float: right;">${totalPrix.toFixed(2)} DH</span>
           </div>
-          <div style="margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #cbd5e1; font-size: 13px;">
+          <div style="margin-bottom: 4px; padding-bottom: 4px; border-bottom: 1px solid #cbd5e1; font-size: 11px;">
             <strong style="color: #2563eb;">TOTAL FRAIS:</strong>
             <span style="color: #059669; font-weight: 700; float: right;">${totalFrais.toFixed(2)} DH</span>
           </div>
-          <div style="font-size: 14px;">
+          <div style="font-size: 12px;">
             <strong style="color: #2563eb;">TOTAL GÉNÉRAL:</strong>
             <span style="color: #059669; font-weight: 700; float: right;">${totalGeneral.toFixed(2)} DH</span>
           </div>
@@ -571,17 +571,17 @@ const generateMobilePDFContent = (bon: Bon): string => {
       </div>
 
       <!-- Notes -->
-      <div style="margin-top: 12px; padding: 10px; background: #f8fafc; border-radius: 6px; border-left: 4px solid #2563eb;">
-        <h4 style="color: #2563eb; margin-bottom: 5px; font-size: 13px; margin-top: 0;">Notes</h4>
-        <p style="color: #475569; margin: 0; font-size: 12px; line-height: 1.4;">
+      <div style="margin-top: 8px; padding: 6px; background: #f8fafc; border-radius: 4px; border-left: 3px solid #2563eb;">
+        <h4 style="color: #2563eb; margin-bottom: 3px; font-size: 11px; margin-top: 0;">Notes</h4>
+        <p style="color: #475569; margin: 0; font-size: 10px; line-height: 1.2;">
           Livraison prioritaire - Contacter le client avant livraison
         </p>
       </div>
 
       <!-- Footer -->
-      <div style="text-align: center; margin-top: 15px; padding-top: 10px; border-top: 1px solid #e2e8f0; color: #64748b; font-size: 11px;">
+      <div style="text-align: center; margin-top: 8px; padding-top: 6px; border-top: 1px solid #e2e8f0; color: #64748b; font-size: 9px;">
         <p style="margin: 0;">Document généré le ${formatDate(new Date().toISOString())} par LogiTrack</p>
-        <p style="margin: 3px 0 0 0;">Total des colis: ${sampleColis.length} | Montant total: ${totalGeneral.toFixed(2)} DH</p>
+        <p style="margin: 2px 0 0 0;">Total des colis: ${sampleColis.length} | Montant total: ${totalGeneral.toFixed(2)} DH</p>
       </div>
     </div>
   `;
