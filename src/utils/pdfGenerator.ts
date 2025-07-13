@@ -379,10 +379,213 @@ export const downloadBonAsPDF = async (bon: Bon): Promise<void> => {
   }
 };
 
-// Generate mobile-optimized PDF content (same as print but optimized for mobile)
+// Generate mobile-optimized PDF content (card-based layout instead of table)
 const generateMobilePDFContent = (bon: Bon): string => {
-  // Use the same content as print/download but with mobile-optimized styling
-  return generatePDFContent(bon);
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('fr-FR', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const getStatusText = (statut: string) => {
+    switch (statut.toLowerCase()) {
+      case 'en cours':
+        return 'En cours';
+      case 'complété':
+      case 'complete':
+        return 'Complété';
+      case 'annulé':
+      case 'annule':
+        return 'Annulé';
+      default:
+        return statut;
+    }
+  };
+
+  // Sample colis data
+  const sampleColis = [
+    {
+      reference: 'COL-2024-001',
+      client: 'Ahmed Benali',
+      entreprise: 'TechCorp SARL',
+      adresse: '123 Rue Mohammed V, Casablanca',
+      prix: 250.00,
+      frais: 25.00,
+      statut: 'En cours'
+    },
+    {
+      reference: 'COL-2024-002',
+      client: 'Fatima Zahra',
+      entreprise: 'Digital Solutions',
+      adresse: '456 Avenue Hassan II, Rabat',
+      prix: 180.50,
+      frais: 20.00,
+      statut: 'En cours'
+    },
+    {
+      reference: 'COL-2024-003',
+      client: 'Omar Alami',
+      entreprise: 'Import Export Co',
+      adresse: '789 Boulevard Zerktouni, Marrakech',
+      prix: 320.75,
+      frais: 30.00,
+      statut: 'En cours'
+    },
+    {
+      reference: 'COL-2024-004',
+      client: 'Aicha Mansouri',
+      entreprise: 'Fashion Store',
+      adresse: '321 Rue de la Liberté, Fès',
+      prix: 95.25,
+      frais: 15.00,
+      statut: 'En cours'
+    }
+  ];
+
+  const totalPrix = sampleColis.reduce((sum, colis) => sum + colis.prix, 0);
+  const totalFrais = sampleColis.reduce((sum, colis) => sum + colis.frais, 0);
+  const totalGeneral = totalPrix + totalFrais;
+
+  return `
+    <div style="font-family: Arial, sans-serif; max-width: 100%; margin: 0 auto; padding: 20px; background: white; font-size: 16px; line-height: 1.5;">
+      <!-- Header -->
+      <div style="text-align: center; margin-bottom: 25px; border-bottom: 3px solid #2563eb; padding-bottom: 20px;">
+        <h1 style="color: #2563eb; font-size: 24px; margin-bottom: 10px; margin-top: 0; font-weight: bold;">BON DE DISTRIBUTION</h1>
+        <p style="color: #666; font-size: 14px; margin: 0;">LogiTrack - Système de gestion logistique</p>
+      </div>
+
+      <!-- Bon Info - Stacked for mobile -->
+      <div style="margin-bottom: 25px;">
+        <div style="background: #f8fafc; padding: 20px; border-radius: 8px; border-left: 4px solid #2563eb; margin-bottom: 15px;">
+          <h3 style="color: #2563eb; margin-bottom: 15px; font-size: 18px; margin-top: 0; font-weight: bold;">Informations générales</h3>
+          <div style="margin-bottom: 10px; font-size: 16px;">
+            <strong style="color: #475569;">ID Bon:</strong><br/>
+            <span style="color: #1e293b; font-size: 18px;">${bon.id}</span>
+          </div>
+          <div style="margin-bottom: 10px; font-size: 16px;">
+            <strong style="color: #475569;">Type:</strong><br/>
+            <span style="color: #1e293b; font-size: 18px;">${bon.type.charAt(0).toUpperCase() + bon.type.slice(1)}</span>
+          </div>
+          <div style="margin-bottom: 10px; font-size: 16px;">
+            <strong style="color: #475569;">Statut:</strong><br/>
+            <span style="display: inline-block; padding: 6px 12px; border-radius: 12px; font-size: 14px; font-weight: 600; text-transform: uppercase; background: #dbeafe; color: #1e40af; margin-top: 5px;">${getStatusText(bon.statut)}</span>
+          </div>
+          <div style="margin-bottom: 10px; font-size: 16px;">
+            <strong style="color: #475569;">Date de création:</strong><br/>
+            <span style="color: #1e293b; font-size: 18px;">${formatDate(bon.date_creation)}</span>
+          </div>
+          ${bon.nb_colis ? `
+          <div style="margin-bottom: 10px; font-size: 16px;">
+            <strong style="color: #475569;">Nombre de colis:</strong><br/>
+            <span style="color: #1e293b; font-size: 18px;">${bon.nb_colis} colis</span>
+          </div>
+          ` : ''}
+        </div>
+
+        ${bon.user ? `
+        <div style="background: #f8fafc; padding: 20px; border-radius: 8px; border-left: 4px solid #2563eb;">
+          <h3 style="color: #2563eb; margin-bottom: 15px; font-size: 18px; margin-top: 0; font-weight: bold;">Livreur assigné</h3>
+          <div style="margin-bottom: 10px; font-size: 16px;">
+            <strong style="color: #475569;">Nom:</strong><br/>
+            <span style="color: #1e293b; font-size: 18px;">${bon.user.nom} ${bon.user.prenom || ''}</span>
+          </div>
+          ${bon.user.email ? `
+          <div style="margin-bottom: 10px; font-size: 16px;">
+            <strong style="color: #475569;">Email:</strong><br/>
+            <span style="color: #1e293b; font-size: 18px;">${bon.user.email}</span>
+          </div>
+          ` : ''}
+          ${bon.user.telephone ? `
+          <div style="margin-bottom: 10px; font-size: 16px;">
+            <strong style="color: #475569;">Téléphone:</strong><br/>
+            <span style="color: #1e293b; font-size: 18px;">${bon.user.telephone}</span>
+          </div>
+          ` : ''}
+          ${bon.user.vehicule ? `
+          <div style="margin-bottom: 10px; font-size: 16px;">
+            <strong style="color: #475569;">Véhicule:</strong><br/>
+            <span style="color: #1e293b; font-size: 18px;">${bon.user.vehicule}</span>
+          </div>
+          ` : ''}
+          ${bon.user.zone ? `
+          <div style="margin-bottom: 10px; font-size: 16px;">
+            <strong style="color: #475569;">Zone:</strong><br/>
+            <span style="color: #1e293b; font-size: 18px;">${bon.user.zone}</span>
+          </div>
+          ` : ''}
+        </div>
+        ` : ''}
+      </div>
+
+      <!-- Colis Cards - Mobile friendly -->
+      <div style="margin: 25px 0;">
+        <h3 style="color: #2563eb; margin-bottom: 20px; font-size: 20px; font-weight: bold;">Liste des Colis (${sampleColis.length} colis)</h3>
+
+        ${sampleColis.map((colis, index) => `
+          <div style="background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);">
+            <div style="margin-bottom: 12px;">
+              <strong style="color: #2563eb; font-size: 18px;">Référence:</strong><br/>
+              <span style="color: #1e293b; font-size: 20px; font-weight: 600;">${colis.reference}</span>
+            </div>
+            <div style="margin-bottom: 12px;">
+              <strong style="color: #475569; font-size: 16px;">Client:</strong><br/>
+              <span style="color: #1e293b; font-size: 18px;">${colis.client}</span>
+            </div>
+            <div style="margin-bottom: 12px;">
+              <strong style="color: #475569; font-size: 16px;">Entreprise:</strong><br/>
+              <span style="color: #1e293b; font-size: 18px;">${colis.entreprise}</span>
+            </div>
+            <div style="margin-bottom: 12px;">
+              <strong style="color: #475569; font-size: 16px;">Adresse:</strong><br/>
+              <span style="color: #1e293b; font-size: 18px;">${colis.adresse}</span>
+            </div>
+            <div style="margin-bottom: 12px;">
+              <strong style="color: #475569; font-size: 16px;">Prix:</strong><br/>
+              <span style="color: #059669; font-size: 20px; font-weight: 600;">${colis.prix.toFixed(2)} DH</span>
+            </div>
+            <div style="margin-bottom: 0;">
+              <strong style="color: #475569; font-size: 16px;">Frais:</strong><br/>
+              <span style="color: #059669; font-size: 20px; font-weight: 600;">${colis.frais.toFixed(2)} DH</span>
+            </div>
+          </div>
+        `).join('')}
+
+        <!-- Totals -->
+        <div style="background: #f1f5f9; border: 2px solid #2563eb; border-radius: 8px; padding: 20px; margin-top: 20px;">
+          <div style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #cbd5e1;">
+            <strong style="color: #2563eb; font-size: 18px;">TOTAL PRIX:</strong><br/>
+            <span style="color: #059669; font-size: 24px; font-weight: 700;">${totalPrix.toFixed(2)} DH</span>
+          </div>
+          <div style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #cbd5e1;">
+            <strong style="color: #2563eb; font-size: 18px;">TOTAL FRAIS:</strong><br/>
+            <span style="color: #059669; font-size: 24px; font-weight: 700;">${totalFrais.toFixed(2)} DH</span>
+          </div>
+          <div style="margin-bottom: 0;">
+            <strong style="color: #2563eb; font-size: 20px;">TOTAL GÉNÉRAL:</strong><br/>
+            <span style="color: #059669; font-size: 28px; font-weight: 700;">${totalGeneral.toFixed(2)} DH</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Notes -->
+      <div style="margin-top: 25px; padding: 20px; background: #f8fafc; border-radius: 8px; border-left: 4px solid #2563eb;">
+        <h4 style="color: #2563eb; margin-bottom: 10px; font-size: 18px; margin-top: 0;">Notes</h4>
+        <p style="color: #475569; margin: 0; font-size: 16px; line-height: 1.6;">
+          Livraison prioritaire - Contacter le client avant livraison
+        </p>
+      </div>
+
+      <!-- Footer -->
+      <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0; color: #64748b; font-size: 14px;">
+        <p style="margin: 0;">Document généré le ${formatDate(new Date().toISOString())} par LogiTrack</p>
+        <p style="margin: 5px 0 0 0;">Total des colis: ${sampleColis.length} | Montant total: ${totalGeneral.toFixed(2)} DH</p>
+      </div>
+    </div>
+  `;
 };
 
 // Download mobile-optimized PDF (same content as print/download but optimized for mobile viewing)
@@ -393,15 +596,15 @@ export const downloadMobileBonAsPDF = async (bon: Bon): Promise<void> => {
     tempContainer.style.position = 'absolute';
     tempContainer.style.left = '-9999px';
     tempContainer.style.top = '-9999px';
-    tempContainer.style.width = '1000px'; // Same width as desktop for consistency
+    tempContainer.style.width = '600px'; // Narrower width for mobile-friendly layout
     tempContainer.style.backgroundColor = 'white';
-    tempContainer.style.padding = '30px';
+    tempContainer.style.padding = '20px';
     tempContainer.style.fontFamily = 'Arial, sans-serif';
-    tempContainer.style.fontSize = '14px';
+    tempContainer.style.fontSize = '16px'; // Larger font for mobile
     tempContainer.style.lineHeight = '1.5';
 
-    // Generate the same content as print/download
-    const pdfContent = generatePDFContent(bon);
+    // Generate mobile-optimized content
+    const pdfContent = generateMobilePDFContent(bon);
     tempContainer.innerHTML = pdfContent;
 
     document.body.appendChild(tempContainer);
@@ -409,13 +612,13 @@ export const downloadMobileBonAsPDF = async (bon: Bon): Promise<void> => {
     // Wait for rendering
     await new Promise(resolve => setTimeout(resolve, 100));
 
-    // Convert to canvas with same settings as desktop
+    // Convert to canvas optimized for mobile layout
     const canvas = await html2canvas(tempContainer, {
-      scale: 3, // Same high quality as desktop
+      scale: 2, // Good quality for mobile
       useCORS: true,
       allowTaint: true,
       backgroundColor: '#ffffff',
-      width: 1000, // Match container width
+      width: 600, // Match container width
       height: tempContainer.scrollHeight,
       logging: false,
       imageTimeout: 0,
