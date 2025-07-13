@@ -4,7 +4,56 @@ import html2canvas from 'html2canvas';
 
 // Print bon - opens print dialog (like the screenshot)
 export const printBon = async (bon: Bon): Promise<void> => {
-  const htmlContent = generateBonHTML(bon);
+  // Use the same content as PDF download for consistency
+  const htmlContent = `
+    <!DOCTYPE html>
+    <html lang="fr">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Bon de Distribution #${bon.id}</title>
+      <style>
+        body {
+          margin: 0;
+          padding: 0;
+          font-family: Arial, sans-serif;
+          font-size: 14px;
+          line-height: 1.3;
+        }
+        table {
+          width: 100% !important;
+          border-collapse: collapse !important;
+          table-layout: fixed !important;
+        }
+        td, th {
+          white-space: nowrap !important;
+          overflow: hidden !important;
+          text-overflow: ellipsis !important;
+        }
+        .price-cell {
+          min-width: 80px !important;
+          white-space: nowrap !important;
+        }
+        @media print {
+          body {
+            margin: 0;
+            padding: 0;
+            font-size: 12px;
+            line-height: 1.2;
+          }
+          .no-print { display: none; }
+          * {
+            -webkit-print-color-adjust: exact !important;
+            color-adjust: exact !important;
+          }
+        }
+      </style>
+    </head>
+    <body>
+      ${generatePDFContent(bon)}
+    </body>
+    </html>
+  `;
 
   // Create a hidden iframe in the same origin to avoid security issues
   const iframe = document.createElement('iframe');
@@ -131,32 +180,32 @@ const generatePDFContent = (bon: Bon): string => {
   const totalGeneral = totalPrix + totalFrais;
 
   return `
-    <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background: white; font-size: 12px; line-height: 1.4;">
+    <div style="font-family: Arial, sans-serif; max-width: 1000px; margin: 0 auto; padding: 15px; background: white; font-size: 14px; line-height: 1.4;">
       <!-- Header -->
-      <div style="text-align: center; margin-bottom: 25px; border-bottom: 3px solid #2563eb; padding-bottom: 15px;">
-        <h1 style="color: #2563eb; font-size: 24px; margin-bottom: 8px; margin-top: 0; font-weight: bold;">BON DE DISTRIBUTION</h1>
-        <p style="color: #666; font-size: 14px; margin: 0;">LogiTrack - Système de gestion logistique</p>
+      <div style="text-align: center; margin-bottom: 20px; border-bottom: 3px solid #2563eb; padding-bottom: 15px;">
+        <h1 style="color: #2563eb; font-size: 28px; margin-bottom: 8px; margin-top: 0; font-weight: bold;">BON DE DISTRIBUTION</h1>
+        <p style="color: #666; font-size: 16px; margin: 0;">LogiTrack - Système de gestion logistique</p>
       </div>
 
       <!-- Bon Info -->
-      <div style="display: flex; justify-content: space-between; gap: 20px; margin-bottom: 25px;">
+      <div style="display: flex; justify-content: space-between; gap: 20px; margin-bottom: 20px;">
         <div style="flex: 1; background: #f8fafc; padding: 15px; border-radius: 6px; border-left: 4px solid #2563eb;">
           <h3 style="color: #2563eb; margin-bottom: 12px; font-size: 16px; margin-top: 0; font-weight: bold;">Informations générales</h3>
-          <div style="margin-bottom: 8px; font-size: 12px;">
+          <div style="margin-bottom: 8px; font-size: 14px;">
             <strong style="color: #475569;">ID Bon:</strong> <span style="color: #1e293b;">${bon.id}</span>
           </div>
-          <div style="margin-bottom: 8px; font-size: 12px;">
+          <div style="margin-bottom: 8px; font-size: 14px;">
             <strong style="color: #475569;">Type:</strong> <span style="color: #1e293b;">${bon.type.charAt(0).toUpperCase() + bon.type.slice(1)}</span>
           </div>
-          <div style="margin-bottom: 8px; font-size: 12px;">
+          <div style="margin-bottom: 8px; font-size: 14px;">
             <strong style="color: #475569;">Statut:</strong>
-            <span style="display: inline-block; padding: 4px 10px; border-radius: 15px; font-size: 11px; font-weight: 600; text-transform: uppercase; background: #dbeafe; color: #1e40af;">${getStatusText(bon.statut)}</span>
+            <span style="display: inline-block; padding: 4px 10px; border-radius: 10px; font-size: 12px; font-weight: 600; text-transform: uppercase; background: #dbeafe; color: #1e40af;">${getStatusText(bon.statut)}</span>
           </div>
-          <div style="margin-bottom: 8px; font-size: 12px;">
+          <div style="margin-bottom: 8px; font-size: 14px;">
             <strong style="color: #475569;">Date de création:</strong> <span style="color: #1e293b;">${formatDate(bon.date_creation)}</span>
           </div>
           ${bon.nb_colis ? `
-          <div style="margin-bottom: 8px; font-size: 12px;">
+          <div style="margin-bottom: 8px; font-size: 14px;">
             <strong style="color: #475569;">Nombre de colis:</strong> <span style="color: #1e293b;">${bon.nb_colis} colis</span>
           </div>
           ` : ''}
@@ -165,26 +214,26 @@ const generatePDFContent = (bon: Bon): string => {
         ${bon.user ? `
         <div style="flex: 1; background: #f8fafc; padding: 15px; border-radius: 6px; border-left: 4px solid #2563eb;">
           <h3 style="color: #2563eb; margin-bottom: 12px; font-size: 16px; margin-top: 0; font-weight: bold;">Livreur assigné</h3>
-          <div style="margin-bottom: 8px; font-size: 12px;">
+          <div style="margin-bottom: 8px; font-size: 14px;">
             <strong style="color: #475569;">Nom:</strong> <span style="color: #1e293b;">${bon.user.nom} ${bon.user.prenom || ''}</span>
           </div>
           ${bon.user.email ? `
-          <div style="margin-bottom: 8px; font-size: 12px;">
+          <div style="margin-bottom: 8px; font-size: 14px;">
             <strong style="color: #475569;">Email:</strong> <span style="color: #1e293b;">${bon.user.email}</span>
           </div>
           ` : ''}
           ${bon.user.telephone ? `
-          <div style="margin-bottom: 8px; font-size: 12px;">
+          <div style="margin-bottom: 8px; font-size: 14px;">
             <strong style="color: #475569;">Téléphone:</strong> <span style="color: #1e293b;">${bon.user.telephone}</span>
           </div>
           ` : ''}
           ${bon.user.vehicule ? `
-          <div style="margin-bottom: 8px; font-size: 12px;">
+          <div style="margin-bottom: 8px; font-size: 14px;">
             <strong style="color: #475569;">Véhicule:</strong> <span style="color: #1e293b;">${bon.user.vehicule}</span>
           </div>
           ` : ''}
           ${bon.user.zone ? `
-          <div style="margin-bottom: 8px; font-size: 12px;">
+          <div style="margin-bottom: 8px; font-size: 14px;">
             <strong style="color: #475569;">Zone:</strong> <span style="color: #1e293b;">${bon.user.zone}</span>
           </div>
           ` : ''}
@@ -193,52 +242,52 @@ const generatePDFContent = (bon: Bon): string => {
       </div>
 
       <!-- Colis Table -->
-      <div style="margin: 25px 0;">
+      <div style="margin: 20px 0;">
         <h3 style="color: #2563eb; margin-bottom: 15px; font-size: 18px; font-weight: bold;">Liste des Colis (${sampleColis.length} colis)</h3>
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);">
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px; background: white; border-radius: 6px; overflow: hidden; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);">
           <thead>
             <tr style="background: #2563eb; color: white;">
-              <th style="padding: 12px 8px; text-align: left; font-weight: 600; font-size: 12px; text-transform: uppercase;">Référence</th>
-              <th style="padding: 12px 8px; text-align: left; font-weight: 600; font-size: 12px; text-transform: uppercase;">Client</th>
-              <th style="padding: 12px 8px; text-align: left; font-weight: 600; font-size: 12px; text-transform: uppercase;">Entreprise</th>
-              <th style="padding: 12px 8px; text-align: left; font-weight: 600; font-size: 12px; text-transform: uppercase;">Adresse</th>
-              <th style="padding: 12px 8px; text-align: left; font-weight: 600; font-size: 12px; text-transform: uppercase;">Prix (DH)</th>
-              <th style="padding: 12px 8px; text-align: left; font-weight: 600; font-size: 12px; text-transform: uppercase;">Frais (DH)</th>
+              <th style="padding: 10px 8px; text-align: left; font-weight: 600; font-size: 12px; text-transform: uppercase;">Référence</th>
+              <th style="padding: 10px 8px; text-align: left; font-weight: 600; font-size: 12px; text-transform: uppercase;">Client</th>
+              <th style="padding: 10px 8px; text-align: left; font-weight: 600; font-size: 12px; text-transform: uppercase;">Entreprise</th>
+              <th style="padding: 10px 8px; text-align: left; font-weight: 600; font-size: 12px; text-transform: uppercase;">Adresse</th>
+              <th style="padding: 10px 8px; text-align: left; font-weight: 600; font-size: 12px; text-transform: uppercase;">Prix (DH)</th>
+              <th style="padding: 10px 8px; text-align: left; font-weight: 600; font-size: 12px; text-transform: uppercase;">Frais (DH)</th>
             </tr>
           </thead>
           <tbody>
             ${sampleColis.map((colis, index) => `
               <tr style="background: ${index % 2 === 0 ? 'white' : '#f8fafc'};">
-                <td style="padding: 10px 8px; border-bottom: 1px solid #e2e8f0; font-size: 11px;"><strong>${colis.reference}</strong></td>
-                <td style="padding: 10px 8px; border-bottom: 1px solid #e2e8f0; font-size: 11px;">${colis.client}</td>
-                <td style="padding: 10px 8px; border-bottom: 1px solid #e2e8f0; font-size: 11px;">${colis.entreprise}</td>
-                <td style="padding: 10px 8px; border-bottom: 1px solid #e2e8f0; font-size: 11px;">${colis.adresse}</td>
-                <td style="padding: 10px 8px; border-bottom: 1px solid #e2e8f0; font-size: 11px; text-align: right; font-weight: 600; color: #059669;">${colis.prix.toFixed(2)}</td>
-                <td style="padding: 10px 8px; border-bottom: 1px solid #e2e8f0; font-size: 11px; text-align: right; font-weight: 600; color: #059669;">${colis.frais.toFixed(2)}</td>
+                <td style="padding: 8px 6px; border-bottom: 1px solid #e2e8f0; font-size: 12px;"><strong>${colis.reference}</strong></td>
+                <td style="padding: 8px 6px; border-bottom: 1px solid #e2e8f0; font-size: 12px;">${colis.client}</td>
+                <td style="padding: 8px 6px; border-bottom: 1px solid #e2e8f0; font-size: 12px;">${colis.entreprise}</td>
+                <td style="padding: 8px 6px; border-bottom: 1px solid #e2e8f0; font-size: 12px;">${colis.adresse}</td>
+                <td class="price-cell" style="padding: 8px 6px; border-bottom: 1px solid #e2e8f0; font-size: 12px; text-align: right; font-weight: 600; color: #059669; white-space: nowrap;">${colis.prix.toFixed(2)} DH</td>
+                <td class="price-cell" style="padding: 8px 6px; border-bottom: 1px solid #e2e8f0; font-size: 12px; text-align: right; font-weight: 600; color: #059669; white-space: nowrap;">${colis.frais.toFixed(2)} DH</td>
               </tr>
             `).join('')}
             <tr style="background: #f1f5f9; font-weight: 600; border-top: 2px solid #2563eb;">
-              <td colspan="4" style="padding: 12px 8px; font-size: 12px;"><strong>TOTAL</strong></td>
-              <td style="padding: 12px 8px; font-size: 12px; text-align: right;"><strong>${totalPrix.toFixed(2)} DH</strong></td>
-              <td style="padding: 12px 8px; font-size: 12px; text-align: right;"><strong>${totalFrais.toFixed(2)} DH</strong></td>
+              <td colspan="3" style="padding: 10px 8px; font-size: 14px;"><strong>TOTAL</strong></td>
+              <td colspan="2" class="price-cell" style="padding: 10px 8px; font-size: 14px; text-align: right; white-space: nowrap;"><strong>${totalPrix.toFixed(2)} DH</strong></td>
+              <td class="price-cell" style="padding: 10px 8px; font-size: 14px; text-align: right; white-space: nowrap;"><strong>${totalFrais.toFixed(2)} DH</strong></td>
             </tr>
             <tr style="background: #f1f5f9; font-weight: 600; border-top: 2px solid #2563eb;">
-              <td colspan="5" style="padding: 12px 8px; font-size: 12px;"><strong>TOTAL GÉNÉRAL</strong></td>
-              <td style="padding: 12px 8px; font-size: 12px; text-align: right;"><strong>${totalGeneral.toFixed(2)} DH</strong></td>
+              <td colspan="4" style="padding: 10px 8px; font-size: 14px;"><strong>TOTAL GÉNÉRAL</strong></td>
+              <td colspan="2" class="price-cell" style="padding: 10px 8px; font-size: 14px; text-align: right; white-space: nowrap;"><strong>${totalGeneral.toFixed(2)} DH</strong></td>
             </tr>
           </tbody>
         </table>
       </div>
 
       ${bon.notes ? `
-      <div style="margin-top: 25px; padding: 15px; background: #f1f5f9; border-radius: 8px;">
-        <h3 style="color: #2563eb; margin-bottom: 10px; margin-top: 0; font-size: 16px;">Notes</h3>
-        <p style="margin: 0; font-size: 12px;">${bon.notes}</p>
+      <div style="margin-top: 30px; padding: 20px; background: #f1f5f9; border-radius: 10px;">
+        <h3 style="color: #2563eb; margin-bottom: 12px; margin-top: 0; font-size: 18px;">Notes</h3>
+        <p style="margin: 0; font-size: 15px;">${bon.notes}</p>
       </div>
       ` : ''}
 
-      <div style="margin-top: 30px; text-align: center; padding-top: 15px; border-top: 1px solid #e2e8f0; color: #64748b; font-size: 12px;">
-        <p style="margin: 0 0 8px 0;">Document généré le ${formatDate(new Date().toISOString())} par LogiTrack</p>
+      <div style="margin-top: 35px; text-align: center; padding-top: 20px; border-top: 2px solid #e2e8f0; color: #64748b; font-size: 14px;">
+        <p style="margin: 0 0 10px 0;">Document généré le ${formatDate(new Date().toISOString())} par LogiTrack</p>
         <p style="margin: 0;"><strong>Total des colis: ${sampleColis.length} | Montant total: ${totalGeneral.toFixed(2)} DH</strong></p>
       </div>
     </div>
@@ -253,17 +302,17 @@ const isMobile = () => {
 // Download bon as PDF file directly to Downloads folder
 export const downloadBonAsPDF = async (bon: Bon): Promise<void> => {
   try {
-    // Create a temporary container to render the HTML
+    // Create a temporary container to render the HTML with high quality settings
     const tempContainer = document.createElement('div');
     tempContainer.style.position = 'absolute';
     tempContainer.style.left = '-9999px';
     tempContainer.style.top = '-9999px';
-    tempContainer.style.width = '800px'; // Use fixed width for consistent rendering
+    tempContainer.style.width = '1000px'; // Larger width for better quality
     tempContainer.style.backgroundColor = 'white';
-    tempContainer.style.padding = '20px';
+    tempContainer.style.padding = '30px';
     tempContainer.style.fontFamily = 'Arial, sans-serif';
-    tempContainer.style.fontSize = '12px';
-    tempContainer.style.lineHeight = '1.4';
+    tempContainer.style.fontSize = '14px'; // Slightly larger font
+    tempContainer.style.lineHeight = '1.5';
 
     // Generate the content for PDF
     const pdfContent = generatePDFContent(bon);
@@ -274,14 +323,17 @@ export const downloadBonAsPDF = async (bon: Bon): Promise<void> => {
     // Wait a moment for rendering
     await new Promise(resolve => setTimeout(resolve, 100));
 
-    // Convert HTML to canvas
+    // Convert HTML to canvas with high quality settings for desktop
     const canvas = await html2canvas(tempContainer, {
-      scale: 2,
+      scale: 3, // Higher scale for better quality on desktop
       useCORS: true,
       allowTaint: true,
       backgroundColor: '#ffffff',
-      width: 800,
-      height: tempContainer.scrollHeight
+      width: 1000, // Match container width
+      height: tempContainer.scrollHeight,
+      logging: false,
+      imageTimeout: 0,
+      removeContainer: true
     });
 
     // Create PDF
@@ -292,16 +344,16 @@ export const downloadBonAsPDF = async (bon: Bon): Promise<void> => {
     let heightLeft = imgHeight;
     let position = 0;
 
-    // Add image to PDF
-    const imgData = canvas.toDataURL('image/png');
-    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+    // Add image to PDF with maximum quality
+    const imgData = canvas.toDataURL('image/png', 1.0); // Maximum quality
+    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight, undefined, 'FAST');
     heightLeft -= pageHeight;
 
     // Add additional pages if needed
     while (heightLeft >= 0) {
       position = heightLeft - imgHeight;
       pdf.addPage();
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight, undefined, 'FAST');
       heightLeft -= pageHeight;
     }
 

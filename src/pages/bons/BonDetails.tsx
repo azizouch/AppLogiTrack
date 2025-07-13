@@ -414,7 +414,7 @@ export function BonDetails() {
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-sm min-w-[800px]">
               <thead>
                 <tr className="border-b border-gray-200 dark:border-gray-700">
                   <th className="text-left py-2 px-3 font-medium text-gray-500 dark:text-gray-400">Référence</th>
@@ -431,43 +431,43 @@ export function BonDetails() {
                   <td className="py-3 px-3">Ahmed Benali</td>
                   <td className="py-3 px-3">TechCorp SARL</td>
                   <td className="py-3 px-3 text-xs">123 Rue Mohammed V, Casablanca</td>
-                  <td className="py-3 px-3 text-right font-medium text-green-600">250.00 DH</td>
-                  <td className="py-3 px-3 text-right font-medium text-blue-600">25.00 DH</td>
+                  <td className="py-3 px-3 text-right font-medium text-green-600 whitespace-nowrap w-24">250.00 DH</td>
+                  <td className="py-3 px-3 text-right font-medium text-blue-600 whitespace-nowrap w-24">25.00 DH</td>
                 </tr>
                 <tr className="border-b border-gray-100 dark:border-gray-800">
                   <td className="py-3 px-3 font-mono text-xs">COL-2024-002</td>
                   <td className="py-3 px-3">Fatima Zahra</td>
                   <td className="py-3 px-3">Digital Solutions</td>
                   <td className="py-3 px-3 text-xs">456 Avenue Hassan II, Rabat</td>
-                  <td className="py-3 px-3 text-right font-medium text-green-600">180.50 DH</td>
-                  <td className="py-3 px-3 text-right font-medium text-blue-600">20.00 DH</td>
+                  <td className="py-3 px-3 text-right font-medium text-green-600 whitespace-nowrap w-24">180.50 DH</td>
+                  <td className="py-3 px-3 text-right font-medium text-blue-600 whitespace-nowrap w-24">20.00 DH</td>
                 </tr>
                 <tr className="border-b border-gray-100 dark:border-gray-800">
                   <td className="py-3 px-3 font-mono text-xs">COL-2024-003</td>
                   <td className="py-3 px-3">Omar Alami</td>
                   <td className="py-3 px-3">Import Export Co</td>
                   <td className="py-3 px-3 text-xs">789 Boulevard Zerktouni, Marrakech</td>
-                  <td className="py-3 px-3 text-right font-medium text-green-600">320.75 DH</td>
-                  <td className="py-3 px-3 text-right font-medium text-blue-600">30.00 DH</td>
+                  <td className="py-3 px-3 text-right font-medium text-green-600 whitespace-nowrap w-24">320.75 DH</td>
+                  <td className="py-3 px-3 text-right font-medium text-blue-600 whitespace-nowrap w-24">30.00 DH</td>
                 </tr>
                 <tr className="border-b border-gray-100 dark:border-gray-800">
                   <td className="py-3 px-3 font-mono text-xs">COL-2024-004</td>
                   <td className="py-3 px-3">Aicha Mansouri</td>
                   <td className="py-3 px-3">Fashion Store</td>
                   <td className="py-3 px-3 text-xs">321 Rue de la Liberté, Fès</td>
-                  <td className="py-3 px-3 text-right font-medium text-green-600">95.25 DH</td>
-                  <td className="py-3 px-3 text-right font-medium text-blue-600">15.00 DH</td>
+                  <td className="py-3 px-3 text-right font-medium text-green-600 whitespace-nowrap w-24">95.25 DH</td>
+                  <td className="py-3 px-3 text-right font-medium text-blue-600 whitespace-nowrap w-24">15.00 DH</td>
                 </tr>
               </tbody>
               <tfoot>
                 <tr className="border-t-2 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800">
-                  <td colspan="4" className="py-3 px-3 font-semibold">TOTAL</td>
-                  <td className="py-3 px-3 text-right font-bold text-green-700">846.50 DH</td>
-                  <td className="py-3 px-3 text-right font-bold text-blue-700">90.00 DH</td>
+                  <td colSpan={3} className="py-3 px-3 font-semibold">TOTAL</td>
+                  <td className="py-3 px-3 text-right font-bold text-green-700 whitespace-nowrap" colSpan={2}>846.50 DH</td>
+                  <td className="py-3 px-3 text-right font-bold text-blue-700 whitespace-nowrap">90.00 DH</td>
                 </tr>
                 <tr className="bg-gray-100 dark:bg-gray-700">
-                  <td colspan="5" className="py-3 px-3 font-bold">TOTAL GÉNÉRAL</td>
-                  <td className="py-3 px-3 text-right font-bold text-gray-900 dark:text-white">936.50 DH</td>
+                  <td colSpan={4} className="py-3 px-3 font-bold">TOTAL GÉNÉRAL</td>
+                  <td className="py-3 px-3 text-right font-bold text-gray-900 dark:text-white whitespace-nowrap" colSpan={2}>936.50 DH</td>
                 </tr>
               </tfoot>
             </table>
