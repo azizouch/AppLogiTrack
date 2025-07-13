@@ -10,7 +10,7 @@ import { api } from '@/lib/supabase';
 import { Bon } from '@/types';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useToast } from '@/hooks/use-toast';
-import { downloadBonAsPDF, downloadMobileBonAsPDF, printBon } from '@/utils/pdfGenerator';
+import { downloadBonAsPDF, downloadMobileBonAsPDF, downloadMobileBonAsPDFNew, printBon } from '@/utils/pdfGenerator';
 
 export function Distribution() {
   const navigate = useNavigate();
@@ -134,9 +134,9 @@ export function Distribution() {
         }
       };
 
-      // Use mobile PDF if on mobile device
+      // Use new mobile PDF generator if on mobile device
       if (isMobile()) {
-        await downloadMobileBonAsPDF(bonWithUser);
+        await downloadMobileBonAsPDFNew(bonWithUser);
         toast({
           title: 'PDF Mobile téléchargé',
           description: 'Le fichier PDF optimisé mobile a été téléchargé dans votre dossier Téléchargements',
