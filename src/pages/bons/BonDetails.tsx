@@ -8,7 +8,7 @@ import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { api } from '@/lib/supabase';
 import { Bon } from '@/types';
-import { downloadBonAsPDF, downloadMobileBonAsPDF, downloadMobileBonAsPDFNew, printBon } from '@/utils/pdfGenerator';
+import { downloadBonAsPDF, downloadMobileBonAsPDF, downloadMobileBonAsPDFNew, downloadMobileBonAsPDFSimple, printBon } from '@/utils/pdfGenerator';
 
 export function BonDetails() {
   const { id } = useParams<{ id: string }>();
@@ -136,8 +136,8 @@ export function BonDetails() {
     try {
       setDownloadingMobilePdf(true);
 
-      // Use the new html2pdf.js generator for better mobile support
-      await downloadMobileBonAsPDFNew(bon);
+      // Use the simple html2pdf.js generator for testing
+      await downloadMobileBonAsPDFSimple(bon);
 
       toast({
         title: 'PDF Mobile téléchargé',
