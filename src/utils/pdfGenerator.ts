@@ -393,15 +393,15 @@ export const downloadMobileBonAsPDF = async (bon: Bon): Promise<void> => {
     tempContainer.style.position = 'absolute';
     tempContainer.style.left = '-9999px';
     tempContainer.style.top = '-9999px';
-    tempContainer.style.width = '800px'; // Use same width as desktop for consistency
+    tempContainer.style.width = '1000px'; // Same width as desktop for consistency
     tempContainer.style.backgroundColor = 'white';
-    tempContainer.style.padding = '15px';
+    tempContainer.style.padding = '30px';
     tempContainer.style.fontFamily = 'Arial, sans-serif';
     tempContainer.style.fontSize = '14px';
-    tempContainer.style.lineHeight = '1.4';
+    tempContainer.style.lineHeight = '1.5';
 
     // Generate the same content as print/download
-    const pdfContent = generateMobilePDFContent(bon);
+    const pdfContent = generatePDFContent(bon);
     tempContainer.innerHTML = pdfContent;
 
     document.body.appendChild(tempContainer);
@@ -409,14 +409,17 @@ export const downloadMobileBonAsPDF = async (bon: Bon): Promise<void> => {
     // Wait for rendering
     await new Promise(resolve => setTimeout(resolve, 100));
 
-    // Convert to canvas with same settings as desktop but optimized for mobile
+    // Convert to canvas with same settings as desktop
     const canvas = await html2canvas(tempContainer, {
-      scale: 2, // Good quality for mobile
+      scale: 3, // Same high quality as desktop
       useCORS: true,
       allowTaint: true,
       backgroundColor: '#ffffff',
-      width: 800, // Same as desktop
-      height: tempContainer.scrollHeight
+      width: 1000, // Match container width
+      height: tempContainer.scrollHeight,
+      logging: false,
+      imageTimeout: 0,
+      removeContainer: true
     });
 
     // Create PDF optimized for mobile viewing
@@ -427,9 +430,9 @@ export const downloadMobileBonAsPDF = async (bon: Bon): Promise<void> => {
     let heightLeft = imgHeight;
     let position = 0;
 
-    // Add image to PDF
-    const imgData = canvas.toDataURL('image/png');
-    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+    // Add image to PDF with maximum quality
+    const imgData = canvas.toDataURL('image/png', 1.0); // Maximum quality
+    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight, undefined, 'FAST');
     heightLeft -= pageHeight;
 
     // Add additional pages if needed
@@ -441,7 +444,7 @@ export const downloadMobileBonAsPDF = async (bon: Bon): Promise<void> => {
     }
 
     // Generate filename
-    const filename = `Bon_Distribution_Mobile_${bon.id}_${new Date().toISOString().split('T')[0]}.pdf`;
+    const filename = `Bon_Distribution_${bon.id}_${new Date().toISOString().split('T')[0]}.pdf`;
 
     // Download the PDF
     pdf.save(filename);
