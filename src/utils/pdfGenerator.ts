@@ -831,11 +831,11 @@ export const downloadMobileBonAsPDF = async (bon: Bon): Promise<void> => {
     // Left Column: Bon Info Section
     const bonInfoStartY = currentY;
 
-    // Bon Info Card Background
+    // Bon Info Card Background (rounded)
     pdf.setFillColor(248, 250, 252); // Light blue background
     pdf.setDrawColor(37, 99, 235); // Blue border
     pdf.setLineWidth(0.5);
-    pdf.rect(leftColumnX, bonInfoStartY, columnWidth, 45, 'FD'); // Fill and Draw
+    pdf.roundedRect(leftColumnX, bonInfoStartY, columnWidth, 45, 3, 3, 'FD'); // Rounded Fill and Draw
 
     pdf.setFontSize(10);
     pdf.setTextColor(37, 99, 235);
@@ -853,11 +853,11 @@ export const downloadMobileBonAsPDF = async (bon: Bon): Promise<void> => {
 
     // Right Column: Livreur Info (if exists)
     if (bon.user) {
-      // Livreur Info Card Background
+      // Livreur Info Card Background (rounded)
       pdf.setFillColor(248, 250, 252); // Light blue background
       pdf.setDrawColor(37, 99, 235); // Blue border
       pdf.setLineWidth(0.5);
-      pdf.rect(rightColumnX, bonInfoStartY, columnWidth, 45, 'FD'); // Fill and Draw
+      pdf.roundedRect(rightColumnX, bonInfoStartY, columnWidth, 45, 3, 3, 'FD'); // Rounded Fill and Draw
 
       pdf.setFontSize(10);
       pdf.setTextColor(37, 99, 235);
@@ -889,11 +889,14 @@ export const downloadMobileBonAsPDF = async (bon: Bon): Promise<void> => {
 
     currentY = bonInfoStartY + 50; // Move past both cards
 
-    // Colis List Header
+    // Colis List Header with more spacing
+    currentY += 10; // Add extra space above the title
     pdf.setFontSize(12);
+    pdf.setFont('helvetica', 'bold'); // Make title bold
     pdf.setTextColor(37, 99, 235);
     pdf.text(`Liste des Colis (${sampleColis.length} colis)`, margin, currentY);
-    currentY += 10;
+    pdf.setFont('helvetica', 'normal'); // Reset font weight
+    currentY += 12;
 
     // Process each colis individually to avoid page breaks
     sampleColis.forEach((colis) => {
@@ -916,15 +919,19 @@ export const downloadMobileBonAsPDF = async (bon: Bon): Promise<void> => {
       const cardStartY = currentY;
       const cardHeight = 35;
 
-      // Card background
+      // Card background (rounded)
       pdf.setFillColor(255, 255, 255); // White background
       pdf.setDrawColor(226, 232, 240); // Light gray border
       pdf.setLineWidth(0.5);
-      pdf.rect(margin, cardStartY, contentWidth, cardHeight, 'FD'); // Fill and Draw
+      pdf.roundedRect(margin, cardStartY, contentWidth, cardHeight, 3, 3, 'FD'); // Rounded Fill and Draw
 
-      // Header section with reference (blue background)
+      // Header section with reference (blue background, rounded top)
       pdf.setFillColor(37, 99, 235); // Blue background for header
-      pdf.rect(margin, cardStartY, contentWidth, 8, 'F');
+      pdf.roundedRect(margin, cardStartY, contentWidth, 8, 3, 3, 'F');
+
+      // Cover the bottom corners of the header to make only top rounded
+      pdf.setFillColor(37, 99, 235);
+      pdf.rect(margin, cardStartY + 5, contentWidth, 3, 'F');
 
       // Reference number in white
       pdf.setFontSize(9);
@@ -947,10 +954,14 @@ export const downloadMobileBonAsPDF = async (bon: Bon): Promise<void> => {
         pdf.text(addressLines[1], margin + 3, cardStartY + 27);
       }
 
-      // Price section with background
+      // Price section with background (rounded bottom)
       const priceY = cardStartY + (addressLines.length > 1 ? 32 : 27);
       pdf.setFillColor(240, 253, 244); // Light green background for prices
-      pdf.rect(margin, priceY - 2, contentWidth, 6, 'F');
+      pdf.roundedRect(margin, priceY - 2, contentWidth, 6, 3, 3, 'F');
+
+      // Cover the top corners of the price section to make only bottom rounded
+      pdf.setFillColor(240, 253, 244);
+      pdf.rect(margin, priceY - 2, contentWidth, 3, 'F');
 
       // Price info in green
       pdf.setTextColor(5, 150, 105); // Green color
@@ -975,9 +986,11 @@ export const downloadMobileBonAsPDF = async (bon: Bon): Promise<void> => {
       currentY += 15;
     }
 
-    // Totals section
+    // Totals section (rounded)
     pdf.setFillColor(241, 245, 249); // Light blue background
-    pdf.rect(margin, currentY, contentWidth, 25, 'F');
+    pdf.setDrawColor(37, 99, 235); // Blue border
+    pdf.setLineWidth(0.5);
+    pdf.roundedRect(margin, currentY, contentWidth, 25, 3, 3, 'FD');
 
     pdf.setFontSize(10);
     pdf.setTextColor(37, 99, 235);
