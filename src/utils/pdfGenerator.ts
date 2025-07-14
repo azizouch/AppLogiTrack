@@ -799,68 +799,95 @@ export const downloadMobileBonAsPDF = async (bon: Bon): Promise<void> => {
     };
 
     // Page 1: Header and Info
-    // Header
+    // Header with Logo
+    // Logo placeholder (simple circle with "LT")
+    pdf.setFillColor(37, 99, 235); // Blue background
+    pdf.circle(margin + 10, currentY + 5, 8, 'F');
+    pdf.setFontSize(12);
+    pdf.setTextColor(255, 255, 255); // White text
+    pdf.text('LT', margin + 10, currentY + 8, { align: 'center' });
+
+    // Company name next to logo
+    pdf.setFontSize(14);
+    pdf.setTextColor(37, 99, 235); // Blue color
+    pdf.text('LogiTrack', margin + 25, currentY + 8);
+
+    // Main title centered
     pdf.setFontSize(16);
     pdf.setTextColor(37, 99, 235); // Blue color
-    pdf.text('BON DE DISTRIBUTION', pageWidth / 2, currentY, { align: 'center' });
-    currentY += 8;
-
-    pdf.setFontSize(10);
-    pdf.setTextColor(102, 102, 102); // Gray color
-    pdf.text('LogiTrack - Système de gestion logistique', pageWidth / 2, currentY, { align: 'center' });
-    currentY += 15;
-
-    // Bon Info Section
-    pdf.setFontSize(12);
-    pdf.setTextColor(37, 99, 235);
-    pdf.text('Informations générales', margin, currentY);
-    currentY += 8;
+    pdf.text('BON DE DISTRIBUTION', pageWidth / 2, currentY + 5, { align: 'center' });
+    currentY += 12;
 
     pdf.setFontSize(9);
+    pdf.setTextColor(102, 102, 102); // Gray color
+    pdf.text('Système de gestion logistique', pageWidth / 2, currentY, { align: 'center' });
+    currentY += 15;
+
+    // Two-column layout for Bon Info and Livreur Info
+    const leftColumnX = margin;
+    const rightColumnX = pageWidth / 2 + 5;
+    const columnWidth = (contentWidth / 2) - 5;
+
+    // Left Column: Bon Info Section
+    const bonInfoStartY = currentY;
+
+    // Bon Info Card Background
+    pdf.setFillColor(248, 250, 252); // Light blue background
+    pdf.setDrawColor(37, 99, 235); // Blue border
+    pdf.setLineWidth(0.5);
+    pdf.rect(leftColumnX, bonInfoStartY, columnWidth, 45, 'FD'); // Fill and Draw
+
+    pdf.setFontSize(10);
+    pdf.setTextColor(37, 99, 235);
+    pdf.text('Informations générales', leftColumnX + 3, bonInfoStartY + 6);
+
+    pdf.setFontSize(8);
     pdf.setTextColor(0, 0, 0);
-    pdf.text(`ID: ${bon.id}`, margin, currentY);
-    currentY += 5;
-    pdf.text(`Type: ${bon.type.charAt(0).toUpperCase() + bon.type.slice(1)}`, margin, currentY);
-    currentY += 5;
-    pdf.text(`Statut: ${getStatusText(bon.statut)}`, margin, currentY);
-    currentY += 5;
-    pdf.text(`Date: ${formatDate(bon.date_creation)}`, margin, currentY);
-    currentY += 5;
+    pdf.text(`ID: ${bon.id}`, leftColumnX + 3, bonInfoStartY + 12);
+    pdf.text(`Type: ${bon.type.charAt(0).toUpperCase() + bon.type.slice(1)}`, leftColumnX + 3, bonInfoStartY + 17);
+    pdf.text(`Statut: ${getStatusText(bon.statut)}`, leftColumnX + 3, bonInfoStartY + 22);
+    pdf.text(`Date: ${formatDate(bon.date_creation)}`, leftColumnX + 3, bonInfoStartY + 27);
     if (bon.nb_colis) {
-      pdf.text(`Colis: ${bon.nb_colis}`, margin, currentY);
-      currentY += 5;
+      pdf.text(`Colis: ${bon.nb_colis}`, leftColumnX + 3, bonInfoStartY + 32);
     }
-    currentY += 5;
 
-    // Livreur Info (if exists)
+    // Right Column: Livreur Info (if exists)
     if (bon.user) {
-      pdf.setFontSize(12);
-      pdf.setTextColor(37, 99, 235);
-      pdf.text('Livreur assigné', margin, currentY);
-      currentY += 8;
+      // Livreur Info Card Background
+      pdf.setFillColor(248, 250, 252); // Light blue background
+      pdf.setDrawColor(37, 99, 235); // Blue border
+      pdf.setLineWidth(0.5);
+      pdf.rect(rightColumnX, bonInfoStartY, columnWidth, 45, 'FD'); // Fill and Draw
 
-      pdf.setFontSize(9);
+      pdf.setFontSize(10);
+      pdf.setTextColor(37, 99, 235);
+      pdf.text('Livreur assigné', rightColumnX + 3, bonInfoStartY + 6);
+
+      pdf.setFontSize(8);
       pdf.setTextColor(0, 0, 0);
-      pdf.text(`Nom: ${bon.user.nom} ${bon.user.prenom || ''}`, margin, currentY);
-      currentY += 5;
+      let livreurY = bonInfoStartY + 12;
+      pdf.text(`Nom: ${bon.user.nom} ${bon.user.prenom || ''}`, rightColumnX + 3, livreurY);
+      livreurY += 5;
+
       if (bon.user.email) {
-        pdf.text(`Email: ${bon.user.email}`, margin, currentY);
-        currentY += 5;
+        pdf.text(`Email: ${bon.user.email}`, rightColumnX + 3, livreurY);
+        livreurY += 5;
       }
       if (bon.user.telephone) {
-        pdf.text(`Tél: ${bon.user.telephone}`, margin, currentY);
-        currentY += 5;
+        pdf.text(`Tél: ${bon.user.telephone}`, rightColumnX + 3, livreurY);
+        livreurY += 5;
       }
       if (bon.user.vehicule) {
-        pdf.text(`Véhicule: ${bon.user.vehicule}`, margin, currentY);
-        currentY += 5;
+        pdf.text(`Véhicule: ${bon.user.vehicule}`, rightColumnX + 3, livreurY);
+        livreurY += 5;
       }
       if (bon.user.zone) {
-        pdf.text(`Zone: ${bon.user.zone}`, margin, currentY);
-        currentY += 5;
+        pdf.text(`Zone: ${bon.user.zone}`, rightColumnX + 3, livreurY);
+        livreurY += 5;
       }
-      currentY += 5;
     }
+
+    currentY = bonInfoStartY + 50; // Move past both cards
 
     // Colis List Header
     pdf.setFontSize(12);
@@ -869,8 +896,8 @@ export const downloadMobileBonAsPDF = async (bon: Bon): Promise<void> => {
     currentY += 10;
 
     // Process each colis individually to avoid page breaks
-    sampleColis.forEach((colis, index) => {
-      const colisHeight = 35; // Estimated height for each colis card
+    sampleColis.forEach((colis) => {
+      const colisHeight = 38; // Estimated height for each colis card
 
       // Check if we need a new page for this colis
       if (checkPageBreak(colisHeight)) {
@@ -885,36 +912,53 @@ export const downloadMobileBonAsPDF = async (bon: Bon): Promise<void> => {
         currentY += 15;
       }
 
-      // Draw colis card
+      // Draw colis card with improved styling
       const cardStartY = currentY;
+      const cardHeight = 35;
 
-      // Card border
+      // Card background
+      pdf.setFillColor(255, 255, 255); // White background
       pdf.setDrawColor(226, 232, 240); // Light gray border
-      pdf.rect(margin, cardStartY, contentWidth, 30);
+      pdf.setLineWidth(0.5);
+      pdf.rect(margin, cardStartY, contentWidth, cardHeight, 'FD'); // Fill and Draw
+
+      // Header section with reference (blue background)
+      pdf.setFillColor(37, 99, 235); // Blue background for header
+      pdf.rect(margin, cardStartY, contentWidth, 8, 'F');
+
+      // Reference number in white
+      pdf.setFontSize(9);
+      pdf.setTextColor(255, 255, 255); // White text
+      pdf.text(`Réf: ${colis.reference}`, margin + 3, cardStartY + 5);
 
       // Card content
-      pdf.setFontSize(9);
-      pdf.setTextColor(37, 99, 235);
-      pdf.text(`Réf: ${colis.reference}`, margin + 3, cardStartY + 6);
-
+      pdf.setFontSize(8);
       pdf.setTextColor(0, 0, 0);
-      pdf.text(`Client: ${colis.client}`, margin + 3, cardStartY + 11);
-      pdf.text(`Entreprise: ${colis.entreprise}`, margin + 3, cardStartY + 16);
+
+      // Client info
+      pdf.text(`Client: ${colis.client}`, margin + 3, cardStartY + 12);
+      pdf.text(`Entreprise: ${colis.entreprise}`, margin + 3, cardStartY + 17);
 
       // Split long addresses if needed
       const maxAddressWidth = contentWidth - 6;
       const addressLines = pdf.splitTextToSize(`Adresse: ${colis.adresse}`, maxAddressWidth);
-      pdf.text(addressLines[0], margin + 3, cardStartY + 21);
+      pdf.text(addressLines[0], margin + 3, cardStartY + 22);
       if (addressLines.length > 1) {
-        pdf.text(addressLines[1], margin + 3, cardStartY + 26);
+        pdf.text(addressLines[1], margin + 3, cardStartY + 27);
       }
 
-      // Price info
-      pdf.setTextColor(5, 150, 105); // Green color
-      pdf.text(`Prix: ${colis.prix.toFixed(2)} DH`, margin + 3, cardStartY + (addressLines.length > 1 ? 31 : 26));
-      pdf.text(`Frais: ${colis.frais.toFixed(2)} DH`, margin + 80, cardStartY + (addressLines.length > 1 ? 31 : 26));
+      // Price section with background
+      const priceY = cardStartY + (addressLines.length > 1 ? 32 : 27);
+      pdf.setFillColor(240, 253, 244); // Light green background for prices
+      pdf.rect(margin, priceY - 2, contentWidth, 6, 'F');
 
-      currentY += 35; // Move to next colis position
+      // Price info in green
+      pdf.setTextColor(5, 150, 105); // Green color
+      pdf.setFontSize(8);
+      pdf.text(`Prix: ${colis.prix.toFixed(2)} DH`, margin + 3, priceY + 2);
+      pdf.text(`Frais: ${colis.frais.toFixed(2)} DH`, margin + 80, priceY + 2);
+
+      currentY += 40; // Move to next colis position with spacing
     });
 
     // Add totals on a new page or at the end
