@@ -800,28 +800,78 @@ export const downloadMobileBonAsPDF = async (bon: Bon): Promise<void> => {
 
     // Page 1: Header and Info
     // Header with Logo
-    // Logo placeholder (simple circle with "LT")
-    pdf.setFillColor(37, 99, 235); // Blue background
-    pdf.circle(margin + 10, currentY + 5, 8, 'F');
-    pdf.setFontSize(12);
-    pdf.setTextColor(255, 255, 255); // White text
-    pdf.text('LT', margin + 10, currentY + 8, { align: 'center' });
+    try {
+      // Load logo from public folder
+      const logoImg = new Image();
+      logoImg.crossOrigin = 'anonymous';
+
+      await new Promise<void>((resolve, reject) => {
+        logoImg.onload = () => {
+          // Create canvas to convert image to base64
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          canvas.width = logoImg.width;
+          canvas.height = logoImg.height;
+          ctx?.drawImage(logoImg, 0, 0);
+
+          try {
+            const logoBase64 = canvas.toDataURL('image/png');
+            // Add logo to PDF
+            pdf.addImage(logoBase64, 'PNG', margin, currentY, 15, 15);
+            resolve();
+          } catch (error) {
+            console.warn('Could not load logo, using fallback');
+            // Fallback to text logo
+            pdf.setFillColor(37, 99, 235);
+            pdf.circle(margin + 7.5, currentY + 7.5, 7.5, 'F');
+            pdf.setFontSize(10);
+            pdf.setTextColor(255, 255, 255);
+            pdf.text('LT', margin + 7.5, currentY + 10, { align: 'center' });
+            resolve();
+          }
+        };
+
+        logoImg.onerror = () => {
+          console.warn('Logo not found, using fallback');
+          // Fallback to text logo
+          pdf.setFillColor(37, 99, 235);
+          pdf.circle(margin + 7.5, currentY + 7.5, 7.5, 'F');
+          pdf.setFontSize(10);
+          pdf.setTextColor(255, 255, 255);
+          pdf.text('LT', margin + 7.5, currentY + 10, { align: 'center' });
+          resolve();
+        };
+
+        logoImg.src = '/fastDelivery.jpg'; // Assuming logo.png in public folder
+      });
+    } catch (error) {
+      console.warn('Error loading logo:', error);
+      // Fallback to text logo
+      pdf.setFillColor(37, 99, 235);
+      pdf.circle(margin + 7.5, currentY + 7.5, 7.5, 'F');
+      pdf.setFontSize(10);
+      pdf.setTextColor(255, 255, 255);
+      pdf.text('LT', margin + 7.5, currentY + 10, { align: 'center' });
+    }
 
     // Company name next to logo
     pdf.setFontSize(14);
+    pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(37, 99, 235); // Blue color
-    pdf.text('LogiTrack', margin + 25, currentY + 8);
+    pdf.text('LogiTrack', margin + 20, currentY + 10);
 
     // Main title centered
     pdf.setFontSize(16);
+    pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(37, 99, 235); // Blue color
-    pdf.text('BON DE DISTRIBUTION', pageWidth / 2, currentY + 5, { align: 'center' });
-    currentY += 12;
+    pdf.text('BON DE DISTRIBUTION', pageWidth / 2, currentY + 8, { align: 'center' });
+    currentY += 15;
 
     pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(102, 102, 102); // Gray color
     pdf.text('Système de gestion logistique', pageWidth / 2, currentY, { align: 'center' });
-    currentY += 15;
+    currentY += 20; // Increased spacing to match colis cards spacing
 
     // Two-column layout for Bon Info and Livreur Info
     const leftColumnX = margin;
@@ -838,8 +888,10 @@ export const downloadMobileBonAsPDF = async (bon: Bon): Promise<void> => {
     pdf.roundedRect(leftColumnX, bonInfoStartY, columnWidth, 45, 3, 3, 'FD'); // Rounded Fill and Draw
 
     pdf.setFontSize(10);
+    pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(37, 99, 235);
     pdf.text('Informations générales', leftColumnX + 3, bonInfoStartY + 6);
+    pdf.setFont('helvetica', 'normal');
 
     pdf.setFontSize(8);
     pdf.setTextColor(0, 0, 0);
@@ -860,8 +912,10 @@ export const downloadMobileBonAsPDF = async (bon: Bon): Promise<void> => {
       pdf.roundedRect(rightColumnX, bonInfoStartY, columnWidth, 45, 3, 3, 'FD'); // Rounded Fill and Draw
 
       pdf.setFontSize(10);
+      pdf.setFont('helvetica', 'bold');
       pdf.setTextColor(37, 99, 235);
       pdf.text('Livreur assigné', rightColumnX + 3, bonInfoStartY + 6);
+      pdf.setFont('helvetica', 'normal');
 
       pdf.setFontSize(8);
       pdf.setTextColor(0, 0, 0);
@@ -889,14 +943,14 @@ export const downloadMobileBonAsPDF = async (bon: Bon): Promise<void> => {
 
     currentY = bonInfoStartY + 50; // Move past both cards
 
-    // Colis List Header with more spacing
-    currentY += 10; // Add extra space above the title
+    // Colis List Header with spacing matching colis cards
+    currentY += 5; // Top spacing same as between colis cards
     pdf.setFontSize(12);
     pdf.setFont('helvetica', 'bold'); // Make title bold
     pdf.setTextColor(37, 99, 235);
     pdf.text(`Liste des Colis (${sampleColis.length} colis)`, margin, currentY);
     pdf.setFont('helvetica', 'normal'); // Reset font weight
-    currentY += 12;
+    currentY += 5; // Bottom spacing same as between colis cards
 
     // Process each colis individually to avoid page breaks
     sampleColis.forEach((colis) => {

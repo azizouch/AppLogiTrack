@@ -242,7 +242,7 @@ export function BonDetails() {
             onClick={handlePrint}
             disabled={printing}
             variant="outline"
-            className="border-blue-600 text-blue-600 hover:bg-blue-50 flex-1 sm:flex-none"
+            className="border-blue-600 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 dark:hover:text-blue-400 flex-1 sm:flex-none"
           >
             {printing ? (
               <>
