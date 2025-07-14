@@ -459,6 +459,13 @@ const generateMobilePDFContent = (bon: Bon): string => {
   const totalFrais = sampleColis.reduce((sum, colis) => sum + colis.frais, 0);
   const totalGeneral = totalPrix + totalFrais;
 
+  // Split colis into chunks that fit on a page (approximately 6-8 colis per page for mobile)
+  const colisPerPage = 6;
+  const colisPages = [];
+  for (let i = 0; i < sampleColis.length; i += colisPerPage) {
+    colisPages.push(sampleColis.slice(i, i + colisPerPage));
+  }
+
   return `
     <style>
       @media print {
@@ -466,33 +473,38 @@ const generateMobilePDFContent = (bon: Bon): string => {
           page-break-inside: avoid !important;
           break-inside: avoid !important;
         }
-        .page-break-before { page-break-before: always; }
-        .page-break-after { page-break-after: always; }
+        .page-break-before { page-break-before: always !important; }
+        .page-break-after { page-break-after: always !important; }
       }
 
-      /* Force page break avoidance for colis cards */
-      div[style*="background: white"][style*="border: 1px solid #e2e8f0"] {
+      /* Ensure no breaks within cards */
+      .colis-card {
         page-break-inside: avoid !important;
         break-inside: avoid !important;
         display: block !important;
+        margin-bottom: 8px !important;
       }
 
-      /* Ensure sections stay together */
-      div[style*="background: #f8fafc"][style*="border-left: 2px solid #2563eb"] {
+      /* Page container */
+      .page {
+        min-height: 250mm;
+        page-break-after: always;
+      }
+
+      .page:last-child {
+        page-break-after: avoid;
+      }
+
+      /* Header section */
+      .header-section {
         page-break-inside: avoid !important;
         break-inside: avoid !important;
       }
 
-      /* Better orphan/widow control */
-      body {
-        orphans: 3;
-        widows: 3;
-      }
-
-      /* Prevent small fragments at page breaks */
-      h3 {
-        page-break-after: avoid !important;
-        break-after: avoid !important;
+      /* Info sections */
+      .info-section {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
       }
     </style>
     <div style="font-family: Arial, sans-serif; width: 100%; margin: 0; padding: 0; background: white; font-size: 10px; line-height: 1.2;">
@@ -565,39 +577,85 @@ const generateMobilePDFContent = (bon: Bon): string => {
         ` : ''}
       </div>
 
-      <!-- Colis List - Compact -->
-      <div class="page-break-inside-avoid" style="margin: 8px 0; page-break-inside: avoid !important; break-inside: avoid !important;">
-        <h3 style="color: #2563eb; margin-bottom: 6px; font-size: 11px; font-weight: bold;">Liste des Colis (${sampleColis.length} colis)</h3>
+        <!-- First Page Colis -->
+        <div style="margin: 8px 0;">
+          <h3 style="color: #2563eb; margin-bottom: 6px; font-size: 11px; font-weight: bold;">Liste des Colis (${sampleColis.length} colis)</h3>
 
-        ${sampleColis.map((colis) => `
-          <div class="page-break-inside-avoid" style="background: white; border: 1px solid #e2e8f0; border-radius: 3px; padding: 6px; margin-bottom: 6px; page-break-inside: avoid !important; break-inside: avoid !important; display: block; min-height: 60px;">
-            <div style="margin-bottom: 3px; font-size: 8px;">
-              <strong style="color: #2563eb;">Réf:</strong>
-              <span style="color: #1e293b; font-weight: 600; margin-left: 2px;">${colis.reference}</span>
+          ${colisPages[0] ? colisPages[0].map((colis) => `
+            <div class="colis-card" style="background: white; border: 1px solid #e2e8f0; border-radius: 3px; padding: 6px; margin-bottom: 6px;">
+              <div style="margin-bottom: 3px; font-size: 8px;">
+                <strong style="color: #2563eb;">Réf:</strong>
+                <span style="color: #1e293b; font-weight: 600; margin-left: 2px;">${colis.reference}</span>
+              </div>
+              <div style="margin-bottom: 3px; font-size: 8px;">
+                <strong style="color: #475569;">Client:</strong>
+                <span style="color: #1e293b; margin-left: 2px;">${colis.client}</span>
+              </div>
+              <div style="margin-bottom: 3px; font-size: 8px;">
+                <strong style="color: #475569;">Entreprise:</strong>
+                <span style="color: #1e293b; margin-left: 2px;">${colis.entreprise}</span>
+              </div>
+              <div style="margin-bottom: 3px; font-size: 8px;">
+                <strong style="color: #475569;">Adresse:</strong>
+                <span style="color: #1e293b; margin-left: 2px;">${colis.adresse}</span>
+              </div>
+              <div style="font-size: 8px; margin-bottom: 2px;">
+                <strong style="color: #059669;">Prix:</strong>
+                <span style="color: #059669; font-weight: 600; margin-left: 2px;">${colis.prix.toFixed(2)} DH</span>
+                <strong style="color: #059669; margin-left: 8px;">Frais:</strong>
+                <span style="color: #059669; font-weight: 600; margin-left: 2px;">${colis.frais.toFixed(2)} DH</span>
+              </div>
             </div>
-            <div style="margin-bottom: 3px; font-size: 8px;">
-              <strong style="color: #475569;">Client:</strong>
-              <span style="color: #1e293b; margin-left: 2px;">${colis.client}</span>
-            </div>
-            <div style="margin-bottom: 3px; font-size: 8px;">
-              <strong style="color: #475569;">Entreprise:</strong>
-              <span style="color: #1e293b; margin-left: 2px;">${colis.entreprise}</span>
-            </div>
-            <div style="margin-bottom: 3px; font-size: 8px;">
-              <strong style="color: #475569;">Adresse:</strong>
-              <span style="color: #1e293b; margin-left: 2px;">${colis.adresse}</span>
-            </div>
-            <div style="font-size: 8px; margin-bottom: 2px;">
-              <strong style="color: #059669;">Prix:</strong>
-              <span style="color: #059669; font-weight: 600; margin-left: 2px;">${colis.prix.toFixed(2)} DH</span>
-              <strong style="color: #059669; margin-left: 8px;">Frais:</strong>
-              <span style="color: #059669; font-weight: 600; margin-left: 2px;">${colis.frais.toFixed(2)} DH</span>
-            </div>
+          `).join('') : ''}
+
+        </div>
+      </div>
+
+      <!-- Additional Pages for Remaining Colis -->
+      ${colisPages.slice(1).map((pageColisArray, pageIndex) => `
+        <div class="page page-break-before">
+          <!-- Page Header -->
+          <div class="header-section" style="text-align: center; margin-bottom: 8px; border-bottom: 1px solid #2563eb; padding-bottom: 6px;">
+            <h1 style="color: #2563eb; font-size: 14px; margin-bottom: 2px; margin-top: 0; font-weight: bold;">BON DE DISTRIBUTION</h1>
+            <p style="color: #666; font-size: 8px; margin: 0;">Page ${pageIndex + 2} - Suite des colis</p>
           </div>
-        `).join('')}
 
+          <!-- Colis for this page -->
+          <div style="margin: 8px 0;">
+            ${pageColisArray.map((colis) => `
+              <div class="colis-card" style="background: white; border: 1px solid #e2e8f0; border-radius: 3px; padding: 6px; margin-bottom: 6px;">
+                <div style="margin-bottom: 3px; font-size: 8px;">
+                  <strong style="color: #2563eb;">Réf:</strong>
+                  <span style="color: #1e293b; font-weight: 600; margin-left: 2px;">${colis.reference}</span>
+                </div>
+                <div style="margin-bottom: 3px; font-size: 8px;">
+                  <strong style="color: #475569;">Client:</strong>
+                  <span style="color: #1e293b; margin-left: 2px;">${colis.client}</span>
+                </div>
+                <div style="margin-bottom: 3px; font-size: 8px;">
+                  <strong style="color: #475569;">Entreprise:</strong>
+                  <span style="color: #1e293b; margin-left: 2px;">${colis.entreprise}</span>
+                </div>
+                <div style="margin-bottom: 3px; font-size: 8px;">
+                  <strong style="color: #475569;">Adresse:</strong>
+                  <span style="color: #1e293b; margin-left: 2px;">${colis.adresse}</span>
+                </div>
+                <div style="font-size: 8px; margin-bottom: 2px;">
+                  <strong style="color: #059669;">Prix:</strong>
+                  <span style="color: #059669; font-weight: 600; margin-left: 2px;">${colis.prix.toFixed(2)} DH</span>
+                  <strong style="color: #059669; margin-left: 8px;">Frais:</strong>
+                  <span style="color: #059669; font-weight: 600; margin-left: 2px;">${colis.frais.toFixed(2)} DH</span>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `).join('')}
+
+      <!-- Final Page with Totals -->
+      <div class="page page-break-before">
         <!-- Totals -->
-        <div style="background: #f1f5f9; border: 1px solid #2563eb; border-radius: 3px; padding: 8px; margin-top: 6px; page-break-inside: avoid;">
+        <div style="background: #f1f5f9; border: 1px solid #2563eb; border-radius: 3px; padding: 8px; margin-top: 6px;">
           <div style="margin-bottom: 4px; padding-bottom: 4px; border-bottom: 1px solid #cbd5e1; font-size: 9px;">
             <strong style="color: #2563eb;">TOTAL PRIX:</strong>
             <span style="color: #059669; font-weight: 700; float: right;">${totalPrix.toFixed(2)} DH</span>
@@ -611,20 +669,21 @@ const generateMobilePDFContent = (bon: Bon): string => {
             <span style="color: #059669; font-weight: 700; float: right;">${totalGeneral.toFixed(2)} DH</span>
           </div>
         </div>
-      </div>
 
-      <!-- Notes -->
-      <div style="margin-top: 6px; padding: 8px; background: #f8fafc; border-radius: 3px; border-left: 2px solid #2563eb; page-break-inside: avoid;">
-        <h4 style="color: #2563eb; margin-bottom: 4px; font-size: 9px; margin-top: 0;">Notes</h4>
-        <p style="color: #475569; margin: 0; margin-bottom: 2px; font-size: 8px; line-height: 1.2;">
-          Livraison prioritaire - Contacter le client avant livraison
-        </p>
-      </div>
 
-      <!-- Footer -->
-      <div style="text-align: center; margin-top: 6px; padding-top: 4px; border-top: 1px solid #e2e8f0; color: #64748b; font-size: 7px;">
-        <p style="margin: 0;">Document généré le ${formatDate(new Date().toISOString())} par LogiTrack</p>
-        <p style="margin: 1px 0 0 0;">Total des colis: ${sampleColis.length} | Montant total: ${totalGeneral.toFixed(2)} DH</p>
+        <!-- Notes -->
+        <div style="margin-top: 6px; padding: 8px; background: #f8fafc; border-radius: 3px; border-left: 2px solid #2563eb;">
+          <h4 style="color: #2563eb; margin-bottom: 4px; font-size: 9px; margin-top: 0;">Notes</h4>
+          <p style="color: #475569; margin: 0; margin-bottom: 2px; font-size: 8px; line-height: 1.2;">
+            ${bon.notes || 'Livraison prioritaire - Contacter le client avant livraison'}
+          </p>
+        </div>
+
+        <!-- Footer -->
+        <div style="text-align: center; margin-top: 6px; padding-top: 4px; border-top: 1px solid #e2e8f0; color: #64748b; font-size: 7px;">
+          <p style="margin: 0;">Document généré le ${formatDate(new Date().toISOString())} par LogiTrack</p>
+          <p style="margin: 1px 0 0 0;">Total des colis: ${sampleColis.length} | Montant total: ${totalGeneral.toFixed(2)} DH</p>
+        </div>
       </div>
     </div>
   `;
@@ -706,12 +765,3 @@ export const downloadMobileBonAsPDF = async (bon: Bon): Promise<void> => {
     throw new Error('Erreur lors de la génération du PDF mobile');
   }
 };
-
-
-
-
-
-
-
-
-
