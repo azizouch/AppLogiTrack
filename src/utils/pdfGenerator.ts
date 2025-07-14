@@ -443,6 +443,15 @@ const generateMobilePDFContent = (bon: Bon): string => {
       prix: 95.25,
       frais: 15.00,
       statut: 'En cours'
+    },
+    {
+      reference: 'COL-2024-005',
+      client: 'Youssef Alami',
+      entreprise: 'Global Trade',
+      adresse: '654 Avenue Royale, Agadir',
+      prix: 175.00,
+      frais: 18.00,
+      statut: 'En cours'
     }
   ];
 
@@ -451,6 +460,13 @@ const generateMobilePDFContent = (bon: Bon): string => {
   const totalGeneral = totalPrix + totalFrais;
 
   return `
+    <style>
+      @media print {
+        .page-break-inside-avoid { page-break-inside: avoid; }
+        .page-break-before { page-break-before: always; }
+        .page-break-after { page-break-after: always; }
+      }
+    </style>
     <div style="font-family: Arial, sans-serif; width: 100%; margin: 0; padding: 0; background: white; font-size: 10px; line-height: 1.2;">
       <!-- Header -->
       <div style="text-align: center; margin-bottom: 8px; border-bottom: 1px solid #2563eb; padding-bottom: 6px;">
@@ -460,26 +476,26 @@ const generateMobilePDFContent = (bon: Bon): string => {
 
       <!-- Bon Info - Compact -->
       <div style="margin-bottom: 8px;">
-        <div style="background: #f8fafc; padding: 6px; border-radius: 3px; border-left: 2px solid #2563eb; margin-bottom: 4px;">
-          <h3 style="color: #2563eb; margin-bottom: 4px; font-size: 11px; margin-top: 0; font-weight: bold;">Informations générales</h3>
-          <div style="margin-bottom: 2px; font-size: 9px;">
+        <div style="background: #f8fafc; padding: 8px; border-radius: 3px; border-left: 2px solid #2563eb; margin-bottom: 4px;">
+          <h3 style="color: #2563eb; margin-bottom: 6px; font-size: 11px; margin-top: 0; font-weight: bold;">Informations générales</h3>
+          <div style="margin-bottom: 4px; font-size: 9px;">
             <strong style="color: #475569;">ID:</strong>
             <span style="color: #1e293b; margin-left: 2px;">${bon.id}</span>
           </div>
-          <div style="margin-bottom: 2px; font-size: 9px;">
+          <div style="margin-bottom: 4px; font-size: 9px;">
             <strong style="color: #475569;">Type:</strong>
             <span style="color: #1e293b; margin-left: 2px;">${bon.type.charAt(0).toUpperCase() + bon.type.slice(1)}</span>
           </div>
-          <div style="margin-bottom: 2px; font-size: 9px;">
+          <div style="margin-bottom: 4px; font-size: 9px;">
             <strong style="color: #475569;">Statut:</strong>
             <span style="display: inline-block; padding: 1px 4px; border-radius: 2px; font-size: 8px; font-weight: 600; background: #dbeafe; color: #1e40af; margin-left: 2px;">${getStatusText(bon.statut)}</span>
           </div>
-          <div style="margin-bottom: 2px; font-size: 9px;">
+          <div style="margin-bottom: 4px; font-size: 9px;">
             <strong style="color: #475569;">Date:</strong>
             <span style="color: #1e293b; margin-left: 2px;">${formatDate(bon.date_creation)}</span>
           </div>
           ${bon.nb_colis ? `
-          <div style="font-size: 9px;">
+          <div style="font-size: 9px; margin-bottom: 2px;">
             <strong style="color: #475569;">Colis:</strong>
             <span style="color: #1e293b; margin-left: 2px;">${bon.nb_colis}</span>
           </div>
@@ -487,32 +503,32 @@ const generateMobilePDFContent = (bon: Bon): string => {
         </div>
 
         ${bon.user ? `
-        <div style="background: #f8fafc; padding: 6px; border-radius: 3px; border-left: 2px solid #2563eb;">
-          <h3 style="color: #2563eb; margin-bottom: 4px; font-size: 11px; margin-top: 0; font-weight: bold;">Livreur assigné</h3>
-          <div style="margin-bottom: 2px; font-size: 9px;">
+        <div style="background: #f8fafc; padding: 8px; border-radius: 3px; border-left: 2px solid #2563eb;">
+          <h3 style="color: #2563eb; margin-bottom: 6px; font-size: 11px; margin-top: 0; font-weight: bold;">Livreur assigné</h3>
+          <div style="margin-bottom: 4px; font-size: 9px;">
             <strong style="color: #475569;">Nom:</strong>
             <span style="color: #1e293b; margin-left: 2px;">${bon.user.nom} ${bon.user.prenom || ''}</span>
           </div>
           ${bon.user.email ? `
-          <div style="margin-bottom: 2px; font-size: 9px;">
+          <div style="margin-bottom: 4px; font-size: 9px;">
             <strong style="color: #475569;">Email:</strong>
             <span style="color: #1e293b; margin-left: 2px;">${bon.user.email}</span>
           </div>
           ` : ''}
           ${bon.user.telephone ? `
-          <div style="margin-bottom: 2px; font-size: 9px;">
+          <div style="margin-bottom: 4px; font-size: 9px;">
             <strong style="color: #475569;">Tél:</strong>
             <span style="color: #1e293b; margin-left: 2px;">${bon.user.telephone}</span>
           </div>
           ` : ''}
           ${bon.user.vehicule ? `
-          <div style="margin-bottom: 2px; font-size: 9px;">
+          <div style="margin-bottom: 4px; font-size: 9px;">
             <strong style="color: #475569;">Véhicule:</strong>
             <span style="color: #1e293b; margin-left: 2px;">${bon.user.vehicule}</span>
           </div>
           ` : ''}
           ${bon.user.zone ? `
-          <div style="font-size: 9px;">
+          <div style="font-size: 9px; margin-bottom: 2px;">
             <strong style="color: #475569;">Zone:</strong>
             <span style="color: #1e293b; margin-left: 2px;">${bon.user.zone}</span>
           </div>
@@ -526,24 +542,24 @@ const generateMobilePDFContent = (bon: Bon): string => {
         <h3 style="color: #2563eb; margin-bottom: 6px; font-size: 11px; font-weight: bold;">Liste des Colis (${sampleColis.length} colis)</h3>
 
         ${sampleColis.map((colis) => `
-          <div style="background: white; border: 1px solid #e2e8f0; border-radius: 3px; padding: 4px; margin-bottom: 3px;">
-            <div style="margin-bottom: 2px; font-size: 8px;">
+          <div style="background: white; border: 1px solid #e2e8f0; border-radius: 3px; padding: 6px; margin-bottom: 4px; page-break-inside: avoid;">
+            <div style="margin-bottom: 3px; font-size: 8px;">
               <strong style="color: #2563eb;">Réf:</strong>
               <span style="color: #1e293b; font-weight: 600; margin-left: 2px;">${colis.reference}</span>
             </div>
-            <div style="margin-bottom: 2px; font-size: 8px;">
+            <div style="margin-bottom: 3px; font-size: 8px;">
               <strong style="color: #475569;">Client:</strong>
               <span style="color: #1e293b; margin-left: 2px;">${colis.client}</span>
             </div>
-            <div style="margin-bottom: 2px; font-size: 8px;">
+            <div style="margin-bottom: 3px; font-size: 8px;">
               <strong style="color: #475569;">Entreprise:</strong>
               <span style="color: #1e293b; margin-left: 2px;">${colis.entreprise}</span>
             </div>
-            <div style="margin-bottom: 2px; font-size: 8px;">
+            <div style="margin-bottom: 3px; font-size: 8px;">
               <strong style="color: #475569;">Adresse:</strong>
               <span style="color: #1e293b; margin-left: 2px;">${colis.adresse}</span>
             </div>
-            <div style="font-size: 8px;">
+            <div style="font-size: 8px; margin-bottom: 2px;">
               <strong style="color: #059669;">Prix:</strong>
               <span style="color: #059669; font-weight: 600; margin-left: 2px;">${colis.prix.toFixed(2)} DH</span>
               <strong style="color: #059669; margin-left: 8px;">Frais:</strong>
@@ -553,16 +569,16 @@ const generateMobilePDFContent = (bon: Bon): string => {
         `).join('')}
 
         <!-- Totals -->
-        <div style="background: #f1f5f9; border: 1px solid #2563eb; border-radius: 3px; padding: 6px; margin-top: 6px;">
-          <div style="margin-bottom: 2px; padding-bottom: 2px; border-bottom: 1px solid #cbd5e1; font-size: 9px;">
+        <div style="background: #f1f5f9; border: 1px solid #2563eb; border-radius: 3px; padding: 8px; margin-top: 6px; page-break-inside: avoid;">
+          <div style="margin-bottom: 4px; padding-bottom: 4px; border-bottom: 1px solid #cbd5e1; font-size: 9px;">
             <strong style="color: #2563eb;">TOTAL PRIX:</strong>
             <span style="color: #059669; font-weight: 700; float: right;">${totalPrix.toFixed(2)} DH</span>
           </div>
-          <div style="margin-bottom: 2px; padding-bottom: 2px; border-bottom: 1px solid #cbd5e1; font-size: 9px;">
+          <div style="margin-bottom: 4px; padding-bottom: 4px; border-bottom: 1px solid #cbd5e1; font-size: 9px;">
             <strong style="color: #2563eb;">TOTAL FRAIS:</strong>
             <span style="color: #059669; font-weight: 700; float: right;">${totalFrais.toFixed(2)} DH</span>
           </div>
-          <div style="font-size: 10px;">
+          <div style="font-size: 10px; margin-bottom: 2px;">
             <strong style="color: #2563eb;">TOTAL GÉNÉRAL:</strong>
             <span style="color: #059669; font-weight: 700; float: right;">${totalGeneral.toFixed(2)} DH</span>
           </div>
@@ -570,9 +586,9 @@ const generateMobilePDFContent = (bon: Bon): string => {
       </div>
 
       <!-- Notes -->
-      <div style="margin-top: 6px; padding: 4px; background: #f8fafc; border-radius: 3px; border-left: 2px solid #2563eb;">
-        <h4 style="color: #2563eb; margin-bottom: 2px; font-size: 9px; margin-top: 0;">Notes</h4>
-        <p style="color: #475569; margin: 0; font-size: 8px; line-height: 1.2;">
+      <div style="margin-top: 6px; padding: 8px; background: #f8fafc; border-radius: 3px; border-left: 2px solid #2563eb; page-break-inside: avoid;">
+        <h4 style="color: #2563eb; margin-bottom: 4px; font-size: 9px; margin-top: 0;">Notes</h4>
+        <p style="color: #475569; margin: 0; margin-bottom: 2px; font-size: 8px; line-height: 1.2;">
           Livraison prioritaire - Contacter le client avant livraison
         </p>
       </div>
