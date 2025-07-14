@@ -462,9 +462,37 @@ const generateMobilePDFContent = (bon: Bon): string => {
   return `
     <style>
       @media print {
-        .page-break-inside-avoid { page-break-inside: avoid; }
+        .page-break-inside-avoid {
+          page-break-inside: avoid !important;
+          break-inside: avoid !important;
+        }
         .page-break-before { page-break-before: always; }
         .page-break-after { page-break-after: always; }
+      }
+
+      /* Force page break avoidance for colis cards */
+      div[style*="background: white"][style*="border: 1px solid #e2e8f0"] {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+        display: block !important;
+      }
+
+      /* Ensure sections stay together */
+      div[style*="background: #f8fafc"][style*="border-left: 2px solid #2563eb"] {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+      }
+
+      /* Better orphan/widow control */
+      body {
+        orphans: 3;
+        widows: 3;
+      }
+
+      /* Prevent small fragments at page breaks */
+      h3 {
+        page-break-after: avoid !important;
+        break-after: avoid !important;
       }
     </style>
     <div style="font-family: Arial, sans-serif; width: 100%; margin: 0; padding: 0; background: white; font-size: 10px; line-height: 1.2;">
@@ -538,11 +566,11 @@ const generateMobilePDFContent = (bon: Bon): string => {
       </div>
 
       <!-- Colis List - Compact -->
-      <div style="margin: 8px 0;">
+      <div class="page-break-inside-avoid" style="margin: 8px 0; page-break-inside: avoid !important; break-inside: avoid !important;">
         <h3 style="color: #2563eb; margin-bottom: 6px; font-size: 11px; font-weight: bold;">Liste des Colis (${sampleColis.length} colis)</h3>
 
         ${sampleColis.map((colis) => `
-          <div style="background: white; border: 1px solid #e2e8f0; border-radius: 3px; padding: 6px; margin-bottom: 4px; page-break-inside: avoid;">
+          <div class="page-break-inside-avoid" style="background: white; border: 1px solid #e2e8f0; border-radius: 3px; padding: 6px; margin-bottom: 6px; page-break-inside: avoid !important; break-inside: avoid !important; display: block; min-height: 60px;">
             <div style="margin-bottom: 3px; font-size: 8px;">
               <strong style="color: #2563eb;">Réf:</strong>
               <span style="color: #1e293b; font-weight: 600; margin-left: 2px;">${colis.reference}</span>
