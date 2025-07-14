@@ -141,7 +141,7 @@ export function Paiement() {
       </div>
 
       {/* Table Container */}
-      <div className="rounded-lg bg-white dark:bg-gray-800">
+      <div className="space-y-4">
         {/* Table Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between py-4 gap-3">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
@@ -172,7 +172,7 @@ export function Paiement() {
         {/* Table or Empty State */}
         {loading || bons.length > 0 ? (
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full bg-transparent">
               <thead>
                 <tr className="border-b border-gray-200 dark:border-gray-600" style={{ backgroundColor: 'hsl(210, 40%, 96.1%)' }}>
                   <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">
@@ -221,7 +221,7 @@ export function Paiement() {
                   ))
                 ) : (
                   bons.map((bon) => (
-                    <tr key={bon.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                    <tr key={bon.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-200 dark:border-gray-600 bg-white dark:bg-transparent">
                       <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
                         {bon.id}
                       </td>

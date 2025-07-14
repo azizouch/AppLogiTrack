@@ -8,7 +8,7 @@ import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { api } from '@/lib/supabase';
 import { Bon } from '@/types';
-import { downloadBonAsPDF, downloadMobileBonAsPDF, downloadMobileBonAsPDFNew, downloadMobileBonAsPDFSimple, printBon } from '@/utils/pdfGenerator';
+import { downloadBonAsPDF, downloadMobileBonAsPDF, printBon } from '@/utils/pdfGenerator';
 
 export function BonDetails() {
   const { id } = useParams<{ id: string }>();
