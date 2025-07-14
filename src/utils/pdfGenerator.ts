@@ -689,76 +689,293 @@ const generateMobilePDFContent = (bon: Bon): string => {
   `;
 };
 
-// Download mobile-optimized PDF (smaller size optimized for mobile viewing)
+// Download mobile-optimized PDF with proper page breaks (no html2canvas)
 export const downloadMobileBonAsPDF = async (bon: Bon): Promise<void> => {
   try {
-    // Create a temporary container optimized for mobile PDF with smaller dimensions
-    const tempContainer = document.createElement('div');
-    tempContainer.style.position = 'absolute';
-    tempContainer.style.left = '-9999px';
-    tempContainer.style.top = '-9999px';
-    tempContainer.style.width = '400px'; // Much smaller width for mobile optimization
-    tempContainer.style.backgroundColor = 'white';
-    tempContainer.style.padding = '10px'; // Minimal padding
-    tempContainer.style.fontFamily = 'Arial, sans-serif';
-    tempContainer.style.fontSize = '11px'; // Smaller font for mobile
-    tempContainer.style.lineHeight = '1.3'; // Tighter line height
-    tempContainer.style.boxSizing = 'border-box';
-
-    // Generate mobile-optimized content
-    const pdfContent = generateMobilePDFContent(bon);
-    tempContainer.innerHTML = pdfContent;
-
-    document.body.appendChild(tempContainer);
-
-    // Wait for rendering
-    await new Promise(resolve => setTimeout(resolve, 200));
-
-    // Convert to canvas with mobile-optimized settings
-    const canvas = await html2canvas(tempContainer, {
-      scale: 2, // Higher scale for better quality but smaller content
-      useCORS: true,
-      allowTaint: true,
-      backgroundColor: '#ffffff',
-      width: tempContainer.offsetWidth,
-      height: tempContainer.scrollHeight,
-      logging: false,
-      imageTimeout: 0,
-      removeContainer: true
-    });
-
-    // Create PDF with mobile-friendly dimensions
     const pdf = new jsPDF('p', 'mm', 'a4');
-    const pdfWidth = 210; // A4 width in mm
-    const pdfHeight = 297; // A4 height in mm
-    const margin = 15; // Add margins for better mobile viewing
-    const contentWidth = pdfWidth - (margin * 2); // Content width with margins
-    const contentHeight = (canvas.height * contentWidth) / canvas.width;
+    const pageWidth = 210; // A4 width in mm
+    const pageHeight = 297; // A4 height in mm
+    const margin = 15;
+    const contentWidth = pageWidth - (margin * 2);
 
-    // Add image to PDF with margins for better mobile viewing
-    const imageData = canvas.toDataURL('image/png', 0.9); // Slightly compressed for smaller file size
+    const formatDate = (dateString: string) => {
+      return new Date(dateString).toLocaleDateString('fr-FR', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    };
 
-    // Center content on page with margins
-    pdf.addImage(imageData, 'PNG', margin, margin, contentWidth, contentHeight, undefined, 'FAST');
+    const getStatusText = (statut: string) => {
+      switch (statut.toLowerCase()) {
+        case 'en cours':
+          return 'En cours';
+        case 'complété':
+        case 'complete':
+          return 'Complété';
+        case 'annulé':
+        case 'annule':
+          return 'Annulé';
+        default:
+          return statut;
+      }
+    };
 
-    // Handle multi-page content if needed
-    let remainingHeight = contentHeight - (pdfHeight - margin * 2);
+    // Sample colis data
+    const sampleColis = [
+      {
+        reference: 'COL-2024-001',
+        client: 'Ahmed Benali',
+        entreprise: 'TechCorp SARL',
+        adresse: '123 Rue Mohammed V, Casablanca',
+        prix: 250.00,
+        frais: 25.00,
+        statut: 'En cours'
+      },
+      {
+        reference: 'COL-2024-002',
+        client: 'Fatima Zahra',
+        entreprise: 'Digital Solutions',
+        adresse: '456 Avenue Hassan II, Rabat',
+        prix: 180.50,
+        frais: 20.00,
+        statut: 'En cours'
+      },
+      {
+        reference: 'COL-2024-003',
+        client: 'Omar Alami',
+        entreprise: 'Import Export Co',
+        adresse: '789 Boulevard Zerktouni, Marrakech',
+        prix: 320.75,
+        frais: 30.00,
+        statut: 'En cours'
+      },
+      {
+        reference: 'COL-2024-004',
+        client: 'Aicha Mansouri',
+        entreprise: 'Fashion Store',
+        adresse: '321 Rue de la Liberté, Fès',
+        prix: 95.25,
+        frais: 15.00,
+        statut: 'En cours'
+      },
+      {
+        reference: 'COL-2024-005',
+        client: 'Youssef Alami',
+        entreprise: 'Global Trade',
+        adresse: '654 Avenue Royale, Agadir',
+        prix: 175.00,
+        frais: 18.00,
+        statut: 'En cours'
+      }
+    ];
 
-    while (remainingHeight > 0) {
+    const totalPrix = sampleColis.reduce((sum, colis) => sum + colis.prix, 0);
+    const totalFrais = sampleColis.reduce((sum, colis) => sum + colis.frais, 0);
+    const totalGeneral = totalPrix + totalFrais;
+
+    // Set font
+    pdf.setFont('helvetica');
+
+    let currentY = margin;
+    let pageNumber = 1;
+
+    // Helper function to add a new page
+    const addNewPage = () => {
       pdf.addPage();
-      const yOffset = -(contentHeight - remainingHeight) + margin;
-      pdf.addImage(imageData, 'PNG', margin, yOffset, contentWidth, contentHeight, undefined, 'FAST');
-      remainingHeight -= (pdfHeight - margin * 2);
+      pageNumber++;
+      currentY = margin;
+    };
+
+    // Helper function to check if we need a new page
+    const checkPageBreak = (requiredHeight: number) => {
+      if (currentY + requiredHeight > pageHeight - margin) {
+        addNewPage();
+        return true;
+      }
+      return false;
+    };
+
+    // Page 1: Header and Info
+    // Header
+    pdf.setFontSize(16);
+    pdf.setTextColor(37, 99, 235); // Blue color
+    pdf.text('BON DE DISTRIBUTION', pageWidth / 2, currentY, { align: 'center' });
+    currentY += 8;
+
+    pdf.setFontSize(10);
+    pdf.setTextColor(102, 102, 102); // Gray color
+    pdf.text('LogiTrack - Système de gestion logistique', pageWidth / 2, currentY, { align: 'center' });
+    currentY += 15;
+
+    // Bon Info Section
+    pdf.setFontSize(12);
+    pdf.setTextColor(37, 99, 235);
+    pdf.text('Informations générales', margin, currentY);
+    currentY += 8;
+
+    pdf.setFontSize(9);
+    pdf.setTextColor(0, 0, 0);
+    pdf.text(`ID: ${bon.id}`, margin, currentY);
+    currentY += 5;
+    pdf.text(`Type: ${bon.type.charAt(0).toUpperCase() + bon.type.slice(1)}`, margin, currentY);
+    currentY += 5;
+    pdf.text(`Statut: ${getStatusText(bon.statut)}`, margin, currentY);
+    currentY += 5;
+    pdf.text(`Date: ${formatDate(bon.date_creation)}`, margin, currentY);
+    currentY += 5;
+    if (bon.nb_colis) {
+      pdf.text(`Colis: ${bon.nb_colis}`, margin, currentY);
+      currentY += 5;
+    }
+    currentY += 5;
+
+    // Livreur Info (if exists)
+    if (bon.user) {
+      pdf.setFontSize(12);
+      pdf.setTextColor(37, 99, 235);
+      pdf.text('Livreur assigné', margin, currentY);
+      currentY += 8;
+
+      pdf.setFontSize(9);
+      pdf.setTextColor(0, 0, 0);
+      pdf.text(`Nom: ${bon.user.nom} ${bon.user.prenom || ''}`, margin, currentY);
+      currentY += 5;
+      if (bon.user.email) {
+        pdf.text(`Email: ${bon.user.email}`, margin, currentY);
+        currentY += 5;
+      }
+      if (bon.user.telephone) {
+        pdf.text(`Tél: ${bon.user.telephone}`, margin, currentY);
+        currentY += 5;
+      }
+      if (bon.user.vehicule) {
+        pdf.text(`Véhicule: ${bon.user.vehicule}`, margin, currentY);
+        currentY += 5;
+      }
+      if (bon.user.zone) {
+        pdf.text(`Zone: ${bon.user.zone}`, margin, currentY);
+        currentY += 5;
+      }
+      currentY += 5;
     }
 
-    // Generate filename
+    // Colis List Header
+    pdf.setFontSize(12);
+    pdf.setTextColor(37, 99, 235);
+    pdf.text(`Liste des Colis (${sampleColis.length} colis)`, margin, currentY);
+    currentY += 10;
+
+    // Process each colis individually to avoid page breaks
+    sampleColis.forEach((colis, index) => {
+      const colisHeight = 35; // Estimated height for each colis card
+
+      // Check if we need a new page for this colis
+      if (checkPageBreak(colisHeight)) {
+        // Add page header for continuation
+        pdf.setFontSize(14);
+        pdf.setTextColor(37, 99, 235);
+        pdf.text('BON DE DISTRIBUTION', pageWidth / 2, currentY, { align: 'center' });
+        currentY += 6;
+        pdf.setFontSize(8);
+        pdf.setTextColor(102, 102, 102);
+        pdf.text(`Page ${pageNumber} - Suite des colis`, pageWidth / 2, currentY, { align: 'center' });
+        currentY += 15;
+      }
+
+      // Draw colis card
+      const cardStartY = currentY;
+
+      // Card border
+      pdf.setDrawColor(226, 232, 240); // Light gray border
+      pdf.rect(margin, cardStartY, contentWidth, 30);
+
+      // Card content
+      pdf.setFontSize(9);
+      pdf.setTextColor(37, 99, 235);
+      pdf.text(`Réf: ${colis.reference}`, margin + 3, cardStartY + 6);
+
+      pdf.setTextColor(0, 0, 0);
+      pdf.text(`Client: ${colis.client}`, margin + 3, cardStartY + 11);
+      pdf.text(`Entreprise: ${colis.entreprise}`, margin + 3, cardStartY + 16);
+
+      // Split long addresses if needed
+      const maxAddressWidth = contentWidth - 6;
+      const addressLines = pdf.splitTextToSize(`Adresse: ${colis.adresse}`, maxAddressWidth);
+      pdf.text(addressLines[0], margin + 3, cardStartY + 21);
+      if (addressLines.length > 1) {
+        pdf.text(addressLines[1], margin + 3, cardStartY + 26);
+      }
+
+      // Price info
+      pdf.setTextColor(5, 150, 105); // Green color
+      pdf.text(`Prix: ${colis.prix.toFixed(2)} DH`, margin + 3, cardStartY + (addressLines.length > 1 ? 31 : 26));
+      pdf.text(`Frais: ${colis.frais.toFixed(2)} DH`, margin + 80, cardStartY + (addressLines.length > 1 ? 31 : 26));
+
+      currentY += 35; // Move to next colis position
+    });
+
+    // Add totals on a new page or at the end
+    const totalsHeight = 40;
+    if (checkPageBreak(totalsHeight)) {
+      // Add page header for totals
+      pdf.setFontSize(14);
+      pdf.setTextColor(37, 99, 235);
+      pdf.text('BON DE DISTRIBUTION', pageWidth / 2, currentY, { align: 'center' });
+      currentY += 6;
+      pdf.setFontSize(8);
+      pdf.setTextColor(102, 102, 102);
+      pdf.text(`Page ${pageNumber} - Totaux`, pageWidth / 2, currentY, { align: 'center' });
+      currentY += 15;
+    }
+
+    // Totals section
+    pdf.setFillColor(241, 245, 249); // Light blue background
+    pdf.rect(margin, currentY, contentWidth, 25, 'F');
+
+    pdf.setFontSize(10);
+    pdf.setTextColor(37, 99, 235);
+    pdf.text('TOTAL PRIX:', margin + 3, currentY + 6);
+    pdf.text(`${totalPrix.toFixed(2)} DH`, pageWidth - margin - 3, currentY + 6, { align: 'right' });
+
+    pdf.text('TOTAL FRAIS:', margin + 3, currentY + 12);
+    pdf.text(`${totalFrais.toFixed(2)} DH`, pageWidth - margin - 3, currentY + 12, { align: 'right' });
+
+    pdf.setFontSize(11);
+    pdf.text('TOTAL GÉNÉRAL:', margin + 3, currentY + 20);
+    pdf.text(`${totalGeneral.toFixed(2)} DH`, pageWidth - margin - 3, currentY + 20, { align: 'right' });
+
+    currentY += 30;
+
+    // Notes section
+    if (bon.notes || true) { // Always show notes section
+      currentY += 5;
+      pdf.setFontSize(10);
+      pdf.setTextColor(37, 99, 235);
+      pdf.text('Notes', margin, currentY);
+      currentY += 6;
+
+      pdf.setFontSize(8);
+      pdf.setTextColor(0, 0, 0);
+      const notesText = bon.notes || 'Livraison prioritaire - Contacter le client avant livraison';
+      const notesLines = pdf.splitTextToSize(notesText, contentWidth);
+      pdf.text(notesLines, margin, currentY);
+      currentY += notesLines.length * 4;
+    }
+
+    // Footer
+    currentY += 10;
+    pdf.setFontSize(7);
+    pdf.setTextColor(100, 116, 139);
+    pdf.text(`Document généré le ${formatDate(new Date().toISOString())} par LogiTrack`, pageWidth / 2, currentY, { align: 'center' });
+    currentY += 4;
+    pdf.text(`Total des colis: ${sampleColis.length} | Montant total: ${totalGeneral.toFixed(2)} DH`, pageWidth / 2, currentY, { align: 'center' });
+
+    // Generate filename and save
     const filename = `Bon_Distribution_Mobile_${bon.id}_${new Date().toISOString().split('T')[0]}.pdf`;
-
-    // Download the PDF
     pdf.save(filename);
-
-    // Clean up
-    document.body.removeChild(tempContainer);
 
   } catch (error) {
     console.error('Error generating mobile PDF:', error);
