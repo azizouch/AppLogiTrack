@@ -179,19 +179,23 @@ const generatePDFContent = (bon: Bon): string => {
   const totalGeneral = totalPrix + totalFrais;
 
   return `
-    <div style="font-family: Arial, sans-serif; max-width: 1000px; margin: 0 auto; padding: 15px; background: white; font-size: 14px; line-height: 1.4;">
+    <div style="font-family: Arial, sans-serif; max-width: 1000px; margin: 0 auto; padding: 20px 40px; background: white; font-size: 14px; line-height: 1.4;">
       <!-- Header -->
       <div style="text-align: center; margin-bottom: 20px; border-bottom: 3px solid #2563eb; padding-bottom: 15px;">
-        <div style="display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 10px;">
-          <img src="/logo.jpg" alt="LogiTrack Logo" style="height: 50px; width: auto;" onerror="this.style.display='none'">
-          <h1 style="color: #2563eb; font-size: 28px; margin: 0; font-weight: bold;">BON DE DISTRIBUTION</h1>
-        </div>
+        <table style="width: 100%; margin-bottom: 10px; border-collapse: collapse;">
+          <tr>
+            <td style="text-align: center; vertical-align: middle; padding: 0; border: none; line-height: 30px;">
+              <img src="/logo.jpg" alt="LogiTrack Logo" style="height: 30px; width: 30px; vertical-align: middle; margin-right: 8px; display: inline-block;" onerror="this.style.display='none'">
+              <span style="color: #2563eb; font-size: 28px; font-weight: bold; vertical-align: middle; display: inline-block; line-height: 30px;">BON DE DISTRIBUTION</span>
+            </td>
+          </tr>
+        </table>
         <p style="color: #666; font-size: 16px; margin: 0;">LogiTrack - Système de gestion logistique</p>
       </div>
 
       <!-- Bon Info -->
       <div style="display: flex; justify-content: space-between; gap: 20px; margin-bottom: 20px;">
-        <div style="flex: 1; background: #f8fafc; padding: 15px; border-radius: 6px; border-left: 4px solid #2563eb;">
+        <div style="flex: 1; background: #f8fafc; padding: 15px; border-radius: 6px; border-left: 2px solid #2563eb;">
           <h3 style="color: #2563eb; margin-bottom: 12px; font-size: 16px; margin-top: 0; font-weight: bold;">Informations générales</h3>
           <div style="margin-bottom: 8px; font-size: 14px;">
             <strong style="color: #475569;">ID Bon:</strong> <span style="color: #1e293b;">${bon.id}</span>
@@ -214,7 +218,7 @@ const generatePDFContent = (bon: Bon): string => {
         </div>
 
         ${bon.user ? `
-        <div style="flex: 1; background: #f8fafc; padding: 15px; border-radius: 6px; border-left: 4px solid #2563eb;">
+        <div style="flex: 1; background: #f8fafc; padding: 15px; border-radius: 6px; border-left: 2px solid #2563eb;">
           <h3 style="color: #2563eb; margin-bottom: 12px; font-size: 16px; margin-top: 0; font-weight: bold;">Livreur assigné</h3>
           <div style="margin-bottom: 8px; font-size: 14px;">
             <strong style="color: #475569;">Nom:</strong> <span style="color: #1e293b;">${bon.user.nom} ${bon.user.prenom || ''}</span>
@@ -244,43 +248,45 @@ const generatePDFContent = (bon: Bon): string => {
       </div>
 
       <!-- Colis Table -->
-      <div style="margin: 20px 0;">
+      <div style="margin: 20px 0 15px 0;">
         <h3 style="color: #2563eb; margin-bottom: 15px; font-size: 18px; font-weight: bold;">Liste des Colis (${sampleColis.length} colis)</h3>
         <div style="border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden; background: white;">
           <!-- Table Header -->
-          <div style="background: #2563eb; color: white; display: flex; font-weight: 600; font-size: 12px; text-transform: uppercase;">
-            <div style="flex: 1; padding: 10px 8px; border-right: 1px solid rgba(255,255,255,0.2);">Référence</div>
-            <div style="flex: 1; padding: 10px 8px; border-right: 1px solid rgba(255,255,255,0.2);">Client</div>
-            <div style="flex: 1; padding: 10px 8px; border-right: 1px solid rgba(255,255,255,0.2);">Entreprise</div>
-            <div style="flex: 1.5; padding: 10px 8px; border-right: 1px solid rgba(255,255,255,0.2);">Adresse</div>
-            <div style="flex: 0.8; padding: 10px 8px; border-right: 1px solid rgba(255,255,255,0.2); text-align: right;">Prix (DH)</div>
-            <div style="flex: 0.8; padding: 10px 8px; text-align: right;">Frais (DH)</div>
+          <div style="background: #2563eb; color: white; display: flex; font-weight: 600; font-size: 12px; text-transform: uppercase; min-height: 40px;">
+            <div style="flex: 1; padding: 12px 8px; border-right: 1px solid rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: flex-start;">Référence</div>
+            <div style="flex: 1; padding: 12px 8px; border-right: 1px solid rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: flex-start;">Client</div>
+            <div style="flex: 1; padding: 12px 8px; border-right: 1px solid rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: flex-start;">Entreprise</div>
+            <div style="flex: 1.5; padding: 12px 8px; border-right: 1px solid rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: flex-start;">Adresse</div>
+            <div style="flex: 0.8; padding: 12px 8px; border-right: 1px solid rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center;">Frais (DH)</div>
+            <div style="flex: 0.8; padding: 12px 8px; display: flex; align-items: center; justify-content: center;">Prix (DH)</div>
           </div>
 
           <!-- Table Body -->
           ${sampleColis.map((colis, index) => `
-            <div style="background: ${index % 2 === 0 ? 'white' : '#f8fafc'}; display: flex; border-bottom: 1px solid #e2e8f0; font-size: 12px;">
-              <div style="flex: 1; padding: 8px 6px; border-right: 1px solid #e2e8f0;"><strong>${colis.reference}</strong></div>
-              <div style="flex: 1; padding: 8px 6px; border-right: 1px solid #e2e8f0;">${colis.client}</div>
-              <div style="flex: 1; padding: 8px 6px; border-right: 1px solid #e2e8f0;">${colis.entreprise}</div>
-              <div style="flex: 1.5; padding: 8px 6px; border-right: 1px solid #e2e8f0;">${colis.adresse}</div>
-              <div style="flex: 0.8; padding: 8px 6px; border-right: 1px solid #e2e8f0; text-align: right; font-weight: 600; color: #059669;">${colis.prix.toFixed(2)} DH</div>
-              <div style="flex: 0.8; padding: 8px 6px; text-align: right; font-weight: 600; color: #059669;">${colis.frais.toFixed(2)} DH</div>
+            <div style="background: ${index % 2 === 0 ? 'white' : '#f8fafc'}; display: flex; border-bottom: 1px solid #e2e8f0; font-size: 12px; min-height: 30px;">
+              <div style="flex: 1; padding: 8px 6px; border-right: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: flex-start;"><strong>${colis.reference}</strong></div>
+              <div style="flex: 1; padding: 8px 6px; border-right: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: flex-start;">${colis.client}</div>
+              <div style="flex: 1; padding: 8px 6px; border-right: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: flex-start;">${colis.entreprise}</div>
+              <div style="flex: 1.5; padding: 8px 6px; border-right: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: flex-start;">${colis.adresse}</div>
+              <div style="flex: 0.8; padding: 8px 6px; border-right: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: center; font-weight: 600; color: #059669;">${colis.frais.toFixed(2)} DH</div>
+              <div style="flex: 0.8; padding: 8px 6px; display: flex; align-items: center; justify-content: center; font-weight: 600; color: #059669;">${colis.prix.toFixed(2)} DH</div>
             </div>
           `).join('')}
 
           <!-- Total Row -->
-          <div style="background: #f1f5f9; display: flex; border-top: 2px solid #2563eb; font-weight: 600; font-size: 14px;">
-            <div style="flex: 3; padding: 10px 8px; border-right: 1px solid #e2e8f0;"><strong>TOTAL</strong></div>
-            <div style="flex: 1.5; padding: 10px 8px; border-right: 1px solid #e2e8f0;"></div>
-            <div style="flex: 0.8; padding: 10px 8px; border-right: 1px solid #e2e8f0; text-align: right;"><strong>${totalPrix.toFixed(2)} DH</strong></div>
-            <div style="flex: 0.8; padding: 10px 8px; text-align: right;"><strong>${totalFrais.toFixed(2)} DH</strong></div>
+          <div style="background: #f1f5f9; display: flex; border-top: 2px solid #2563eb; border-bottom: 1px solid #e2e8f0; font-weight: 600; font-size: 14px; min-height: 40px;">
+            <div style="flex: 1; padding: 12px 8px; display: flex; align-items: center; justify-content: flex-start;"><strong>TOTAL</strong></div>
+            <div style="flex: 1; padding: 12px 8px; display: flex; align-items: center; justify-content: flex-start;"></div>
+            <div style="flex: 1; padding: 12px 8px; display: flex; align-items: center; justify-content: flex-start;"></div>
+            <div style="flex: 1.5; padding: 12px 8px; display: flex; align-items: center; justify-content: flex-start;"></div>
+            <div style="flex: 0.8; padding: 12px 8px; display: flex; align-items: center; justify-content: center; white-space: nowrap;"><strong>${totalFrais.toFixed(2)} DH</strong></div>
+            <div style="flex: 0.8; padding: 12px 8px; display: flex; align-items: center; justify-content: center; white-space: nowrap;"><strong>${totalPrix.toFixed(2)} DH</strong></div>
           </div>
 
           <!-- Total General Row -->
-          <div style="background: #f1f5f9; display: flex; border-top: 1px solid #2563eb; font-weight: 600; font-size: 14px;">
-            <div style="flex: 4.5; padding: 10px 8px; border-right: 1px solid #e2e8f0;"><strong>TOTAL GÉNÉRAL</strong></div>
-            <div style="flex: 1.6; padding: 10px 8px; text-align: right;"><strong>${totalGeneral.toFixed(2)} DH</strong></div>
+          <div style="background: #f1f5f9; display: flex; border-top: 1px solid #2563eb; font-weight: 600; font-size: 14px; min-height: 40px;">
+            <div style="flex: 4.8; padding: 12px 8px; display: flex; align-items: center; justify-content: flex-start;"><strong>TOTAL GÉNÉRAL</strong></div>
+            <div style="flex: 1.6; padding: 12px 8px; display: flex; align-items: center; justify-content: center; white-space: nowrap;"><strong>${totalGeneral.toFixed(2)} DH</strong></div>
           </div>
         </div>
       </div>
@@ -305,467 +311,152 @@ const isMobile = () => {
   return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 };
 
+// Helper function to wrap text within a given width
+const wrapText = (pdf: jsPDF, text: string, maxWidth: number): string[] => {
+  const words = text.split(' ');
+  const lines: string[] = [];
+  let currentLine = '';
+
+  for (const word of words) {
+    const testLine = currentLine ? `${currentLine} ${word}` : word;
+    const textWidth = pdf.getTextWidth(testLine);
+
+    if (textWidth <= maxWidth) {
+      currentLine = testLine;
+    } else {
+      if (currentLine) {
+        lines.push(currentLine);
+        currentLine = word;
+      } else {
+        // Word is too long, break it
+        lines.push(word);
+      }
+    }
+  }
+
+  if (currentLine) {
+    lines.push(currentLine);
+  }
+
+  return lines;
+};
+
 // Download bon as PDF file directly to Downloads folder (using same HTML content as print)
 export const downloadBonAsPDF = async (bon: Bon): Promise<void> => {
   try {
-    const pdf = new jsPDF('p', 'mm', 'a4');
-    const pageWidth = 210; // A4 width in mm
-    const pageHeight = 297; // A4 height in mm
-    const margin = 20; // Larger margin for desktop
-    const contentWidth = pageWidth - (margin * 2);
-
-    const formatDate = (dateString: string) => {
-      return new Date(dateString).toLocaleDateString('fr-FR', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-    };
-
-    const getStatusText = (statut: string) => {
-      switch (statut.toLowerCase()) {
-        case 'en cours':
-          return 'En cours';
-        case 'complété':
-        case 'complete':
-          return 'Complété';
-        case 'annulé':
-        case 'annule':
-          return 'Annulé';
-        default:
-          return statut;
-      }
-    };
-
-    // Sample colis data
-    const sampleColis = [
-      {
-        reference: 'COL-2024-001',
-        client: 'Ahmed Benali',
-        entreprise: 'TechCorp SARL',
-        adresse: '123 Rue Mohammed V, Casablanca',
-        prix: 250.00,
-        frais: 25.00,
-        statut: 'En cours'
-      },
-      {
-        reference: 'COL-2024-002',
-        client: 'Fatima Zahra',
-        entreprise: 'Digital Solutions',
-        adresse: '456 Avenue Hassan II, Rabat',
-        prix: 180.50,
-        frais: 20.00,
-        statut: 'En cours'
-      },
-      {
-        reference: 'COL-2024-003',
-        client: 'Omar Alami',
-        entreprise: 'Import Export Co',
-        adresse: '789 Boulevard Zerktouni, Marrakech',
-        prix: 320.75,
-        frais: 30.00,
-        statut: 'En cours'
-      },
-      {
-        reference: 'COL-2024-004',
-        client: 'Aicha Mansouri',
-        entreprise: 'Fashion Store',
-        adresse: '321 Rue de la Liberté, Fès',
-        prix: 95.25,
-        frais: 15.00,
-        statut: 'En cours'
-      }
-    ];
-
-    const totalPrix = sampleColis.reduce((sum, colis) => sum + colis.prix, 0);
-    const totalFrais = sampleColis.reduce((sum, colis) => sum + colis.frais, 0);
-    const totalGeneral = totalPrix + totalFrais;
-
-    // Set font
-    pdf.setFont('helvetica');
-
-    let currentY = margin;
-
-    // Header with Logo and Title on same line
-    const logoSize = 15;
-    const titleY = currentY + 8;
-
-    // Logo on the left
-    const logoX = margin;
-
-    try {
-      // Load logo from public folder
-      const logoImg = new Image();
-      logoImg.crossOrigin = 'anonymous';
-
-      await new Promise<void>((resolve) => {
-        logoImg.onload = () => {
-          try {
-            // Create canvas to convert image to base64
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            canvas.width = logoImg.width;
-            canvas.height = logoImg.height;
-            ctx?.drawImage(logoImg, 0, 0);
-
-            const logoBase64 = canvas.toDataURL('image/png');
-            // Add logo left aligned
-            pdf.addImage(logoBase64, 'PNG', logoX, currentY, logoSize, logoSize);
-            resolve();
-          } catch (error) {
-            console.warn('Could not load logo, using fallback');
-            // Fallback to text logo (left aligned)
-            pdf.setFillColor(37, 99, 235);
-            pdf.circle(logoX + (logoSize / 2), currentY + (logoSize / 2), logoSize / 2, 'F');
-            pdf.setFontSize(8);
-            pdf.setTextColor(255, 255, 255);
-            pdf.text('LT', logoX + (logoSize / 2), currentY + (logoSize / 2) + 2, { align: 'center' });
-            resolve();
+    // Use the exact same HTML content as printBon for consistency
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html lang="fr">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Bon de Distribution #${bon.id}</title>
+        <style>
+          body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+            line-height: 1.3;
           }
-        };
+          table {
+            width: 100% !important;
+            border-collapse: collapse !important;
+            table-layout: fixed !important;
+            
+          }
+          td, th {
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+          }
+          .price-cell {
+            min-width: 80px !important;
+            white-space: nowrap !important;
+          }
+          @media print {
+            body {
+              margin: 0;
+              padding: 0;
+              font-size: 12px;
+              line-height: 1.2;
+            }
+            .no-print { display: none; }
+            * {
+              -webkit-print-color-adjust: exact !important;
+              color-adjust: exact !important;
+            }
+          }
+        </style>
+      </head>
+      <body>
+        ${generatePDFContent(bon)}
+      </body>
+      </html>
+    `;
 
-        logoImg.onerror = () => {
-          console.warn('Logo not found, using fallback');
-          // Fallback to text logo (left aligned)
-          pdf.setFillColor(37, 99, 235);
-          pdf.circle(logoX + (logoSize / 2), currentY + (logoSize / 2), logoSize / 2, 'F');
-          pdf.setFontSize(8);
-          pdf.setTextColor(255, 255, 255);
-          pdf.text('LT', logoX + (logoSize / 2), currentY + (logoSize / 2) + 2, { align: 'center' });
-          resolve();
-        };
+    // Import html2canvas and jsPDF dynamically for PDF generation
+    const html2canvas = (await import('html2canvas')).default;
+    const { jsPDF } = await import('jspdf');
 
-        logoImg.src = '/logo.jpg';
-      });
-    } catch (error) {
-      console.warn('Error loading logo:', error);
-      // Fallback to text logo (left aligned)
-      pdf.setFillColor(37, 99, 235);
-      pdf.circle(logoX + (logoSize / 2), currentY + (logoSize / 2), logoSize / 2, 'F');
-      pdf.setFontSize(8);
-      pdf.setTextColor(255, 255, 255);
-      pdf.text('LT', logoX + (logoSize / 2), currentY + (logoSize / 2) + 2, { align: 'center' });
-    }
+    // Create a temporary container to render the HTML
+    const tempContainer = document.createElement('div');
+    tempContainer.innerHTML = htmlContent.replace(/<html[^>]*>|<\/html>|<head[^>]*>[\s\S]*?<\/head>|<body[^>]*>|<\/body>/gi, '');
+    tempContainer.style.position = 'absolute';
+    tempContainer.style.left = '-9999px';
+    tempContainer.style.top = '-9999px';
+    tempContainer.style.width = '210mm';
+    tempContainer.style.height = 'auto';
+    tempContainer.style.backgroundColor = 'white';
+    tempContainer.style.fontFamily = 'Arial, sans-serif';
+    tempContainer.style.fontSize = '14px';
+    tempContainer.style.lineHeight = '1.3';
 
-    // Main title (centered, same line as logo)
-    pdf.setFontSize(18);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(37, 99, 235); // Blue color
-    pdf.text('BON DE DISTRIBUTION', pageWidth / 2, titleY, { align: 'center' });
+    document.body.appendChild(tempContainer);
 
-    currentY += 20; // Move past the title line
+    // Wait for content to render
+    await new Promise(resolve => setTimeout(resolve, 500));
 
-    // Subtitle (centered)
-    pdf.setFontSize(10);
-    pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(102, 102, 102); // Gray color
-    pdf.text('LogiTrack - Système de gestion logistique', pageWidth / 2, currentY, { align: 'center' });
-    currentY += 12;
-
-    // Blue separator line
-    pdf.setDrawColor(37, 99, 235);
-    pdf.setLineWidth(1);
-    pdf.line(margin, currentY, pageWidth - margin, currentY);
-    currentY += 15;
-
-    // Two-column layout for Bon Info and Livreur Info
-    const leftColumnX = margin;
-    const rightColumnX = pageWidth / 2 + 5;
-    const columnWidth = (contentWidth / 2) - 5;
-
-    // Left Column: Bon Info Section
-    const bonInfoStartY = currentY;
-
-    // Bon Info Card Background (matching print style)
-    pdf.setFillColor(248, 250, 252); // #f8fafc - Light blue background
-    pdf.setDrawColor(248, 250, 252); // Same color for border
-    pdf.setLineWidth(0.5);
-    pdf.roundedRect(leftColumnX, bonInfoStartY, columnWidth, 45, 3, 3, 'FD'); // Card background with rounded corners
-
-    // Left blue border (4px thick like print version)
-    pdf.setDrawColor(37, 99, 235); // #2563eb - Blue color
-    pdf.setLineWidth(4);
-    pdf.line(leftColumnX, bonInfoStartY + 2, leftColumnX, bonInfoStartY + 43); // 4px thick left border
-
-    // Title
-    pdf.setFontSize(12);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(37, 99, 235); // #2563eb - Blue title
-    pdf.text('Informations générales', leftColumnX + 8, bonInfoStartY + 10);
-
-    // Content with proper styling like print version
-    pdf.setFontSize(10);
-    pdf.setFont('helvetica', 'normal');
-
-    let infoY = bonInfoStartY + 18;
-
-    // ID Bon
-    pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(71, 85, 105); // #475569 - Gray for labels
-    pdf.text('ID Bon:', leftColumnX + 8, infoY);
-    pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(30, 41, 59); // #1e293b - Dark for values
-    pdf.text(bon.id, leftColumnX + 30, infoY);
-
-    infoY += 6;
-    // Type
-    pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(71, 85, 105);
-    pdf.text('Type:', leftColumnX + 8, infoY);
-    pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(30, 41, 59);
-    pdf.text(bon.type.charAt(0).toUpperCase() + bon.type.slice(1), leftColumnX + 30, infoY);
-
-    infoY += 6;
-    // Statut
-    pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(71, 85, 105);
-    pdf.text('Statut:', leftColumnX + 8, infoY);
-    pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(30, 41, 59);
-    pdf.text(getStatusText(bon.statut), leftColumnX + 30, infoY);
-
-    infoY += 6;
-    // Date
-    pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(71, 85, 105);
-    pdf.text('Date de création:', leftColumnX + 8, infoY);
-    pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(30, 41, 59);
-    pdf.text(formatDate(bon.date_creation), leftColumnX + 50, infoY);
-
-    if (bon.nb_colis) {
-      infoY += 6;
-      pdf.setFont('helvetica', 'bold');
-      pdf.setTextColor(71, 85, 105);
-      pdf.text('Nombre de colis:', leftColumnX + 8, infoY);
-      pdf.setFont('helvetica', 'normal');
-      pdf.setTextColor(30, 41, 59);
-      pdf.text(`${bon.nb_colis} colis`, leftColumnX + 50, infoY);
-    }
-
-    // Right Column: Livreur Info Section (if user exists)
-    if (bon.user) {
-      // Livreur Info Card Background (matching print style)
-      pdf.setFillColor(248, 250, 252); // #f8fafc - Light blue background
-      pdf.setDrawColor(248, 250, 252); // Same color for border
-      pdf.setLineWidth(0.5);
-      pdf.roundedRect(rightColumnX, bonInfoStartY, columnWidth, 45, 3, 3, 'FD'); // Card background with rounded corners
-
-      // Left blue border (4px thick like print version)
-      pdf.setDrawColor(37, 99, 235); // #2563eb - Blue color
-      pdf.setLineWidth(4);
-      pdf.line(rightColumnX, bonInfoStartY + 2, rightColumnX, bonInfoStartY + 43); // 4px thick left border
-
-      // Title
-      pdf.setFontSize(12);
-      pdf.setFont('helvetica', 'bold');
-      pdf.setTextColor(37, 99, 235); // #2563eb - Blue title
-      pdf.text('Livreur assigné', rightColumnX + 8, bonInfoStartY + 10);
-
-      // Content with proper styling like print version
-      pdf.setFontSize(10);
-      pdf.setFont('helvetica', 'normal');
-
-      let livreurY = bonInfoStartY + 18;
-
-      // Nom
-      pdf.setFont('helvetica', 'bold');
-      pdf.setTextColor(71, 85, 105); // #475569 - Gray for labels
-      pdf.text('Nom:', rightColumnX + 8, livreurY);
-      pdf.setFont('helvetica', 'normal');
-      pdf.setTextColor(30, 41, 59); // #1e293b - Dark for values
-      pdf.text(`${bon.user.nom} ${bon.user.prenom || ''}`, rightColumnX + 30, livreurY);
-
-      if (bon.user.email) {
-        livreurY += 6;
-        pdf.setFont('helvetica', 'bold');
-        pdf.setTextColor(71, 85, 105);
-        pdf.text('Email:', rightColumnX + 8, livreurY);
-        pdf.setFont('helvetica', 'normal');
-        pdf.setTextColor(30, 41, 59);
-        pdf.text(bon.user.email, rightColumnX + 30, livreurY);
-      }
-
-      if (bon.user.telephone) {
-        livreurY += 6;
-        pdf.setFont('helvetica', 'bold');
-        pdf.setTextColor(71, 85, 105);
-        pdf.text('Téléphone:', rightColumnX + 8, livreurY);
-        pdf.setFont('helvetica', 'normal');
-        pdf.setTextColor(30, 41, 59);
-        pdf.text(bon.user.telephone, rightColumnX + 40, livreurY);
-      }
-
-      if (bon.user.zone) {
-        livreurY += 6;
-        pdf.setFont('helvetica', 'bold');
-        pdf.setTextColor(71, 85, 105);
-        pdf.text('Zone:', rightColumnX + 8, livreurY);
-        pdf.setFont('helvetica', 'normal');
-        pdf.setTextColor(30, 41, 59);
-        pdf.text(bon.user.zone, rightColumnX + 30, livreurY);
-      }
-    }
-
-    currentY += 55; // Move past the cards
-
-    // Colis Table Section
-    pdf.setFontSize(14);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(37, 99, 235);
-    pdf.text(`Liste des Colis (${sampleColis.length} colis)`, margin, currentY);
-    currentY += 12;
-
-    // Table Header
-    const colWidths = [30, 30, 30, 50, 25, 25]; // Column widths for desktop
-    const colPositions = [margin];
-    for (let i = 1; i < colWidths.length; i++) {
-      colPositions[i] = colPositions[i-1] + colWidths[i-1];
-    }
-
-    // Header background
-    pdf.setFillColor(37, 99, 235); // Blue background
-    pdf.rect(margin, currentY, contentWidth, 10, 'F');
-
-    // Header text
-    pdf.setFontSize(10);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(255, 255, 255); // White text
-
-    pdf.text('RÉFÉRENCE', colPositions[0] + 2, currentY + 6);
-    pdf.text('CLIENT', colPositions[1] + 2, currentY + 6);
-    pdf.text('ENTREPRISE', colPositions[2] + 2, currentY + 6);
-    pdf.text('ADRESSE', colPositions[3] + 2, currentY + 6);
-    pdf.text('FRAIS (DH)', colPositions[4] + 2, currentY + 6);
-    pdf.text('PRIX (DH)', colPositions[5] + 2, currentY + 6);
-
-    currentY += 10;
-
-    // Table rows
-    pdf.setFontSize(9);
-    pdf.setFont('helvetica', 'normal');
-
-    sampleColis.forEach((colis, index) => {
-      // Alternating row colors
-      if (index % 2 === 0) {
-        pdf.setFillColor(255, 255, 255); // White
-      } else {
-        pdf.setFillColor(248, 250, 252); // Light gray
-      }
-      pdf.rect(margin, currentY, contentWidth, 8, 'F');
-
-      // Row borders
-      pdf.setDrawColor(226, 232, 240);
-      pdf.setLineWidth(0.1);
-      for (let i = 0; i < colPositions.length; i++) {
-        pdf.line(colPositions[i], currentY, colPositions[i], currentY + 8);
-      }
-      pdf.line(margin + contentWidth, currentY, margin + contentWidth, currentY + 8);
-      pdf.line(margin, currentY + 8, margin + contentWidth, currentY + 8);
-
-      // Row text
-      pdf.setTextColor(30, 41, 59); // Dark text
-
-      // Reference (bold)
-      pdf.setFont('helvetica', 'bold');
-      pdf.text(colis.reference, colPositions[0] + 2, currentY + 5);
-
-      // Other columns (normal)
-      pdf.setFont('helvetica', 'normal');
-      pdf.text(colis.client, colPositions[1] + 2, currentY + 5);
-      pdf.text(colis.entreprise, colPositions[2] + 2, currentY + 5);
-
-      // Truncate address if too long
-      const maxAddressLength = 30;
-      const address = colis.adresse.length > maxAddressLength
-        ? colis.adresse.substring(0, maxAddressLength) + '...'
-        : colis.adresse;
-      pdf.text(address, colPositions[3] + 2, currentY + 5);
-
-      // Price columns (green color)
-      pdf.setTextColor(5, 150, 105); // Green color
-      pdf.setFont('helvetica', 'bold');
-      pdf.text(`${colis.frais.toFixed(2)}`, colPositions[4] + colWidths[4] - 2, currentY + 5, { align: 'right' });
-      pdf.text(`${colis.prix.toFixed(2)}`, colPositions[5] + colWidths[5] - 2, currentY + 5, { align: 'right' });
-
-      currentY += 8;
+    // Generate PDF using html2canvas and jsPDF
+    const canvas = await html2canvas(tempContainer, {
+      scale: 2,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: '#ffffff',
+      width: tempContainer.scrollWidth,
+      height: tempContainer.scrollHeight
     });
 
-    // Total row
-    pdf.setFillColor(241, 245, 249); // Light blue background
-    pdf.rect(margin, currentY, contentWidth, 10, 'F');
+    const imgData = canvas.toDataURL('image/png');
+    const pdf = new jsPDF('p', 'mm', 'a4');
 
-    // Total row borders
-    pdf.setDrawColor(226, 232, 240);
-    pdf.setLineWidth(0.1);
-    pdf.rect(margin, currentY, contentWidth, 10);
+    const imgWidth = 210; // A4 width in mm
+    const pageHeight = 297; // A4 height in mm
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+    let heightLeft = imgHeight;
+    let position = 0;
 
-    pdf.setFontSize(10);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(30, 41, 59);
-    pdf.text('TOTAL', colPositions[0] + 2, currentY + 6);
+    // Add first page
+    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+    heightLeft -= pageHeight;
 
-    pdf.setTextColor(5, 150, 105);
-    pdf.text(`${totalFrais.toFixed(2)}`, colPositions[4] + colWidths[4] - 2, currentY + 6, { align: 'right' });
-    pdf.text(`${totalPrix.toFixed(2)}`, colPositions[5] + colWidths[5] - 2, currentY + 6, { align: 'right' });
-
-    currentY += 10;
-
-    // Total General row
-    pdf.setFillColor(241, 245, 249);
-    pdf.rect(margin, currentY, contentWidth, 10, 'F');
-
-    pdf.setDrawColor(226, 232, 240);
-    pdf.setLineWidth(0.1);
-    pdf.rect(margin, currentY, contentWidth, 10);
-
-    pdf.setFontSize(11);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(30, 41, 59);
-    pdf.text('TOTAL GÉNÉRAL', colPositions[0] + 2, currentY + 6);
-
-    pdf.setTextColor(5, 150, 105);
-    pdf.text(`${totalGeneral.toFixed(2)} DH`, colPositions[5] + colWidths[5] - 2, currentY + 6, { align: 'right' });
-
-    currentY += 20;
-
-    // Notes section (if exists)
-    if (bon.notes) {
-      pdf.setFillColor(248, 250, 252);
-      pdf.setDrawColor(37, 99, 235);
-      pdf.setLineWidth(4);
-      pdf.roundedRect(margin, currentY, contentWidth, 25, 3, 3, 'FD');
-
-      // Left blue border
-      pdf.line(margin, currentY + 2, margin, currentY + 23);
-
-      pdf.setFontSize(12);
-      pdf.setFont('helvetica', 'bold');
-      pdf.setTextColor(37, 99, 235);
-      pdf.text('Notes', margin + 8, currentY + 10);
-
-      pdf.setFontSize(10);
-      pdf.setFont('helvetica', 'normal');
-      pdf.setTextColor(30, 41, 59);
-      pdf.text(bon.notes, margin + 8, currentY + 18);
-
-      currentY += 30;
+    // Add additional pages if needed
+    while (heightLeft >= 0) {
+      position = heightLeft - imgHeight;
+      pdf.addPage();
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
     }
-
-    // Footer
-    currentY += 15;
-    pdf.setFontSize(8);
-    pdf.setTextColor(100, 116, 139);
-    pdf.text(`Document généré le ${formatDate(new Date().toISOString())} par LogiTrack`, pageWidth / 2, currentY, { align: 'center' });
-    currentY += 4;
-    pdf.text(`Total des colis: ${sampleColis.length} | Montant total: ${totalGeneral.toFixed(2)} DH`, pageWidth / 2, currentY, { align: 'center' });
 
     // Generate filename and download
     const filename = `Bon_Distribution_${bon.id}_${new Date().toISOString().split('T')[0]}.pdf`;
     pdf.save(filename);
+
+    // Clean up
+    if (document.body.contains(tempContainer)) {
+      document.body.removeChild(tempContainer);
+    }
 
   } catch (error) {
     console.error('Error generating PDF:', error);
@@ -773,6 +464,31 @@ export const downloadBonAsPDF = async (bon: Bon): Promise<void> => {
   }
 };
 
+// Helper functions for PDF content generation
+const formatDate = (dateString: string) => {
+  return new Date(dateString).toLocaleDateString('fr-FR', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+};
+
+const getStatusText = (statut: string) => {
+  switch (statut.toLowerCase()) {
+    case 'en cours':
+      return 'En cours';
+    case 'complété':
+    case 'complete':
+      return 'Complété';
+    case 'annulé':
+    case 'annule':
+      return 'Annulé';
+    default:
+      return statut;
+  }
+};
 
 // Generate mobile-optimized PDF content (card-based layout instead of table)
 const generateMobilePDFContent = (bon: Bon): string => {
