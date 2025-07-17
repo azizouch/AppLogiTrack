@@ -4,12 +4,15 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TablePagination } from '@/components/ui/table-pagination';
-import { Plus, Search, Eye, Edit, Download, Trash2, RotateCcw, RefreshCw } from 'lucide-react';
+import { Plus, Search, Eye, Edit, Download, Trash2, RotateCcw, RefreshCw, FileSpreadsheet } from 'lucide-react';
 import { api } from '@/lib/supabase';
 import { Bon } from '@/types';
 import { useDebounce } from '@/hooks/useDebounce';
+import { useToast } from '@/hooks/use-toast';
+import { downloadBonAsExcel } from '@/utils/pdfGenerator';
 
 export function Retour() {
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [bons, setBons] = useState<Bon[]>([]);
   const [loading, setLoading] = useState(true);
@@ -20,6 +23,7 @@ export function Retour() {
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [hasNextPage, setHasNextPage] = useState(false);
   const [hasPrevPage, setHasPrevPage] = useState(false);
+  const [downloadingExcel, setDownloadingExcel] = useState<string | null>(null);
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
   // Fetch bons data
@@ -90,6 +94,43 @@ export function Retour() {
         return <Badge className="bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">En attente</Badge>;
       default:
         return <Badge variant="secondary">{statut}</Badge>;
+    }
+  };
+
+  const handleDownloadExcel = async (bon: Bon) => {
+    try {
+      setDownloadingExcel(bon.id);
+
+      // Add user data to bon object
+      const bonWithUser = {
+        ...bon,
+        user: {
+          id: 'user-1',
+          nom: 'Alami',
+          prenom: 'Mohammed',
+          email: 'mohammed.alami@logitrack.ma',
+          telephone: '+212 6 12 34 56 78',
+          vehicule: 'Renault Kangoo - AB-1234-CD',
+          zone: 'Casablanca Centre'
+        }
+      };
+
+      await downloadBonAsExcel(bonWithUser);
+
+      toast({
+        title: 'Excel téléchargé',
+        description: 'Le fichier Excel a été téléchargé dans votre dossier Téléchargements',
+      });
+
+    } catch (error) {
+      console.error('Error downloading Excel:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Impossible de générer le fichier Excel',
+        variant: 'destructive',
+      });
+    } finally {
+      setDownloadingExcel(null);
     }
   };
 
@@ -168,10 +209,13 @@ export function Retour() {
               <thead>
                 <tr className="border-b border-gray-200 dark:border-gray-600" style={{ backgroundColor: 'hsl(210, 40%, 96.1%)' }}>
                   <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">
-                    ID Bon
+                    Référence
                   </th>
                   <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">
                     Livreur
+                  </th>
+                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">
+                    Zone
                   </th>
                   <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">
                     Statut
@@ -207,6 +251,9 @@ export function Retour() {
                         <div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div>
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap">
+                        <div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div>
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap">
                         <div className="h-8 bg-gray-200 dark:bg-gray-600 rounded animate-pulse w-20"></div>
                       </td>
                     </tr>
@@ -220,6 +267,9 @@ export function Retour() {
                       <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                         {bon.user ? `${bon.user.nom} ${bon.user.prenom || ''}`.trim() : 'N/A'}
                       </td>
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                        {bon.user?.zone || 'N/A'}
+                      </td>
                       <td className="px-4 py-4 whitespace-nowrap">
                         {getStatusBadge(bon.statut)}
                       </td>
@@ -230,12 +280,36 @@ export function Retour() {
                         {formatDate(bon.date_creation)}
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex items-center space-x-2">
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                        <div className="flex items-center space-x-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0"
+                            title="Voir les détails"
+                          >
                             <Eye className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0"
+                            title="Télécharger PDF"
+                          >
                             <Download className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0"
+                            onClick={() => handleDownloadExcel(bon)}
+                            disabled={downloadingExcel === bon.id}
+                            title="Télécharger Excel"
+                          >
+                            {downloadingExcel === bon.id ? (
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600"></div>
+                            ) : (
+                              <FileSpreadsheet className="h-4 w-4" />
+                            )}
                           </Button>
                         </div>
                       </td>

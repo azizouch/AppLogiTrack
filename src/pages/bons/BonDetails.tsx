@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Download, Printer, Truck, Calendar, User, Package, FileText, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Download, Printer, Truck, Calendar, User, Package, FileText, AlertCircle, FileSpreadsheet } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,7 +8,7 @@ import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { api } from '@/lib/supabase';
 import { Bon } from '@/types';
-import { downloadBonAsPDF, downloadMobileBonAsPDF, printBon } from '@/utils/pdfGenerator';
+import { downloadBonAsPDF, downloadMobileBonAsPDF, printBon, downloadBonAsExcel } from '@/utils/pdfGenerator';
 
 export function BonDetails() {
   const { id } = useParams<{ id: string }>();
@@ -18,6 +18,7 @@ export function BonDetails() {
   const [loading, setLoading] = useState(true);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
   const [downloadingMobilePdf, setDownloadingMobilePdf] = useState(false);
+  const [downloadingExcel, setDownloadingExcel] = useState(false);
   const [printing, setPrinting] = useState(false);
 
   useEffect(() => {
@@ -181,6 +182,31 @@ export function BonDetails() {
     }
   };
 
+  const handleDownloadExcel = async () => {
+    if (!bon) return;
+
+    try {
+      setDownloadingExcel(true);
+
+      await downloadBonAsExcel(bon);
+
+      toast({
+        title: 'Excel téléchargé',
+        description: 'Le fichier Excel a été téléchargé dans votre dossier Téléchargements',
+      });
+
+    } catch (error) {
+      console.error('Error downloading Excel:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Impossible de générer le fichier Excel',
+        variant: 'destructive',
+      });
+    } finally {
+      setDownloadingExcel(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -210,10 +236,10 @@ export function BonDetails() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="space-y-2">
-          {/* Return button and status on same line for small screens */}
-          <div className="flex items-center justify-between sm:block">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <div className="space-y-3 md:space-y-2">
+          {/* Return button */}
+          <div className="flex items-center justify-start">
             <Button
               variant="ghost"
               onClick={() => navigate('/bons/distribution')}
@@ -222,37 +248,41 @@ export function BonDetails() {
               <ArrowLeft className="h-4 w-4" />
               Retour à la liste
             </Button>
-            <div className="sm:hidden">
+          </div>
+
+          {/* Title and status - single line on tablet (md+), stacked on mobile */}
+          <div className="flex items-center gap-2 md:gap-3">
+            <Truck className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+            <h1 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">
+              Bon : {bon.id}
+            </h1>
+            <div className="hidden md:block">
               {getStatusBadge(bon.statut)}
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <Truck className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
-              Bon : {bon.id}
-            </h1>
-            <div className="hidden sm:block">
-              {getStatusBadge(bon.statut)}
-            </div>
+
+          {/* Status badge for mobile and small tablet */}
+          <div className="block md:hidden -mt-1 ml-7">
+            {getStatusBadge(bon.statut)}
           </div>
         </div>
 
-        <div className="flex gap-2 w-full sm:w-auto sm:gap-3">
+        <div className="flex gap-2 w-full lg:w-auto lg:gap-3">
           <Button
             onClick={handlePrint}
             disabled={printing}
             variant="outline"
-            className="border-blue-600 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 dark:hover:text-blue-400 flex-1 sm:flex-none"
+            className="border-blue-600 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 dark:hover:text-blue-400 flex-1 lg:flex-none"
           >
             {printing ? (
               <>
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
-                Impression...
+                <span className="hidden sm:inline">Impression...</span>
               </>
             ) : (
               <>
                 <Printer className="mr-2 h-4 w-4" />
-                Imprimer
+                <span className="hidden sm:inline">Imprimer</span>
               </>
             )}
           </Button>
@@ -261,17 +291,17 @@ export function BonDetails() {
             <Button
               onClick={handleDownloadMobilePdf}
               disabled={downloadingMobilePdf}
-              className="bg-blue-600 hover:bg-blue-700 flex-1 sm:flex-none"
+              className="bg-blue-600 hover:bg-blue-700 flex-1 lg:flex-none"
             >
               {downloadingMobilePdf ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Téléchargement...
+                  <span className="hidden sm:inline">Téléchargement...</span>
                 </>
               ) : (
                 <>
                   <Download className="mr-2 h-4 w-4" />
-                  <span className="hidden min-[340px]:inline">Télécharger </span>PDF
+                  <span className="hidden sm:inline">Télécharger </span>PDF
                 </>
               )}
             </Button>
@@ -279,21 +309,40 @@ export function BonDetails() {
             <Button
               onClick={handleDownloadPdf}
               disabled={downloadingPdf}
-              className="bg-blue-600 hover:bg-blue-700 flex-1 sm:flex-none"
+              className="bg-blue-600 hover:bg-blue-700 flex-1 lg:flex-none"
             >
               {downloadingPdf ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Téléchargement...
+                  <span className="hidden sm:inline">Téléchargement...</span>
                 </>
               ) : (
                 <>
                   <Download className="mr-2 h-4 w-4" />
-                  <span className="hidden min-[340px]:inline">Télécharger </span>PDF
+                  <span className="hidden sm:inline">Télécharger </span>PDF
                 </>
               )}
             </Button>
           )}
+
+          <Button
+            onClick={handleDownloadExcel}
+            disabled={downloadingExcel}
+            variant="outline"
+            className="border-green-600 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 dark:hover:text-green-400 flex-1 lg:flex-none"
+          >
+            {downloadingExcel ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600 mr-2"></div>
+                <span className="hidden sm:inline">Téléchargement...</span>
+              </>
+            ) : (
+              <>
+                <FileSpreadsheet className="mr-2 h-4 w-4" />
+                <span className="hidden sm:inline">Télécharger </span>Excel
+              </>
+            )}
+          </Button>
         </div>
       </div>
 

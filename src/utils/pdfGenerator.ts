@@ -1,5 +1,6 @@
 import { Bon } from '@/types';
 import jsPDF from 'jspdf';
+import * as XLSX from 'xlsx';
 
 // Print bon - opens print dialog (like the screenshot)
 export const printBon = async (bon: Bon): Promise<void> => {
@@ -1202,5 +1203,162 @@ export const downloadMobileBonAsPDF = async (bon: Bon): Promise<void> => {
   } catch (error) {
     console.error('Error generating mobile PDF:', error);
     throw new Error('Erreur lors de la génération du PDF mobile');
+  }
+};
+
+// Download bon as Excel file
+export const downloadBonAsExcel = async (bon: Bon): Promise<void> => {
+  try {
+    // Helper function for date formatting
+    const formatDate = (dateString: string) => {
+      return new Date(dateString).toLocaleDateString('fr-FR', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    };
+    // Sample colis data (same as used in PDF generation)
+    const sampleColis = [
+      {
+        id: 'COL-2025-0001',
+        reference: 'REF-001',
+        nom: 'Smartphone Samsung Galaxy',
+        prix: 2500.00,
+        frais: 25.00,
+        statut: 'en cours',
+        client: { nom: 'Ahmed Benali', telephone: '+212 6 12 34 56 78' },
+        adresse_livraison: '123 Rue Mohammed V, Casablanca'
+      },
+      {
+        id: 'COL-2025-0002',
+        reference: 'REF-002',
+        nom: 'Ordinateur portable HP',
+        prix: 4200.00,
+        frais: 35.00,
+        statut: 'en cours',
+        client: { nom: 'Fatima Alaoui', telephone: '+212 6 98 76 54 32' },
+        adresse_livraison: '456 Avenue Hassan II, Rabat'
+      },
+      {
+        id: 'COL-2025-0003',
+        reference: 'REF-003',
+        nom: 'Tablette iPad Air',
+        prix: 3200.00,
+        frais: 30.00,
+        statut: 'en cours',
+        client: { nom: 'Omar Tazi', telephone: '+212 6 11 22 33 44' },
+        adresse_livraison: '789 Boulevard Zerktouni, Casablanca'
+      },
+      {
+        id: 'COL-2025-0004',
+        reference: 'REF-004',
+        nom: 'Montre connectée Apple Watch',
+        prix: 1800.00,
+        frais: 20.00,
+        statut: 'en cours',
+        client: { nom: 'Aicha Bennani', telephone: '+212 6 55 66 77 88' },
+        adresse_livraison: '321 Rue Allal Ben Abdellah, Fès'
+      }
+    ];
+
+    // Calculate totals
+    const totalPrix = sampleColis.reduce((sum, colis) => sum + colis.prix, 0);
+    const totalFrais = sampleColis.reduce((sum, colis) => sum + colis.frais, 0);
+    const totalGeneral = totalPrix + totalFrais;
+
+    // Create workbook with single sheet
+    const workbook = XLSX.utils.book_new();
+
+    // Create single sheet data with bon details at top and colis table below
+    const sheetData = [];
+
+    // 1. Header section - Bon de Distribution
+    sheetData.push(['BON DE DISTRIBUTION', '', '', '', '', '', '', '', '', '']);
+    sheetData.push(['', '', '', '', '', '', '', '', '', '']);
+
+    // 2. Bon information section
+    sheetData.push(['INFORMATIONS GÉNÉRALES', '', '', '', '', '', '', '', '', '']);
+    sheetData.push(['', '', '', '', '', '', '', '', '', '']);
+    sheetData.push(['ID Bon:', bon.id, '', '', 'Type:', 'Distribution', '', '', '', '']);
+    sheetData.push(['Date de création:', formatDate(bon.date_creation), '', '', 'Statut:', bon.statut, '', '', '', '']);
+    sheetData.push(['Livreur:', bon.user ? `${bon.user.nom} ${bon.user.prenom || ''}`.trim() : 'N/A', '', '', 'Zone:', bon.user?.zone || 'N/A', '', '', '', '']);
+    sheetData.push(['Email:', bon.user?.email || 'N/A', '', '', 'Téléphone:', bon.user?.telephone || 'N/A', '', '', '', '']);
+    sheetData.push(['Véhicule:', bon.user?.vehicule || 'N/A', '', '', 'Nombre de colis:', bon.nb_colis || sampleColis.length, '', '', '', '']);
+    sheetData.push(['', '', '', '', '', '', '', '', '', '']);
+    sheetData.push(['Notes:', bon.notes || 'Aucune note', '', '', '', '', '', '', '', '']);
+    sheetData.push(['', '', '', '', '', '', '', '', '', '']);
+    sheetData.push(['', '', '', '', '', '', '', '', '', '']);
+
+    // 3. Colis table section
+    sheetData.push(['LISTE DES COLIS', '', '', '', '', '', '', '', '', '']);
+    sheetData.push(['', '', '', '', '', '', '', '', '', '']);
+
+    // Table headers
+    sheetData.push([
+      'Référence',
+      'Nom du produit',
+      'Client',
+      'Téléphone',
+      'Adresse de livraison',
+      'Frais (DH)',
+      'Prix (DH)',
+      'Total (DH)',
+      'Statut',
+      'Zone'
+    ]);
+
+    // Table data
+    sampleColis.forEach(colis => {
+      sheetData.push([
+        colis.reference,
+        colis.nom,
+        colis.client.nom,
+        colis.client.telephone,
+        colis.adresse_livraison,
+        colis.frais.toFixed(2),
+        colis.prix.toFixed(2),
+        (colis.prix + colis.frais).toFixed(2),
+        colis.statut,
+        bon.user?.zone || 'N/A'
+      ]);
+    });
+
+    // Add summary section
+    sheetData.push(['', '', '', '', '', '', '', '', '', '']);
+    sheetData.push(['RÉSUMÉ', '', '', '', '', '', '', '', '', '']);
+    sheetData.push(['Total Frais:', totalFrais.toFixed(2) + ' DH', '', '', '', '', '', '', '', '']);
+    sheetData.push(['Total Prix:', totalPrix.toFixed(2) + ' DH', '', '', '', '', '', '', '', '']);
+    sheetData.push(['TOTAL GÉNÉRAL:', totalGeneral.toFixed(2) + ' DH', '', '', '', '', '', '', '', '']);
+    sheetData.push(['Nombre de colis:', sampleColis.length.toString(), '', '', '', '', '', '', '', '']);
+
+    // Create worksheet
+    const worksheet = XLSX.utils.aoa_to_sheet(sheetData);
+
+    // Set column widths
+    worksheet['!cols'] = [
+      { width: 15 }, // Référence
+      { width: 30 }, // Nom du produit
+      { width: 20 }, // Client
+      { width: 18 }, // Téléphone
+      { width: 40 }, // Adresse
+      { width: 12 }, // Frais
+      { width: 12 }, // Prix
+      { width: 12 }, // Total
+      { width: 12 }, // Statut
+      { width: 15 }  // Zone
+    ];
+
+    // Add worksheet to workbook
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Bon de Distribution');
+
+    // Generate filename and download
+    const filename = `Bon_Distribution_${bon.id}_${new Date().toISOString().split('T')[0]}.xlsx`;
+    XLSX.writeFile(workbook, filename);
+
+  } catch (error) {
+    console.error('Error generating Excel file:', error);
+    throw new Error('Erreur lors de la génération du fichier Excel');
   }
 };
