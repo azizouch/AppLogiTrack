@@ -6,6 +6,7 @@ import { Progress } from '@/components/ui/progress';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { LivreurDashboard } from './livreur/LivreurDashboard';
+import { CircularStats } from '@/components/ui/circular-stats';
 
 import { api } from '@/lib/supabase';
 
@@ -22,18 +23,26 @@ export function Dashboard() {
     entreprisesPartenaires: 0,
     livreursDisponibles: 0
   });
+  const [bonStats, setBonStats] = useState({
+    distribution: { total: 0, enCours: 0, complete: 0, annule: 0 },
+    paiement: { total: 0, enCours: 0, complete: 0, annule: 0 },
+    retour: { total: 0, enCours: 0, complete: 0, annule: 0 }
+  });
   const [loading, setLoading] = useState(false);
+  const [bonStatsLoading, setBonStatsLoading] = useState(false);
   const [recentActivity, setRecentActivity] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
         setLoading(true);
+        setBonStatsLoading(true);
 
-        // Fetch dashboard stats and recent activity
-        const [statsResult, activityResult] = await Promise.all([
+        // Fetch dashboard stats, recent activity, and bon statistics
+        const [statsResult, activityResult, bonStatsResult] = await Promise.all([
           api.getDashboardStats(),
-          api.getRecentActivity(3)
+          api.getRecentActivity(3),
+          api.getBonStats()
         ]);
 
         if (statsResult.data && !statsResult.error) {
@@ -53,10 +62,15 @@ export function Dashboard() {
         if (activityResult.data && !activityResult.error) {
           setRecentActivity(activityResult.data);
         }
+
+        if (bonStatsResult.data && !bonStatsResult.error) {
+          setBonStats(bonStatsResult.data);
+        }
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
       } finally {
         setLoading(false);
+        setBonStatsLoading(false);
       }
     };
 
@@ -351,6 +365,22 @@ export function Dashboard() {
             </div>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Bon Statistics */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+        <CircularStats
+          title="Bons de distribution Statistiques"
+          type="distribution"
+          data={bonStats.distribution}
+          loading={bonStatsLoading}
+        />
+        <CircularStats
+          title="Bons de paiement pour livreur Statistiques"
+          type="paiement"
+          data={bonStats.paiement}
+          loading={bonStatsLoading}
+        />
       </div>
     </div>
   );

@@ -2074,5 +2074,140 @@ export const api = {
       .single();
 
     return { data, error };
+  },
+
+  // Get bon statistics for admin (all bons)
+  getBonStats: async () => {
+    try {
+      const { data: bons, error } = await supabase
+        .from('bons')
+        .select('type, statut');
+
+      if (error) {
+        return { data: null, error };
+      }
+
+      // Count bons by type and status
+      const distributionStats = {
+        total: 0,
+        enCours: 0,
+        complete: 0,
+        annule: 0
+      };
+
+      const paiementStats = {
+        total: 0,
+        enCours: 0,
+        complete: 0,
+        annule: 0
+      };
+
+      const retourStats = {
+        total: 0,
+        enCours: 0,
+        complete: 0,
+        annule: 0
+      };
+
+      bons?.forEach(bon => {
+        const statut = bon.statut.toLowerCase();
+
+        if (bon.type === 'distribution') {
+          distributionStats.total++;
+          if (statut === 'en cours') distributionStats.enCours++;
+          else if (statut === 'complété' || statut === 'complete') distributionStats.complete++;
+          else if (statut === 'annulé' || statut === 'annule') distributionStats.annule++;
+        } else if (bon.type === 'paiement') {
+          paiementStats.total++;
+          if (statut === 'en cours') paiementStats.enCours++;
+          else if (statut === 'complété' || statut === 'complete') paiementStats.complete++;
+          else if (statut === 'annulé' || statut === 'annule') paiementStats.annule++;
+        } else if (bon.type === 'retour') {
+          retourStats.total++;
+          if (statut === 'en cours') retourStats.enCours++;
+          else if (statut === 'complété' || statut === 'complete') retourStats.complete++;
+          else if (statut === 'annulé' || statut === 'annule') retourStats.annule++;
+        }
+      });
+
+      return {
+        data: {
+          distribution: distributionStats,
+          paiement: paiementStats,
+          retour: retourStats
+        },
+        error: null
+      };
+    } catch (error) {
+      return { data: null, error };
+    }
+  },
+
+  // Get bon statistics for a specific user (livreur)
+  getBonStatsByUser: async (userId: string) => {
+    try {
+      const { data: bons, error } = await supabase
+        .from('bons')
+        .select('type, statut')
+        .eq('user_id', userId);
+
+      if (error) {
+        return { data: null, error };
+      }
+
+      // Count bons by type and status
+      const distributionStats = {
+        total: 0,
+        enCours: 0,
+        complete: 0,
+        annule: 0
+      };
+
+      const paiementStats = {
+        total: 0,
+        enCours: 0,
+        complete: 0,
+        annule: 0
+      };
+
+      const retourStats = {
+        total: 0,
+        enCours: 0,
+        complete: 0,
+        annule: 0
+      };
+
+      bons?.forEach(bon => {
+        const statut = bon.statut.toLowerCase();
+
+        if (bon.type === 'distribution') {
+          distributionStats.total++;
+          if (statut === 'en cours') distributionStats.enCours++;
+          else if (statut === 'complété' || statut === 'complete') distributionStats.complete++;
+          else if (statut === 'annulé' || statut === 'annule') distributionStats.annule++;
+        } else if (bon.type === 'paiement') {
+          paiementStats.total++;
+          if (statut === 'en cours') paiementStats.enCours++;
+          else if (statut === 'complété' || statut === 'complete') paiementStats.complete++;
+          else if (statut === 'annulé' || statut === 'annule') paiementStats.annule++;
+        } else if (bon.type === 'retour') {
+          retourStats.total++;
+          if (statut === 'en cours') retourStats.enCours++;
+          else if (statut === 'complété' || statut === 'complete') retourStats.complete++;
+          else if (statut === 'annulé' || statut === 'annule') retourStats.annule++;
+        }
+      });
+
+      return {
+        data: {
+          distribution: distributionStats,
+          paiement: paiementStats,
+          retour: retourStats
+        },
+        error: null
+      };
+    } catch (error) {
+      return { data: null, error };
+    }
   }
 }

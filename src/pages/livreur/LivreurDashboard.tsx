@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { api } from '@/lib/supabase';
+import { CircularStats } from '@/components/ui/circular-stats';
 
 import { useToast } from '@/hooks/use-toast';
 
@@ -103,7 +104,13 @@ export function LivreurDashboard() {
     progressionJournaliere: 0,
     livraisonsCeMois: 1
   });
+  const [bonStats, setBonStats] = useState({
+    distribution: { total: 0, enCours: 0, complete: 0, annule: 0 },
+    paiement: { total: 0, enCours: 0, complete: 0, annule: 0 },
+    retour: { total: 0, enCours: 0, complete: 0, annule: 0 }
+  });
   const [loading, setLoading] = useState(false);
+  const [bonStatsLoading, setBonStatsLoading] = useState(false);
   const [todayColisItems, setTodayColisItems] = useState<any[]>([]);
 
   // Performance metrics
@@ -118,12 +125,18 @@ export function LivreurDashboard() {
 
       try {
         setLoading(true);
+        setBonStatsLoading(true);
 
-        // Simple, direct API call
-        const { data: colisData, error } = await api.getColis({
-          livreurId: state.user.id,
-          limit: 1000
-        });
+        // Fetch both colis data and bon statistics
+        const [colisResult, bonStatsResult] = await Promise.all([
+          api.getColis({
+            livreurId: state.user.id,
+            limit: 1000
+          }),
+          api.getBonStatsByUser(state.user.id)
+        ]);
+
+        const { data: colisData, error } = colisResult;
 
         if (error) {
           console.error('API error:', error);
@@ -174,10 +187,16 @@ export function LivreurDashboard() {
             livraisonsCeMois: colisData.filter(colis => colis.statut === 'Livré').length
           });
         }
+
+        // Handle bon statistics
+        if (bonStatsResult.data && !bonStatsResult.error) {
+          setBonStats(bonStatsResult.data);
+        }
       } catch (error) {
         console.error('Error fetching livreur dashboard data:', error);
       } finally {
         setLoading(false);
+        setBonStatsLoading(false);
       }
     };
 
@@ -399,6 +418,22 @@ export function LivreurDashboard() {
             </div>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Bon Statistics */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+        <CircularStats
+          title="Bons de distribution Statistiques"
+          type="distribution"
+          data={bonStats.distribution}
+          loading={bonStatsLoading}
+        />
+        <CircularStats
+          title="Bons de paiement pour livreur Statistiques"
+          type="paiement"
+          data={bonStats.paiement}
+          loading={bonStatsLoading}
+        />
       </div>
     </div>
   );
