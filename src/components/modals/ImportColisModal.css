@@ -1,0 +1,43 @@
+/* Hide all scrollbars in the modal completely */
+.import-colis-modal {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+.import-colis-modal::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+}
+
+/* Table preview with invisible scrollbar by default */
+.table-preview-scroll {
+  overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.table-preview-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.table-preview-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.table-preview-scroll::-webkit-scrollbar-thumb {
+  background-color: transparent;
+  border-radius: 3px;
+}
+
+/* Show scrollbar on hover only */
+.table-preview-scroll:hover {
+  scrollbar-width: thin;
+}
+
+.table-preview-scroll:hover::-webkit-scrollbar-thumb {
+  background-color: rgba(156, 163, 175, 0.6);
+}
+
+.table-preview-scroll:hover::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(107, 114, 128, 0.8);
+}

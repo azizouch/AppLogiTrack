@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Plus, Search, Filter, RefreshCw, X, Package } from 'lucide-react';
+import { Plus, Search, Filter, RefreshCw, X, Package, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -22,6 +22,7 @@ import {
 import { TablePagination } from '@/components/ui/table-pagination';
 import { Colis, User, Statut } from '@/types';
 import { api } from '@/lib/supabase';
+import { ImportColisModal } from '@/components/modals/ImportColisModal';
 
 import { useDebounce } from '@/hooks/useDebounce';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -30,6 +31,8 @@ export function ColisList() {
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Modal state
+  const [importModalOpen, setImportModalOpen] = useState(false);
 
   // Data state
   const [colis, setColis] = useState<Colis[]>([]);
@@ -204,6 +207,13 @@ export function ColisList() {
           >
             <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
             Actualiser
+          </Button>
+          <Button
+            className="bg-green-600 hover:bg-green-700 flex-1 sm:flex-none"
+            onClick={() => setImportModalOpen(true)}
+          >
+            <Upload className="mr-2 h-4 w-4" />
+            Importer Excel
           </Button>
           <Button 
             className="bg-blue-600 hover:bg-blue-700 flex-1 sm:flex-none"
@@ -410,6 +420,16 @@ export function ColisList() {
           />
         )}
       </div>
+
+      {/* Import Modal */}
+      <ImportColisModal
+        open={importModalOpen}
+        onOpenChange={setImportModalOpen}
+        onImportSuccess={() => {
+          setImportModalOpen(false);
+          fetchColis(true); // Refresh the list after successful import
+        }}
+      />
     </div>
   );
 }

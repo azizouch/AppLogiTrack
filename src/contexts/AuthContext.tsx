@@ -129,7 +129,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           throw new Error('User profile not found in database. Please contact administrator.');
         }
 
-        dispatch({ type: 'LOGIN_SUCCESS', payload: result.data });
+        // Update last login time
+        const now = new Date().toISOString();
+        await api.updateUserById(result.data.id, { 
+          derniere_connexion: now 
+        });
+
+        // Update the user data with the new last login time
+        const updatedUser = { ...result.data, derniere_connexion: now };
+
+        dispatch({ type: 'LOGIN_SUCCESS', payload: updatedUser });
       }
     } catch (error: any) {
       dispatch({ type: 'LOGIN_FAILURE' });
@@ -248,6 +257,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             return;
           }
 
+          // Update last login time if not updated recently (within last minute)
+          const lastLogin = result.data.derniere_connexion ? new Date(result.data.derniere_connexion) : null;
+          const now = new Date();
+          const shouldUpdate = !lastLogin || (now.getTime() - lastLogin.getTime()) > 60000; // Update if older than 1 minute
+
+          if (shouldUpdate) {
+            const nowIso = now.toISOString();
+            await api.updateUserById(result.data.id, { 
+              derniere_connexion: nowIso 
+            });
+            result.data.derniere_connexion = nowIso;
+          }
+
           isInitializing = false;
           clearTimeout(timeoutId);
           dispatch({ type: 'LOGIN_SUCCESS', payload: result.data });
@@ -348,6 +370,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             return;
           }
 
+          // Update last login time
+          const now = new Date().toISOString();
+          await api.updateUserById(result.data.id, { 
+            derniere_connexion: now 
+          });
+          result.data.derniere_connexion = now;
+
           dispatch({ type: 'LOGIN_SUCCESS', payload: result.data });
         } catch (error: any) {
           if (mounted) {
@@ -380,6 +409,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             dispatch({ type: 'LOGIN_FAILURE' });
             return;
           }
+
+          // Update last login time
+          const now = new Date().toISOString();
+          await api.updateUserById(result.data.id, { 
+            derniere_connexion: now 
+          });
+          result.data.derniere_connexion = now;
 
           dispatch({ type: 'LOGIN_SUCCESS', payload: result.data });
         } catch (error: any) {

@@ -118,6 +118,13 @@ export function Gestion() {
 
   useEffect(() => {
     fetchUsers();
+    
+    // Auto-refresh user data every 30 seconds to update last connection time
+    const interval = setInterval(() => {
+      fetchUsers();
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(interval);
   }, [fetchUsers]);
 
   // Filter users based on search and filters
@@ -157,6 +164,36 @@ export function Gestion() {
     setHasNextPage(endIndex < filteredUsers.length);
     setHasPrevPage(currentPage > 1);
   }, [filteredUsers, currentPage, itemsPerPage]);
+
+  // Helper function to format last connection time
+  const formatLastConnection = (derniereConnexion: string) => {
+    if (!derniereConnexion) {
+      return 'Jamais connecté';
+    }
+
+    try {
+      const lastConnection = new Date(derniereConnexion);
+      const now = new Date();
+      const diffInMs = now.getTime() - lastConnection.getTime();
+      const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
+      const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
+      const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+
+      if (diffInMinutes < 1) {
+        return 'À l\'instant';
+      } else if (diffInMinutes < 60) {
+        return `Il y a ${diffInMinutes} minute${diffInMinutes > 1 ? 's' : ''}`;
+      } else if (diffInHours < 24) {
+        return `Il y a ${diffInHours} heure${diffInHours > 1 ? 's' : ''}`;
+      } else if (diffInDays < 7) {
+        return `Il y a ${diffInDays} jour${diffInDays > 1 ? 's' : ''}`;
+      } else {
+        return lastConnection.toLocaleDateString('fr-FR');
+      }
+    } catch (error) {
+      return derniereConnexion;
+    }
+  };
 
   const handleAddUser = async () => {
     // Basic validation
@@ -698,7 +735,7 @@ export function Gestion() {
                           {user.statut}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-gray-600 dark:text-gray-400">{user.derniere_connexion}</TableCell>
+                      <TableCell className="text-gray-600 dark:text-gray-400">{formatLastConnection(user.derniere_connexion)}</TableCell>
                       <TableCell>
                         <div className="flex space-x-2">
                           <Button

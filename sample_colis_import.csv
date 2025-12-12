@@ -1,0 +1,11 @@
+numero_suivi,client_id,adresse_livraison,entreprise_id,prix,frais,statut,notes
+DZ-2024-0001,CLT-001,123 Rue de la Paix Alger 16000,ENT-001,500,50,nouveau,Livraison urgente
+DZ-2024-0002,CLT-002,456 Avenue des Fleurs Oran 31000,ENT-002,750,75,nouveau,Fragile - manier avec soin
+DZ-2024-0003,CLT-003,789 Boulevard Central Constantine 25000,ENT-001,1000,100,nouveau,En haut étage - appeler avant
+DZ-2024-0004,CLT-004,321 Rue du Commerce Annaba 23000,ENT-003,600,60,nouveau,
+DZ-2024-0005,CLT-005,654 Avenue Mohamed Blida 9000,ENT-002,850,85,nouveau,Laisser à la réception si absent
+DZ-2024-0006,CLT-001,987 Boulevard Tlemcen 13000,ENT-001,450,45,nouveau,Client habituel
+DZ-2024-0007,CLT-006,147 Rue Sétif Batna 05000,ENT-003,920,92,nouveau,Paiement à la livraison
+DZ-2024-0008,CLT-002,258 Avenue Béjaïa Béjaïa 06000,ENT-002,700,70,nouveau,Contacter avant livraison
+DZ-2024-0009,CLT-004,369 Rue Msila Msila 28000,ENT-001,550,55,nouveau,
+DZ-2024-0010,CLT-005,741 Boulevard Laghouat Laghouat 03000,ENT-003,800,80,nouveau,Demander signature

@@ -67,11 +67,17 @@ export function Suivi() {
         setUsers([]);
       } else if (data) {
         // Transform data to include activity information
-        const usersWithActivity = data.map(user => ({
-          ...user,
-          derniere_activite: formatLastActivity(user.derniere_connexion),
-          en_ligne: isUserOnline(user.derniere_connexion),
-        }));
+        const usersWithActivity = data.map(user => {
+          const enLigne = isUserOnline(user.derniere_connexion);
+          if (enLigne) {
+            console.log(`✅ Online: ${user.nom}, derniere_connexion: ${user.derniere_connexion}`);
+          }
+          return {
+            ...user,
+            derniere_activite: formatLastActivity(user.derniere_connexion),
+            en_ligne: enLigne,
+          };
+        });
         setUsers(usersWithActivity);
       }
     } catch (error) {
@@ -171,22 +177,41 @@ export function Suivi() {
     }
   };
 
-  // Helper function to determine if user is online (connected within last 5 minutes)
+  // Helper function to determine if user is online (connected within last 15 minutes)
   const isUserOnline = (derniereConnexion: string | null) => {
     if (!derniereConnexion) {
       return false;
     }
 
-    const lastConnection = new Date(derniereConnexion);
-    const now = new Date();
-    const diffInMs = now.getTime() - lastConnection.getTime();
-    const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
+    try {
+      // Ensure the timestamp has Z suffix for proper UTC parsing
+      let timestamp = derniereConnexion;
+      if (!timestamp.endsWith('Z')) {
+        timestamp += 'Z';
+      }
+      
+      const lastConnection = new Date(timestamp);
+      const now = new Date();
+      const diffInMs = now.getTime() - lastConnection.getTime();
+      const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
 
-    return diffInMinutes <= 5; // Consider online if connected within last 5 minutes
+      // Consider online if connected within last 15 minutes
+      return diffInMinutes <= 15;
+    } catch (error) {
+      console.error('Error parsing last connection time:', derniereConnexion, error);
+      return false;
+    }
   };
 
   useEffect(() => {
     fetchUsers();
+    
+    // Auto-refresh user data every 30 seconds to update online status
+    const interval = setInterval(() => {
+      fetchUsers();
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(interval);
   }, [fetchUsers]);
 
   // Filter users based on search and filters
