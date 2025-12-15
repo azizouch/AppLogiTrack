@@ -87,43 +87,17 @@ let supabaseInstance: SupabaseClient | null = null
 
 const getSupabaseClient = (): SupabaseClient => {
   if (!supabaseInstance) {
-    // Create a fetch wrapper to detect unauthorized responses (401/403)
-    let customFetch: typeof fetch | undefined = undefined;
-    if (typeof window !== 'undefined' && typeof window.fetch === 'function') {
-      const originalFetch = window.fetch.bind(window) as typeof fetch;
-      customFetch = async (input: RequestInfo, init?: RequestInit) => {
-        try {
-          const response = await originalFetch(input, init);
-          if (response && (response.status === 401 || response.status === 403)) {
-            try {
-              window.dispatchEvent(new CustomEvent('supabase:unauthorized', { detail: { status: response.status } }));
-            } catch (e) {
-              // ignore
-            }
-          }
-          return response;
-        } catch (err) {
-          // rethrow to keep normal error handling
-          throw err;
-        }
-      };
-    }
-
     supabaseInstance = createClient(supabaseUrl, supabaseAnonKey, {
       auth: {
-        autoRefreshToken: false, // Keep disabled to avoid duplicate SIGNED_IN events
+        autoRefreshToken: false, // DISABLED: Causing infinite SIGNED_IN events
         persistSession: true,
         detectSessionInUrl: true,
-        // Disable multi-tab sync when using sessionStorage to keep per-tab sessions isolated
-        multiTab: false,
         // Add session recovery options
         flowType: 'pkce',
-        storage: typeof window !== 'undefined' ? window.sessionStorage : undefined,
+        storage: typeof window !== 'undefined' ? window.localStorage : undefined,
         storageKey: 'supabase.auth.token',
         debug: false
       },
-      // Use custom fetch wrapper when available to detect auth failures
-      fetch: customFetch,
       // Add global error handling
       global: {
         headers: {
@@ -301,17 +275,8 @@ export const auth = {
     try {
       const { error } = await supabase.auth.signOut()
 
-      // Clear any stored auth data from localStorage
+      // Clear auth token keys from localStorage
       if (typeof window !== 'undefined') {
-        try {
-          // Remove from sessionStorage (per-tab) and localStorage as fallback
-          if (window.sessionStorage) {
-            window.sessionStorage.removeItem('supabase.auth.token')
-            window.sessionStorage.removeItem('sb-' + supabaseUrl.split('//')[1].split('.')[0] + '-auth-token')
-          }
-        } catch (e) {
-          // ignore
-        }
         try {
           if (window.localStorage) {
             window.localStorage.removeItem('supabase.auth.token')

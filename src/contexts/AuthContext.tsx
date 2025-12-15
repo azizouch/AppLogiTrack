@@ -173,19 +173,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       dispatch({ type: 'LOGOUT' });
       dispatch({ type: 'SET_LOADING', payload: false });
 
-      // Broadcast logout to other tabs (use BroadcastChannel when available)
-      try {
-        if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
-          const bc = new BroadcastChannel('logitrack-auth');
-          bc.postMessage({ type: 'logout', ts: Date.now() });
-          bc.close();
-        } else if (typeof window !== 'undefined') {
-          // Fallback to localStorage event
-          localStorage.setItem('logitrack:auth_event', JSON.stringify({ type: 'logout', ts: Date.now() }));
-        }
-      } catch (e) {
-        // ignore
-      }
+      // (No cross-tab broadcast here to avoid unintended side effects)
 
       // Sign out from Supabase
       const { error } = await auth.signOut();
@@ -212,60 +200,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
-    // Listener for global unauthorized events emitted by Supabase fetch wrapper
-    const handleUnauthorized = async () => {
-      // Force logout and stop any loading state so UI doesn't stay stuck
-      try {
-        await logout();
-      } catch (e) {
-        // fallback: ensure state reset
-        dispatch({ type: 'LOGOUT' });
-        dispatch({ type: 'SET_LOADING', payload: false });
-      }
-    };
-
-    try {
-      window.addEventListener('supabase:unauthorized', handleUnauthorized as EventListener);
-    } catch (e) {
-      // ignore on server or unsupported environments
-    }
-
-    // BroadcastChannel and storage listener to synchronize logout/login events across tabs
-    let bc: BroadcastChannel | null = null;
-    const handleBroadcast = (ev: MessageEvent) => {
-      try {
-        if (ev?.data?.type === 'logout') {
-          dispatch({ type: 'LOGOUT' });
-          dispatch({ type: 'SET_LOADING', payload: false });
-        }
-      } catch (e) {
-        // ignore
-      }
-    };
-
-    const handleStorageEvent = (e: StorageEvent) => {
-      try {
-        if (e.key === 'logitrack:auth_event' && e.newValue) {
-          const payload = JSON.parse(e.newValue);
-          if (payload.type === 'logout') {
-            dispatch({ type: 'LOGOUT' });
-            dispatch({ type: 'SET_LOADING', payload: false });
-          }
-        }
-      } catch (err) {
-        // ignore
-      }
-    };
-
-    try {
-      if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
-        bc = new BroadcastChannel('logitrack-auth');
-        bc.addEventListener('message', handleBroadcast as EventListener);
-      }
-      window.addEventListener('storage', handleStorageEvent);
-    } catch (e) {
-      // ignore
-    }
+    // (Reverted cross-tab unauthorized/broadcast handling to avoid causing loader deadlocks.)
 
     let mounted = true;
     let isInitializing = true;
@@ -483,26 +418,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     return () => {
-      // Cleanup unauthorized listener
-      try {
-        window.removeEventListener('supabase:unauthorized', handleUnauthorized as EventListener);
-      } catch (e) {
-        // ignore
-      }
-      try {
-        window.removeEventListener('storage', handleStorageEvent);
-      } catch (e) {
-        // ignore
-      }
-      try {
-        if (bc) {
-          bc.removeEventListener('message', handleBroadcast as EventListener);
-          bc.close();
-        }
-      } catch (e) {
-        // ignore
-      }
-
       mounted = false;
       isInitializing = false;
       clearTimeout(timeoutId);
