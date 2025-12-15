@@ -21,7 +21,7 @@ type AuthAction =
 const initialState: AuthState = {
   user: null,
   isAuthenticated: false,
-  loading: true, // Start with loading true to prevent flash of login page
+  loading: false, // Start unauthenticated; tabs should be logged out until explicit signIn
   hasConnectionError: false,
 };
 
@@ -213,42 +213,65 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }, 10000);
 
-    // Simplified session check
+    // Simplified session check - only restore if this tab explicitly saved a session
     const checkSession = async () => {
-      // Ensure loading is set while we verify session
+      // If no explicit session was saved in this tab, start unauthenticated
+      if (typeof window === 'undefined') {
+        return;
+      }
+
+      const stored = window.sessionStorage.getItem('logitrack:session');
+      if (!stored) {
+        // No explicit session for this tab - remain logged out
+        isInitializing = false;
+        if (mounted) {
+          dispatch({ type: 'LOGOUT' });
+          dispatch({ type: 'SET_LOADING', payload: false });
+        }
+        return;
+      }
+
+      // We have an explicit session saved in this tab - try to restore it deterministically
       dispatch({ type: 'SET_LOADING', payload: true });
       try {
         if (!mounted) return;
 
-        // Get current session (read token once)
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-
-        if (!mounted) return;
-
-        // Handle session errors
-        if (sessionError) {
-          // Check if it's a network error
-          if (isNetworkError(sessionError)) {
-            dispatch({ type: 'CONNECTION_ERROR' });
-          } else {
-            dispatch({ type: 'LOGIN_FAILURE' });
-          }
-          return;
+        let parsed: any = null;
+        try {
+          parsed = JSON.parse(stored);
+        } catch (e) {
+          parsed = null;
         }
 
-        // No session found
-        if (!session || !session.user) {
+        if (!parsed) {
           dispatch({ type: 'LOGIN_FAILURE' });
           return;
         }
 
-        // Fetch user data from database
-        const result = await api.getUserByEmail(session.user.email!);
+        // Rehydrate Supabase SDK in-memory session for this tab
+        try {
+          await supabase.auth.setSession({
+            access_token: parsed.access_token,
+            refresh_token: parsed.refresh_token
+          });
+        } catch (e) {
+          // ignore
+        }
+
+        // Get current user from SDK
+        const { data: { user }, error: getUserError } = await supabase.auth.getUser();
+        if (!mounted) return;
+
+        if (getUserError || !user) {
+          dispatch({ type: 'LOGIN_FAILURE' });
+          return;
+        }
+
+        const result = await api.getUserByEmail(user.email!);
 
         if (!mounted) return;
 
         if (result.error || !result.data) {
-          // Check if it's a network error
           if (isNetworkError(result.error)) {
             dispatch({ type: 'CONNECTION_ERROR' });
           } else {
@@ -257,21 +280,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           return;
         }
 
-        // Update last login time if not updated recently (within last minute)
+        // Update last login time if necessary
         try {
           const lastLogin = result.data.derniere_connexion ? new Date(result.data.derniere_connexion) : null;
           const now = new Date();
-          const shouldUpdate = !lastLogin || (now.getTime() - lastLogin.getTime()) > 60000; // Update if older than 1 minute
-
+          const shouldUpdate = !lastLogin || (now.getTime() - lastLogin.getTime()) > 60000;
           if (shouldUpdate) {
             const nowIso = now.toISOString();
-            await api.updateUserById(result.data.id, { 
-              derniere_connexion: nowIso 
-            });
+            await api.updateUserById(result.data.id, { derniere_connexion: nowIso });
             result.data.derniere_connexion = nowIso;
           }
         } catch (e) {
-          // ignore update errors
+          // ignore
         }
 
         dispatch({ type: 'LOGIN_SUCCESS', payload: result.data });
@@ -329,6 +349,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         dispatch({ type: 'LOGOUT' });
         dispatch({ type: 'SET_LOADING', payload: false });
       } else if (event === 'SIGNED_IN' && session.user) {
+        // Only process SIGNED_IN if this tab has an explicit session stored
+        if (typeof window === 'undefined' || !window.sessionStorage.getItem('logitrack:session')) {
+          // Ignore cross-tab sign-in events — do not auto-login this tab
+          return;
+        }
         // Prevent multiple simultaneous sign-in processing
         if (isProcessingSignInRef.current) return;
 
