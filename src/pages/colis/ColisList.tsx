@@ -199,25 +199,24 @@ export function ColisList() {
           <Package className="h-7 w-7 text-blue-600 dark:text-blue-400" />
           Liste des Colis
         </h1>
-        <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
           <Button
             variant="outline"
             onClick={handleRefresh}
             disabled={refreshing}
-            className="w-full sm:w-auto"
           >
             <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
             Actualiser
           </Button>
           <Button
-            className="bg-green-600 hover:bg-green-700 w-full sm:w-auto"
+            className="bg-green-600 hover:bg-green-700 flex-1 sm:flex-none"
             onClick={() => setImportModalOpen(true)}
           >
             <Upload className="mr-2 h-4 w-4" />
             Importer Excel
           </Button>
           <Button 
-            className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto"
+            className="bg-blue-600 hover:bg-blue-700 flex-1 sm:flex-none"
             onClick={() => navigate('/colis/ajouter')}
           >
             <Plus className="mr-2 h-4 w-4" />

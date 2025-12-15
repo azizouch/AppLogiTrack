@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
 import { User } from '@/types';
-import { auth, api, supabase } from '@/lib/supabase';
+import { auth, api } from '@/lib/supabase';
 
 interface AuthState {
   user: User | null;
@@ -21,7 +21,7 @@ type AuthAction =
 const initialState: AuthState = {
   user: null,
   isAuthenticated: false,
-  loading: false, // Start unauthenticated; tabs should be logged out until explicit signIn
+  loading: true,
   hasConnectionError: false,
 };
 
@@ -38,29 +38,11 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
         hasConnectionError: false,
       };
     case 'LOGIN_FAILURE':
-      return {
-        ...state,
-        user: null,
-        isAuthenticated: false,
-        loading: false,
-        hasConnectionError: false,
-      };
+      return { ...state, user: null, isAuthenticated: false, loading: false };
     case 'CONNECTION_ERROR':
-      return {
-        ...state,
-        user: null,
-        isAuthenticated: false,
-        loading: false,
-        hasConnectionError: true,
-      };
+      return { ...state, user: null, isAuthenticated: false, loading: false, hasConnectionError: true };
     case 'LOGOUT':
-      return {
-        ...state,
-        user: null,
-        isAuthenticated: false,
-        loading: false,
-        hasConnectionError: false,
-      };
+      return { ...state, user: null, isAuthenticated: false, loading: false };
     case 'SET_LOADING':
       return { ...state, loading: action.payload };
     default:
@@ -77,380 +59,112 @@ const AuthContext = createContext<{
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [state, dispatch] = useReducer(authReducer, initialState);
-  const isLoggingOutRef = React.useRef(false);
 
-  const currentStateRef = React.useRef(state);
-  const isProcessingSignInRef = React.useRef(false);
-  const lastProcessedEventRef = React.useRef<{ event: string; timestamp: number; email: string } | null>(null);
-
-  // Keep ref in sync with state
-  React.useEffect(() => {
-    currentStateRef.current = state;
-  }, [state]);
-
-  // Helper function to detect network errors
-  const isNetworkError = (error: any): boolean => {
-    if (!error) return false;
-    const message = error.message || '';
-    return message.includes('Failed to fetch') ||
-           message.includes('ERR_INTERNET_DISCONNECTED') ||
-           message.includes('Network Error') ||
-           message.includes('ERR_NETWORK') ||
-           message.includes('ERR_CONNECTION_REFUSED') ||
-           message.includes('fetch');
-  };
-
-  // Retry connection function
   const retryConnection = () => {
     dispatch({ type: 'SET_LOADING', payload: true });
-    // Trigger a re-check of the session
     window.location.reload();
   };
 
-  // Supabase login function
   const login = async (email: string, password: string) => {
     dispatch({ type: 'LOGIN_START' });
-
     try {
-      // Authenticate with Supabase
-      const { data: authData, error: authError } = await auth.signIn(email, password);
-
-      if (authError) {
-        throw authError;
+      const { data, error } = await auth.signIn(email, password);
+      if (error) {
+        dispatch({ type: 'LOGIN_FAILURE' });
+        throw error;
       }
 
-      if (authData.user) {
-
-        // Get user profile from our users table
-        const result = await api.getUserByEmail(email);
-
+      if (data?.user) {
+        const result = await api.getUserByEmail(data.user.email!);
         if (result.error || !result.data) {
           dispatch({ type: 'LOGIN_FAILURE' });
-          throw new Error('User profile not found in database. Please contact administrator.');
+          throw new Error('User profile not found');
         }
-
-        // Update last login time
-        const now = new Date().toISOString();
-        await api.updateUserById(result.data.id, { 
-          derniere_connexion: now 
-        });
-
-        // Update the user data with the new last login time
-        const updatedUser = { ...result.data, derniere_connexion: now };
-
-        dispatch({ type: 'LOGIN_SUCCESS', payload: updatedUser });
+        // update last login time
+        try {
+          const now = new Date().toISOString();
+          await api.updateUserById(result.data.id, { derniere_connexion: now });
+          result.data.derniere_connexion = now;
+        } catch (e) {
+          // ignore
+        }
+        dispatch({ type: 'LOGIN_SUCCESS', payload: result.data });
       }
-    } catch (error: any) {
+    } catch (err) {
       dispatch({ type: 'LOGIN_FAILURE' });
-      throw error;
-    } finally {
-      dispatch({ type: 'SET_LOADING', payload: false });
+      throw err;
     }
   };
 
   const logout = async () => {
-    // Prevent multiple simultaneous logout calls
-    if (isLoggingOutRef.current) {
-      return;
-    }
-
-    isLoggingOutRef.current = true;
-
-    // Set a timeout to reset the flag in case something goes wrong
-    const timeoutId = setTimeout(() => {
-      isLoggingOutRef.current = false;
-    }, 3000); // Reduced to 3 seconds
-
+    dispatch({ type: 'LOGOUT' });
     try {
-      // Force cleanup of any modal/dialog styles that might be stuck
-      if (typeof window !== 'undefined') {
-        document.body.style.removeProperty('pointer-events');
-        document.body.style.removeProperty('overflow');
-        document.body.removeAttribute('data-scroll-locked');
-      }
-
-      // Dispatch logout action immediately to update UI and stop loaders
-      dispatch({ type: 'LOGOUT' });
-      dispatch({ type: 'SET_LOADING', payload: false });
-
-      // (No cross-tab broadcast here to avoid unintended side effects)
-
-      // Sign out from Supabase
-      const { error } = await auth.signOut();
-
-      if (error) {
-        // Don't throw error since we already logged out locally
-      }
-
-    } catch (error: any) {
-
-      // Force cleanup on error too
-      if (typeof window !== 'undefined') {
-        document.body.style.removeProperty('pointer-events');
-        document.body.style.removeProperty('overflow');
-        document.body.removeAttribute('data-scroll-locked');
-      }
-
-      // Ensure logout state is set even on error
-      dispatch({ type: 'LOGOUT' });
-    } finally {
-      clearTimeout(timeoutId);
-      isLoggingOutRef.current = false;
+      await auth.signOut();
+    } catch (e) {
+      // ignore
     }
   };
 
   useEffect(() => {
-    // (Reverted cross-tab unauthorized/broadcast handling to avoid causing loader deadlocks.)
-
     let mounted = true;
-    let isInitializing = true;
 
-    // Longer timeout to handle network issues (10 seconds max)
-    const timeoutId = setTimeout(() => {
-      if (mounted && isInitializing) {
-        isInitializing = false;
-        dispatch({ type: 'CONNECTION_ERROR' });
-      }
-    }, 10000);
-
-    // Simplified session check - only restore if this tab explicitly saved a session
-    const checkSession = async () => {
-      // If no explicit session was saved in this tab, start unauthenticated
-      if (typeof window === 'undefined') {
-        return;
-      }
-
-      const stored = window.sessionStorage.getItem('logitrack:session');
-      if (!stored) {
-        // No explicit session for this tab - remain logged out
-        isInitializing = false;
-        if (mounted) {
-          dispatch({ type: 'LOGOUT' });
-          dispatch({ type: 'SET_LOADING', payload: false });
-        }
-        return;
-      }
-
-      // We have an explicit session saved in this tab - try to restore it deterministically
+    const loadCurrentUser = async () => {
       dispatch({ type: 'SET_LOADING', payload: true });
       try {
+        const { user, error } = await auth.getCurrentUser();
         if (!mounted) return;
-
-        let parsed: any = null;
-        try {
-          parsed = JSON.parse(stored);
-        } catch (e) {
-          parsed = null;
-        }
-
-        if (!parsed) {
+        if (error) {
           dispatch({ type: 'LOGIN_FAILURE' });
           return;
         }
 
-        // Rehydrate Supabase SDK in-memory session for this tab
-        try {
-          await supabase.auth.setSession({
-            access_token: parsed.access_token,
-            refresh_token: parsed.refresh_token
-          });
-        } catch (e) {
-          // ignore
-        }
-
-        // Get current user from SDK
-        const { data: { user }, error: getUserError } = await supabase.auth.getUser();
-        if (!mounted) return;
-
-        if (getUserError || !user) {
-          dispatch({ type: 'LOGIN_FAILURE' });
-          return;
-        }
-
-        const result = await api.getUserByEmail(user.email!);
-
-        if (!mounted) return;
-
-        if (result.error || !result.data) {
-          if (isNetworkError(result.error)) {
-            dispatch({ type: 'CONNECTION_ERROR' });
-          } else {
+        if (user) {
+          const result = await api.getUserByEmail(user.email!);
+          if (!mounted) return;
+          if (result.error || !result.data) {
             dispatch({ type: 'LOGIN_FAILURE' });
+            return;
           }
-          return;
+          dispatch({ type: 'LOGIN_SUCCESS', payload: result.data });
+        } else {
+          dispatch({ type: 'LOGOUT' });
         }
-
-        // Update last login time if necessary
-        try {
-          const lastLogin = result.data.derniere_connexion ? new Date(result.data.derniere_connexion) : null;
-          const now = new Date();
-          const shouldUpdate = !lastLogin || (now.getTime() - lastLogin.getTime()) > 60000;
-          if (shouldUpdate) {
-            const nowIso = now.toISOString();
-            await api.updateUserById(result.data.id, { derniere_connexion: nowIso });
-            result.data.derniere_connexion = nowIso;
-          }
-        } catch (e) {
-          // ignore
-        }
-
-        dispatch({ type: 'LOGIN_SUCCESS', payload: result.data });
-      } catch (error: any) {
-        if (mounted) {
-          if (isNetworkError(error)) {
-            dispatch({ type: 'CONNECTION_ERROR' });
-          } else {
-            dispatch({ type: 'LOGIN_FAILURE' });
-          }
-        }
+      } catch (err) {
+        if (!mounted) return;
+        dispatch({ type: 'CONNECTION_ERROR' });
       } finally {
         if (mounted) dispatch({ type: 'SET_LOADING', payload: false });
       }
     };
 
-    // Start session check
-    checkSession();
+    loadCurrentUser();
 
-    // Listen for auth state changes
-    const { data: { subscription } } = auth.onAuthStateChange(async (event, session) => {
-      // Skip events during initialization to prevent conflicts
-      if (isInitializing) return;
-
-      // Ignore events during logout
-      if (isLoggingOutRef.current) return;
-
+    const { data: subscription } = auth.onAuthStateChange(async (event, session) => {
       if (!mounted) return;
-
-      // Prevent duplicate events within a short time frame
-      const now = Date.now();
-      const userEmail = session?.user?.email || '';
-      const lastEvent = lastProcessedEventRef.current;
-
-      if (lastEvent &&
-          lastEvent.event === event &&
-          lastEvent.email === userEmail &&
-          (now - lastEvent.timestamp) < 2000) {
+      if (event === 'SIGNED_OUT' || !session) {
+        dispatch({ type: 'LOGOUT' });
         return;
       }
 
-      // For SIGNED_IN events, filter out duplicates for already authenticated users
-      if (event === 'SIGNED_IN' && session?.user) {
-        const currentState = currentStateRef.current;
-        if (currentState.isAuthenticated &&
-            currentState.user?.email === session.user.email) {
-          return;
-        }
-      }
-
-      // Update last processed event
-      lastProcessedEventRef.current = { event, timestamp: now, email: userEmail };
-
-      if (event === 'SIGNED_OUT' || !session) {
-        dispatch({ type: 'LOGOUT' });
-        dispatch({ type: 'SET_LOADING', payload: false });
-      } else if (event === 'SIGNED_IN' && session.user) {
-        // Only process SIGNED_IN if this tab has an explicit session stored
-        if (typeof window === 'undefined' || !window.sessionStorage.getItem('logitrack:session')) {
-          // Ignore cross-tab sign-in events — do not auto-login this tab
-          return;
-        }
-        // Prevent multiple simultaneous sign-in processing
-        if (isProcessingSignInRef.current) return;
-
-        const currentState = currentStateRef.current;
-
-        // Check if this is the same user that's already authenticated
-        if (currentState.user && currentState.user.email === session.user.email) {
-          // If already authenticated, skip processing
-          if (currentState.isAuthenticated) return;
-
-          // If we have user data but state is not properly set, fix it
-          dispatch({ type: 'LOGIN_SUCCESS', payload: currentState.user });
-          return;
-        }
-
-        // Set processing flag and loading state
-        isProcessingSignInRef.current = true;
-        dispatch({ type: 'LOGIN_START' });
-
+      if (event === 'SIGNED_IN' && session.user) {
         try {
           const result = await api.getUserByEmail(session.user.email!);
-
-          if (!mounted) return;
-
           if (result.error || !result.data) {
             dispatch({ type: 'LOGIN_FAILURE' });
             return;
           }
-
-          // Update last login time
-          const now = new Date().toISOString();
-          await api.updateUserById(result.data.id, { 
-            derniere_connexion: now 
-          });
-          result.data.derniere_connexion = now;
-
           dispatch({ type: 'LOGIN_SUCCESS', payload: result.data });
-        } catch (error: any) {
-          if (mounted) {
-            dispatch({ type: 'LOGIN_FAILURE' });
-          }
-        } finally {
-          isProcessingSignInRef.current = false;
-          if (mounted) dispatch({ type: 'SET_LOADING', payload: false });
-        }
-      } else if (event === 'TOKEN_REFRESHED' && session.user) {
-        const currentState = currentStateRef.current;
-
-        // For TOKEN_REFRESHED events, if we already have user data, just keep it
-        if (currentState.user && currentState.user.email === session.user.email) {
-          // Ensure state is properly authenticated
-          if (!currentState.isAuthenticated) {
-            dispatch({ type: 'LOGIN_SUCCESS', payload: currentState.user });
-          }
-          return;
-        }
-
-        // If we don't have user data or it's for a different user, fetch it
-        dispatch({ type: 'LOGIN_START' });
-
-        try {
-          const result = await api.getUserByEmail(session.user.email!);
-
-          if (!mounted) return;
-
-          if (result.error || !result.data) {
-            dispatch({ type: 'LOGIN_FAILURE' });
-            return;
-          }
-
-          // Update last login time
-          const now = new Date().toISOString();
-          await api.updateUserById(result.data.id, { 
-            derniere_connexion: now 
-          });
-          result.data.derniere_connexion = now;
-
-          dispatch({ type: 'LOGIN_SUCCESS', payload: result.data });
-        } catch (error: any) {
-          if (mounted) {
-            dispatch({ type: 'LOGIN_FAILURE' });
-          }
-        } finally {
-          if (mounted) dispatch({ type: 'SET_LOADING', payload: false });
+        } catch (e) {
+          dispatch({ type: 'LOGIN_FAILURE' });
         }
       }
     });
 
     return () => {
       mounted = false;
-      isInitializing = false;
-      clearTimeout(timeoutId);
-      subscription.unsubscribe();
+      subscription?.unsubscribe();
     };
-  }, []); // Keep empty dependency array to avoid re-subscription
-
-
+  }, []);
 
   return (
     <AuthContext.Provider value={{ state, login, logout, retryConnection }}>
@@ -461,12 +175,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) {
-    // In development, provide a more helpful error message
-    if (process.env.NODE_ENV === 'development') {
-      console.error('useAuth must be used within an AuthProvider. This might be a hot reload issue - try refreshing the page.');
-    }
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
+  if (!context) throw new Error('useAuth must be used within an AuthProvider');
   return context;
 };

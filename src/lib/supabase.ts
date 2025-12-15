@@ -89,14 +89,12 @@ const getSupabaseClient = (): SupabaseClient => {
   if (!supabaseInstance) {
     supabaseInstance = createClient(supabaseUrl, supabaseAnonKey, {
       auth: {
-        autoRefreshToken: false, // Keep disabled to avoid duplicate SIGNED_IN events
+        autoRefreshToken: false, // DISABLED: Causing infinite SIGNED_IN events
         persistSession: true,
         detectSessionInUrl: true,
-        // Use sessionStorage so each browser tab keeps its own session
-        // and disable multi-tab sync to avoid cross-tab overwrites
-        multiTab: false,
+        // Add session recovery options
         flowType: 'pkce',
-        storage: typeof window !== 'undefined' ? window.sessionStorage : undefined,
+        storage: typeof window !== 'undefined' ? window.localStorage : undefined,
         storageKey: 'supabase.auth.token',
         debug: false
       },
@@ -191,32 +189,6 @@ export const auth = {
       email,
       password,
     })
-
-    // If sign in succeeded and a session exists, persist it explicitly into sessionStorage
-    try {
-      if (!error && data?.session && typeof window !== 'undefined' && window.sessionStorage) {
-        try {
-          // Save the raw session JSON for this tab only
-          window.sessionStorage.setItem('logitrack:session', JSON.stringify(data.session));
-          window.sessionStorage.setItem('logitrack:explicit_session', JSON.stringify({ created_at: Date.now() }));
-        } catch (e) {
-          // ignore storage errors
-        }
-
-        // Ensure the Supabase client has the session in-memory so SDK calls work
-        try {
-          await supabase.auth.setSession({
-            access_token: data.session.access_token,
-            refresh_token: data.session.refresh_token
-          });
-        } catch (e) {
-          // ignore
-        }
-      }
-    } catch (e) {
-      // ignore
-    }
-
     return { data, error }
   },
 
@@ -303,26 +275,10 @@ export const auth = {
     try {
       const { error } = await supabase.auth.signOut()
 
-      // Clear auth token keys from sessionStorage and localStorage and remove explicit session flag
+      // Clear any stored auth data from localStorage
       if (typeof window !== 'undefined') {
-        try {
-          if (window.sessionStorage) {
-            window.sessionStorage.removeItem('logitrack:session')
-            window.sessionStorage.removeItem('logitrack:explicit_session')
-            window.sessionStorage.removeItem('supabase.auth.token')
-            window.sessionStorage.removeItem('sb-' + supabaseUrl.split('//')[1].split('.')[0] + '-auth-token')
-          }
-        } catch (e) {
-          // ignore
-        }
-        try {
-          if (window.localStorage) {
-            window.localStorage.removeItem('supabase.auth.token')
-            window.localStorage.removeItem('sb-' + supabaseUrl.split('//')[1].split('.')[0] + '-auth-token')
-          }
-        } catch (e) {
-          // ignore
-        }
+        localStorage.removeItem('supabase.auth.token')
+        localStorage.removeItem('sb-' + supabaseUrl.split('//')[1].split('.')[0] + '-auth-token')
       }
 
       return { error }
