@@ -89,9 +89,11 @@ const getSupabaseClient = (): SupabaseClient => {
   if (!supabaseInstance) {
     supabaseInstance = createClient(supabaseUrl, supabaseAnonKey, {
       auth: {
-        autoRefreshToken: false, // DISABLED: Causing infinite SIGNED_IN events
+        autoRefreshToken: false, // Keep disabled to avoid duplicate SIGNED_IN events
         persistSession: true,
         detectSessionInUrl: true,
+        // Disable multi-tab sync when using sessionStorage to keep per-tab sessions isolated
+        multiTab: false,
         // Add session recovery options
         flowType: 'pkce',
         storage: typeof window !== 'undefined' ? window.sessionStorage : undefined,
