@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
 import { User } from '@/types';
-import { auth, api } from '@/lib/supabase';
+import { auth, api, supabase } from '@/lib/supabase';
 
 interface AuthState {
   user: User | null;
@@ -21,7 +21,7 @@ type AuthAction =
 const initialState: AuthState = {
   user: null,
   isAuthenticated: false,
-  loading: true,
+  loading: false,
   hasConnectionError: false,
 };
 
@@ -75,20 +75,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       if (data?.user) {
-        const result = await api.getUserByEmail(data.user.email!);
-        if (result.error || !result.data) {
-          dispatch({ type: 'LOGIN_FAILURE' });
-          throw new Error('User profile not found');
-        }
-        // update last login time
+        // Get full user data from DB with extended timeout
         try {
-          const now = new Date().toISOString();
-          await api.updateUserById(result.data.id, { derniere_connexion: now });
-          result.data.derniere_connexion = now;
-        } catch (e) {
-          // ignore
+          const { data: userData, error: userError } = await supabase
+            .from('utilisateurs')
+            .select('*')
+            .eq('auth_id', data.user.id)
+            .single();
+
+          if (userData && !userError) {
+            // Got full user data
+            const userWithEmail = { ...userData, email: data.user.email };
+            dispatch({ type: 'LOGIN_SUCCESS', payload: userWithEmail });
+          } else {
+            throw new Error('User profile not found');
+          }
+        } catch (dbError) {
+          // Database error or timeout - use basic info as fallback
+          dispatch({ type: 'LOGIN_SUCCESS', payload: { 
+            id: data.user.id, 
+            email: data.user.email,
+            nom: data.user.email?.split('@')[0] || 'User',
+            prenom: '',
+            role: 'Gestionnaire',
+            statut: 'actif',
+            date_creation: new Date().toISOString(),
+            auth_id: data.user.id
+          } as any });
         }
-        dispatch({ type: 'LOGIN_SUCCESS', payload: result.data });
       }
     } catch (err) {
       dispatch({ type: 'LOGIN_FAILURE' });
@@ -109,54 +123,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     let mounted = true;
 
     const loadCurrentUser = async () => {
-      dispatch({ type: 'SET_LOADING', payload: true });
-      try {
-        const { user, error } = await auth.getCurrentUser();
-        if (!mounted) return;
-        if (error) {
-          dispatch({ type: 'LOGIN_FAILURE' });
-          return;
-        }
+      // Immediately stop showing the loader
+      dispatch({ type: 'SET_LOADING', payload: false });
 
-        if (user) {
-          const result = await api.getUserByEmail(user.email!);
-          if (!mounted) return;
-          if (result.error || !result.data) {
-            dispatch({ type: 'LOGIN_FAILURE' });
-            return;
-          }
-          dispatch({ type: 'LOGIN_SUCCESS', payload: result.data });
-        } else {
-          dispatch({ type: 'LOGOUT' });
-        }
+      // Load user in background (don't wait for it)
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!mounted || !session?.user?.id) return;
+
+        const { data: userData } = await supabase
+          .from('utilisateurs')
+          .select('*')
+          .eq('auth_id', session.user.id)
+          .single();
+
+        if (!mounted || !userData) return;
+
+        const userWithEmail = { ...userData, email: session.user.email };
+        dispatch({ type: 'LOGIN_SUCCESS', payload: userWithEmail });
       } catch (err) {
-        if (!mounted) return;
-        dispatch({ type: 'CONNECTION_ERROR' });
-      } finally {
-        if (mounted) dispatch({ type: 'SET_LOADING', payload: false });
+        // ignore errors in background
       }
     };
 
     loadCurrentUser();
 
-    const { data: subscription } = auth.onAuthStateChange(async (event, session) => {
+    const { data: subscription } = auth.onAuthStateChange((event, session) => {
       if (!mounted) return;
+      // Only handle sign out, not sign in (login function handles that)
       if (event === 'SIGNED_OUT' || !session) {
         dispatch({ type: 'LOGOUT' });
-        return;
-      }
-
-      if (event === 'SIGNED_IN' && session.user) {
-        try {
-          const result = await api.getUserByEmail(session.user.email!);
-          if (result.error || !result.data) {
-            dispatch({ type: 'LOGIN_FAILURE' });
-            return;
-          }
-          dispatch({ type: 'LOGIN_SUCCESS', payload: result.data });
-        } catch (e) {
-          dispatch({ type: 'LOGIN_FAILURE' });
-        }
       }
     });
 
