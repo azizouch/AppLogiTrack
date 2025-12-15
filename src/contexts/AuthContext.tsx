@@ -143,6 +143,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error: any) {
       dispatch({ type: 'LOGIN_FAILURE' });
       throw error;
+    } finally {
+      dispatch({ type: 'SET_LOADING', payload: false });
     }
   };
 
@@ -167,8 +169,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         document.body.removeAttribute('data-scroll-locked');
       }
 
-      // Dispatch logout action immediately to update UI
+      // Dispatch logout action immediately to update UI and stop loaders
       dispatch({ type: 'LOGOUT' });
+      dispatch({ type: 'SET_LOADING', payload: false });
+
+      // Broadcast logout to other tabs (use BroadcastChannel when available)
+      try {
+        if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+          const bc = new BroadcastChannel('logitrack-auth');
+          bc.postMessage({ type: 'logout', ts: Date.now() });
+          bc.close();
+        } else if (typeof window !== 'undefined') {
+          // Fallback to localStorage event
+          localStorage.setItem('logitrack:auth_event', JSON.stringify({ type: 'logout', ts: Date.now() }));
+        }
+      } catch (e) {
+        // ignore
+      }
 
       // Sign out from Supabase
       const { error } = await auth.signOut();
@@ -196,17 +213,58 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     // Listener for global unauthorized events emitted by Supabase fetch wrapper
-    const handleUnauthorized = () => {
+    const handleUnauthorized = async () => {
       // Force logout and stop any loading state so UI doesn't stay stuck
-      dispatch({ type: 'LOGOUT' });
-      // Optional: show a connection error state so UI can present retry
-      dispatch({ type: 'CONNECTION_ERROR' });
+      try {
+        await logout();
+      } catch (e) {
+        // fallback: ensure state reset
+        dispatch({ type: 'LOGOUT' });
+        dispatch({ type: 'SET_LOADING', payload: false });
+      }
     };
 
     try {
       window.addEventListener('supabase:unauthorized', handleUnauthorized as EventListener);
     } catch (e) {
       // ignore on server or unsupported environments
+    }
+
+    // BroadcastChannel and storage listener to synchronize logout/login events across tabs
+    let bc: BroadcastChannel | null = null;
+    const handleBroadcast = (ev: MessageEvent) => {
+      try {
+        if (ev?.data?.type === 'logout') {
+          dispatch({ type: 'LOGOUT' });
+          dispatch({ type: 'SET_LOADING', payload: false });
+        }
+      } catch (e) {
+        // ignore
+      }
+    };
+
+    const handleStorageEvent = (e: StorageEvent) => {
+      try {
+        if (e.key === 'logitrack:auth_event' && e.newValue) {
+          const payload = JSON.parse(e.newValue);
+          if (payload.type === 'logout') {
+            dispatch({ type: 'LOGOUT' });
+            dispatch({ type: 'SET_LOADING', payload: false });
+          }
+        }
+      } catch (err) {
+        // ignore
+      }
+    };
+
+    try {
+      if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+        bc = new BroadcastChannel('logitrack-auth');
+        bc.addEventListener('message', handleBroadcast as EventListener);
+      }
+      window.addEventListener('storage', handleStorageEvent);
+    } catch (e) {
+      // ignore
     }
 
     let mounted = true;
@@ -222,19 +280,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Simplified session check
     const checkSession = async () => {
+      // Ensure loading is set while we verify session
+      dispatch({ type: 'SET_LOADING', payload: true });
       try {
         if (!mounted) return;
 
-        // Get current session
+        // Get current session (read token once)
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
         if (!mounted) return;
 
         // Handle session errors
         if (sessionError) {
-          isInitializing = false;
-          clearTimeout(timeoutId);
-
           // Check if it's a network error
           if (isNetworkError(sessionError)) {
             dispatch({ type: 'CONNECTION_ERROR' });
@@ -246,32 +303,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         // No session found
         if (!session || !session.user) {
-          isInitializing = false;
-          clearTimeout(timeoutId);
           dispatch({ type: 'LOGIN_FAILURE' });
           return;
         }
 
         // Fetch user data from database
-        try {
-          const result = await api.getUserByEmail(session.user.email!);
+        const result = await api.getUserByEmail(session.user.email!);
 
-          if (!mounted) return;
+        if (!mounted) return;
 
-          if (result.error || !result.data) {
-            isInitializing = false;
-            clearTimeout(timeoutId);
-
-            // Check if it's a network error
-            if (isNetworkError(result.error)) {
-              dispatch({ type: 'CONNECTION_ERROR' });
-            } else {
-              dispatch({ type: 'LOGIN_FAILURE' });
-            }
-            return;
+        if (result.error || !result.data) {
+          // Check if it's a network error
+          if (isNetworkError(result.error)) {
+            dispatch({ type: 'CONNECTION_ERROR' });
+          } else {
+            dispatch({ type: 'LOGIN_FAILURE' });
           }
+          return;
+        }
 
-          // Update last login time if not updated recently (within last minute)
+        // Update last login time if not updated recently (within last minute)
+        try {
           const lastLogin = result.data.derniere_connexion ? new Date(result.data.derniere_connexion) : null;
           const now = new Date();
           const shouldUpdate = !lastLogin || (now.getTime() - lastLogin.getTime()) > 60000; // Update if older than 1 minute
@@ -283,35 +335,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             });
             result.data.derniere_connexion = nowIso;
           }
-
-          isInitializing = false;
-          clearTimeout(timeoutId);
-          dispatch({ type: 'LOGIN_SUCCESS', payload: result.data });
-        } catch (error: any) {
-          if (mounted) {
-            isInitializing = false;
-            clearTimeout(timeoutId);
-
-            // Check if it's a network error
-            if (isNetworkError(error)) {
-              dispatch({ type: 'CONNECTION_ERROR' });
-            } else {
-              dispatch({ type: 'LOGIN_FAILURE' });
-            }
-          }
+        } catch (e) {
+          // ignore update errors
         }
+
+        dispatch({ type: 'LOGIN_SUCCESS', payload: result.data });
       } catch (error: any) {
         if (mounted) {
-          isInitializing = false;
-          clearTimeout(timeoutId);
-
-          // Check if it's a network error
           if (isNetworkError(error)) {
             dispatch({ type: 'CONNECTION_ERROR' });
           } else {
             dispatch({ type: 'LOGIN_FAILURE' });
           }
         }
+      } finally {
+        if (mounted) dispatch({ type: 'SET_LOADING', payload: false });
       }
     };
 
@@ -354,6 +392,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (event === 'SIGNED_OUT' || !session) {
         dispatch({ type: 'LOGOUT' });
+        dispatch({ type: 'SET_LOADING', payload: false });
       } else if (event === 'SIGNED_IN' && session.user) {
         // Prevent multiple simultaneous sign-in processing
         if (isProcessingSignInRef.current) return;
@@ -398,6 +437,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
         } finally {
           isProcessingSignInRef.current = false;
+          if (mounted) dispatch({ type: 'SET_LOADING', payload: false });
         }
       } else if (event === 'TOKEN_REFRESHED' && session.user) {
         const currentState = currentStateRef.current;
@@ -436,6 +476,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (mounted) {
             dispatch({ type: 'LOGIN_FAILURE' });
           }
+        } finally {
+          if (mounted) dispatch({ type: 'SET_LOADING', payload: false });
         }
       }
     });
@@ -444,6 +486,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Cleanup unauthorized listener
       try {
         window.removeEventListener('supabase:unauthorized', handleUnauthorized as EventListener);
+      } catch (e) {
+        // ignore
+      }
+      try {
+        window.removeEventListener('storage', handleStorageEvent);
+      } catch (e) {
+        // ignore
+      }
+      try {
+        if (bc) {
+          bc.removeEventListener('message', handleBroadcast as EventListener);
+          bc.close();
+        }
       } catch (e) {
         // ignore
       }
