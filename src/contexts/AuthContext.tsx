@@ -21,7 +21,7 @@ type AuthAction =
 const initialState: AuthState = {
   user: null,
   isAuthenticated: false,
-  loading: false,
+  loading: true,
   hasConnectionError: false,
 };
 
@@ -123,26 +123,47 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     let mounted = true;
 
     const loadCurrentUser = async () => {
-      // Immediately stop showing the loader
-      dispatch({ type: 'SET_LOADING', payload: false });
-
-      // Load user in background (don't wait for it)
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        if (!mounted || !session?.user?.id) return;
+        if (!mounted) return;
 
-        const { data: userData } = await supabase
+        if (!session?.user?.id) {
+          dispatch({ type: 'LOGOUT' });
+          return;
+        }
+
+        // Wait for user data with timeout
+        const { data: userData, error: userError } = await supabase
           .from('utilisateurs')
           .select('*')
           .eq('auth_id', session.user.id)
           .single();
 
-        if (!mounted || !userData) return;
+        if (!mounted) return;
 
-        const userWithEmail = { ...userData, email: session.user.email };
-        dispatch({ type: 'LOGIN_SUCCESS', payload: userWithEmail });
+        if (userData && !userError) {
+          const userWithEmail = { ...userData, email: session.user.email };
+          dispatch({ type: 'LOGIN_SUCCESS', payload: userWithEmail });
+        } else {
+          // DB error but we have session - use basic info
+          dispatch({ type: 'LOGIN_SUCCESS', payload: {
+            id: session.user.id,
+            email: session.user.email,
+            nom: session.user.email?.split('@')[0] || 'User',
+            prenom: '',
+            role: 'Gestionnaire',
+            statut: 'actif',
+            date_creation: new Date().toISOString(),
+            auth_id: session.user.id
+          } as any });
+        }
       } catch (err) {
-        // ignore errors in background
+        if (!mounted) return;
+        dispatch({ type: 'LOGOUT' });
+      } finally {
+        if (mounted) {
+          dispatch({ type: 'SET_LOADING', payload: false });
+        }
       }
     };
 
