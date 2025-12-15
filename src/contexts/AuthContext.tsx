@@ -169,11 +169,43 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     loadCurrentUser();
 
-    const { data: subscription } = auth.onAuthStateChange((event, session) => {
+    const { data: subscription } = auth.onAuthStateChange(async (event, session) => {
       if (!mounted) return;
-      // Only handle sign out, not sign in (login function handles that)
+
       if (event === 'SIGNED_OUT' || !session) {
         dispatch({ type: 'LOGOUT' });
+        return;
+      }
+
+      // Handle sign in from other tabs or initial load
+      if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session.user?.id) {
+        try {
+          const { data: userData, error: userError } = await supabase
+            .from('utilisateurs')
+            .select('*')
+            .eq('auth_id', session.user.id)
+            .single();
+
+          if (!mounted) return;
+
+          if (userData && !userError) {
+            const userWithEmail = { ...userData, email: session.user.email };
+            dispatch({ type: 'LOGIN_SUCCESS', payload: userWithEmail });
+          } else {
+            dispatch({ type: 'LOGIN_SUCCESS', payload: {
+              id: session.user.id,
+              email: session.user.email,
+              nom: session.user.email?.split('@')[0] || 'User',
+              prenom: '',
+              role: 'Gestionnaire',
+              statut: 'actif',
+              date_creation: new Date().toISOString(),
+              auth_id: session.user.id
+            } as any });
+          }
+        } catch (err) {
+          // ignore
+        }
       }
     });
 
