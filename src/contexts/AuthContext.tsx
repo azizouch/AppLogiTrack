@@ -195,6 +195,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
+    // Listener for global unauthorized events emitted by Supabase fetch wrapper
+    const handleUnauthorized = () => {
+      // Force logout and stop any loading state so UI doesn't stay stuck
+      dispatch({ type: 'LOGOUT' });
+      // Optional: show a connection error state so UI can present retry
+      dispatch({ type: 'CONNECTION_ERROR' });
+    };
+
+    try {
+      window.addEventListener('supabase:unauthorized', handleUnauthorized as EventListener);
+    } catch (e) {
+      // ignore on server or unsupported environments
+    }
+
     let mounted = true;
     let isInitializing = true;
 
@@ -427,6 +441,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     return () => {
+      // Cleanup unauthorized listener
+      try {
+        window.removeEventListener('supabase:unauthorized', handleUnauthorized as EventListener);
+      } catch (e) {
+        // ignore
+      }
+
       mounted = false;
       isInitializing = false;
       clearTimeout(timeoutId);
