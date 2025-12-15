@@ -90,8 +90,8 @@ const getSupabaseClient = (): SupabaseClient => {
     supabaseInstance = createClient(supabaseUrl, supabaseAnonKey, {
       auth: {
         autoRefreshToken: false, // DISABLED: Causing infinite SIGNED_IN events
-        persistSession: true,
-        detectSessionInUrl: true,
+        persistSession: false,
+        detectSessionInUrl: false,
         // Add session recovery options
         flowType: 'pkce',
         storage: typeof window !== 'undefined' ? window.sessionStorage : undefined,
@@ -189,6 +189,11 @@ export const auth = {
       email,
       password,
     })
+    // 🔴 Manual session handling per tab
+    if (data.user) {
+      // You can store this in AuthContext state, e.g. setUser(data.user)
+      console.log('User signed in:', data.user)
+    }
     return { data, error }
   },
 
@@ -274,12 +279,16 @@ export const auth = {
   signOut: async () => {
     try {
       const { error } = await supabase.auth.signOut()
-
-      // Clear any stored auth data from localStorage
+      // 🔴 Clear any stored auth data in this tab
       if (typeof window !== 'undefined') {
-        localStorage.removeItem('supabase.auth.token')
-        localStorage.removeItem('sb-' + supabaseUrl.split('//')[1].split('.')[0] + '-auth-token')
+        sessionStorage.removeItem('supabase.auth.token') // clear per-tab session
+        localStorage.removeItem('supabase.auth.token')   // optional: extra cleanup
       }
+      // Clear any stored auth data from localStorage
+      // if (typeof window !== 'undefined') {
+      //   localStorage.removeItem('supabase.auth.token')
+      //   localStorage.removeItem('sb-' + supabaseUrl.split('//')[1].split('.')[0] + '-auth-token')
+      // }
 
       return { error }
     } catch (error: any) {
