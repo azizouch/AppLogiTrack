@@ -94,7 +94,7 @@ const getSupabaseClient = (): SupabaseClient => {
         detectSessionInUrl: true,
         // Add session recovery options
         flowType: 'pkce',
-        storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+        storage: typeof window !== 'undefined' ? window.sessionStorage : undefined,
         storageKey: 'supabase.auth.token',
         debug: false
       },
