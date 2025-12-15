@@ -94,7 +94,7 @@ const getSupabaseClient = (): SupabaseClient => {
         detectSessionInUrl: true,
         // Add session recovery options
         flowType: 'pkce',
-        storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+        storage: typeof window !== 'undefined' ? window.sessionStorage : undefined,
         storageKey: 'supabase.auth.token',
         debug: false
       },
@@ -277,8 +277,23 @@ export const auth = {
 
       // Clear any stored auth data from localStorage
       if (typeof window !== 'undefined') {
-        localStorage.removeItem('supabase.auth.token')
-        localStorage.removeItem('sb-' + supabaseUrl.split('//')[1].split('.')[0] + '-auth-token')
+        try {
+          // Remove from sessionStorage (per-tab) and localStorage as fallback
+          if (window.sessionStorage) {
+            window.sessionStorage.removeItem('supabase.auth.token')
+            window.sessionStorage.removeItem('sb-' + supabaseUrl.split('//')[1].split('.')[0] + '-auth-token')
+          }
+        } catch (e) {
+          // ignore
+        }
+        try {
+          if (window.localStorage) {
+            window.localStorage.removeItem('supabase.auth.token')
+            window.localStorage.removeItem('sb-' + supabaseUrl.split('//')[1].split('.')[0] + '-auth-token')
+          }
+        } catch (e) {
+          // ignore
+        }
       }
 
       return { error }
