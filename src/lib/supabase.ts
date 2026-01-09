@@ -861,6 +861,7 @@ export const api = {
     livreurId?: string;
     sortBy?: 'recent' | 'oldest' | 'status';
     dateFilter?: string;
+    _refresh?: boolean; // Cache-busting parameter
   } = {}) => {
 
     const {
@@ -870,7 +871,8 @@ export const api = {
       status = '',
       livreurId = '',
       sortBy = 'recent',
-      dateFilter = ''
+      dateFilter = '',
+      _refresh = false
     } = options;
 
     let query = supabase
@@ -880,7 +882,17 @@ export const api = {
         client:clients(id, nom, telephone, email),
         entreprise:entreprises(id, nom, telephone, email),
         livreur:utilisateurs(id, nom, prenom, telephone)
-      `, { count: 'exact' });
+      `, {
+        count: 'exact',
+        // Force fresh data when refreshing
+        ...(typeof window !== 'undefined' && _refresh && {
+          cache: 'no-cache',
+          headers: {
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache'
+          }
+        })
+      });
 
         // Apply search filter - comprehensive search across multiple fields
       if (search) {

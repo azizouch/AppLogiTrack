@@ -59,9 +59,10 @@ export function ColisList() {
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
   // Fetch colis data with filters and pagination
-  const fetchColis = useCallback(async (isRefresh = false) => {
+  const fetchColis = useCallback(async (options = {}) => {
+    const { _refresh = false } = options;
     try {
-      if (isRefresh) {
+      if (_refresh) {
         setRefreshing(true);
       } else {
         setLoading(true);
@@ -73,7 +74,8 @@ export function ColisList() {
         search: debouncedSearchTerm,
         status: statusFilter,
         livreurId: delivererFilter,
-        sortBy: sortBy
+        sortBy: sortBy,
+        _refresh
       });
 
       const { data, error, count, totalPages: pages, hasNextPage: hasNext, hasPrevPage: hasPrev } = result;
@@ -177,7 +179,7 @@ export function ColisList() {
 
   // Handle refresh
   const handleRefresh = () => {
-    fetchColis(true);
+    fetchColis({ _refresh: true });
   };
 
   // Reset filters function
@@ -199,24 +201,30 @@ export function ColisList() {
           <Package className="h-7 w-7 text-blue-600 dark:text-blue-400" />
           Liste des Colis
         </h1>
-        <div className="flex items-center gap-2 w-full sm:w-auto">
+        <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full sm:w-auto"
+              onClick={handleRefresh}
+              disabled={refreshing}
+            >
+              <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+              Actualiser
+            </Button>
+            <Button
+              className="bg-green-600 hover:bg-green-700 w-full sm:w-auto"
+              size="sm"
+              onClick={() => setImportModalOpen(true)}
+            >
+              <Upload className="mr-2 h-4 w-4" />
+              Importer Excel
+            </Button>
+          </div>
           <Button
-            variant="outline"
-            onClick={handleRefresh}
-            disabled={refreshing}
-          >
-            <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-            Actualiser
-          </Button>
-          <Button
-            className="bg-green-600 hover:bg-green-700 flex-1 sm:flex-none"
-            onClick={() => setImportModalOpen(true)}
-          >
-            <Upload className="mr-2 h-4 w-4" />
-            Importer Excel
-          </Button>
-          <Button 
-            className="bg-blue-600 hover:bg-blue-700 flex-1 sm:flex-none"
+            className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto"
+            size="sm"
             onClick={() => navigate('/colis/ajouter')}
           >
             <Plus className="mr-2 h-4 w-4" />
@@ -349,7 +357,7 @@ export function ColisList() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {loading ? (
+              {(loading || refreshing) ? (
                 // Loading skeleton
                 Array.from({ length: 5 }).map((_, index) => (
                   <TableRow key={index} className="border-b border-gray-600 dark:border-gray-600 bg-transparent">
@@ -427,7 +435,7 @@ export function ColisList() {
         onOpenChange={setImportModalOpen}
         onImportSuccess={() => {
           setImportModalOpen(false);
-          fetchColis(true); // Refresh the list after successful import
+          fetchColis({ _refresh: true }); // Refresh the list after successful import
         }}
       />
     </div>
