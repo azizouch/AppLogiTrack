@@ -91,13 +91,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             throw new Error('User profile not found');
           }
         } catch (dbError) {
-          // Database error or timeout - use basic info as fallback
-          dispatch({ type: 'LOGIN_SUCCESS', payload: { 
-            id: data.user.id, 
+          // Database error or timeout - use basic info as fallback without assuming role
+          dispatch({ type: 'LOGIN_SUCCESS', payload: {
+            id: data.user.id,
             email: data.user.email,
             nom: data.user.email?.split('@')[0] || 'User',
             prenom: '',
-            role: 'Gestionnaire',
+            role: null, // Don't assume role, let dashboard handle it
             statut: 'actif',
             date_creation: new Date().toISOString(),
             auth_id: data.user.id
@@ -145,13 +145,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const userWithEmail = { ...userData, email: session.user.email };
           dispatch({ type: 'LOGIN_SUCCESS', payload: userWithEmail });
         } else {
-          // DB error but we have session - use basic info
+          // DB error but we have session - use basic info with default role
           dispatch({ type: 'LOGIN_SUCCESS', payload: {
             id: session.user.id,
             email: session.user.email,
             nom: session.user.email?.split('@')[0] || 'User',
             prenom: '',
-            role: 'Gestionnaire',
+            role: 'Gestionnaire', // Default to Gestionnaire when DB fails
             statut: 'actif',
             date_creation: new Date().toISOString(),
             auth_id: session.user.id
@@ -179,7 +179,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     return () => {
       mounted = false;
-      subscription?.unsubscribe();
+      if (subscription && typeof subscription.unsubscribe === 'function') {
+        subscription.unsubscribe();
+      }
     };
   }, []);
 

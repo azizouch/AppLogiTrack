@@ -262,7 +262,7 @@ export function AppSidebar() {
 
   const hasAccess = (itemRoles?: string[]) => {
     if (!itemRoles || itemRoles.length === 0) return true;
-    if (!authState.user) return false;
+    if (!authState.user || !authState.user.role) return false;
 
     // Make role comparison case-insensitive
     const userRole = authState.user.role.toLowerCase();
