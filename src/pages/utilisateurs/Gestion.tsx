@@ -118,13 +118,6 @@ export function Gestion() {
 
   useEffect(() => {
     fetchUsers();
-    
-    // Auto-refresh user data every 30 seconds to update last connection time
-    const interval = setInterval(() => {
-      fetchUsers();
-    }, 30000); // 30 seconds
-
-    return () => clearInterval(interval);
   }, [fetchUsers]);
 
   // Filter users based on search and filters

@@ -299,11 +299,6 @@ export function AppSidebar() {
         return false;
       }
 
-      // Handle sub-routes by checking if current path starts with item URL + "/"
-      if (currentPath.startsWith(item.url + '/')) {
-        return true;
-      }
-
       // Special handling for bons routes to catch detail pages
       if (item.url.startsWith('/bons/') && currentPath.startsWith('/bons/')) {
         // Check if we're on a bon detail page or other bon sub-route

@@ -725,15 +725,7 @@ export const api = {
   // Users
   getUsers: async () => {
     try {
-      // Try to get users with emails using RPC function
-      const { data: usersWithEmails, error: rpcError } = await supabase.rpc('get_all_users_with_email');
-
-      if (!rpcError && usersWithEmails) {
-        return { data: usersWithEmails, error: null };
-      }
-
-      // Fallback: Get users without emails and try to add emails individually
-      console.warn('RPC function failed, using fallback method');
+      // Get users from the utilisateurs table
       const { data: users, error: usersError } = await supabase
         .from('utilisateurs')
         .select('*')
@@ -743,20 +735,18 @@ export const api = {
         return { data: null, error: usersError };
       }
 
-      // Try to add emails for users that have auth_id
+      // Try to add emails for users using the existing RPC function
       const usersWithEmailsAdded = await Promise.all(
         users.map(async (user) => {
-          if (user.auth_id) {
-            try {
-              const { data: userWithEmail } = await supabase.rpc('get_user_with_email', {
-                user_id: user.id
-              });
-              if (userWithEmail?.email) {
-                return { ...user, email: userWithEmail.email };
-              }
-            } catch (e) {
-              // Ignore individual errors
+          try {
+            const { data: userWithEmail } = await supabase.rpc('get_user_with_email', {
+              user_id: user.id
+            });
+            if (userWithEmail) {
+              return { ...user, email: userWithEmail.email || '' };
             }
+          } catch (e) {
+            // Ignore individual errors - email will remain empty
           }
           return { ...user, email: '' }; // No email available
         })
@@ -764,7 +754,7 @@ export const api = {
 
       return { data: usersWithEmailsAdded, error: null };
     } catch (error) {
-      // Final fallback: basic query without emails
+      // Fallback: basic query without emails
       const { data, error: basicError } = await supabase
         .from('utilisateurs')
         .select('*')
