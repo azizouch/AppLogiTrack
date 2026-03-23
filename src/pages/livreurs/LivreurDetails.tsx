@@ -332,7 +332,7 @@ export function LivreurDetails() {
       </div>
 
       {/* Livreur Info Header */}
-      <div className="mb-8">
+      <div className="flex flex-col sm:flex-row sm:justify-between mb-8">
         {/* Title Row */}
         <div className="flex items-center gap-4 mb-4">
           <Avatar className="w-12 h-12">
@@ -355,7 +355,56 @@ export function LivreurDetails() {
         </div>
 
         {/* Buttons Row */}
-        <div className="grid grid-cols-2 md:flex gap-3">
+        <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <Button
+                variant="outline"
+                onClick={() => navigate(`/livreurs/${livreur.id}/modifier`)}
+                className="w-full lg:w-auto text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white flex items-center justify-center gap-2"
+              >
+                <Edit className="h-4 w-4" />
+                Modifier
+              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="destructive"
+                    className="w-full lg:w-auto bg-red-600 hover:bg-red-700 flex items-center justify-center gap-2"
+                    disabled={deleting}
+                  >
+                    {deleting ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Suppression...
+                      </>
+                    ) : (
+                      <>
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Supprimer
+                      </>
+                    )}
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Êtes-vous sûr de vouloir supprimer le livreur "{livreur.nom} {livreur.prenom}" ?
+                      Cette action est irréversible et supprimera toutes les données associées.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Annuler</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={handleDelete}
+                      className="bg-red-600 hover:bg-red-700"
+                    >
+                      Supprimer
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
           <Button
             variant="default"
             onClick={openAssignModal}
@@ -364,53 +413,6 @@ export function LivreurDetails() {
             <User className="h-4 w-4" />
             Assigner
           </Button>
-          <Button
-            variant="outline"
-            onClick={() => navigate(`/livreurs/${livreur.id}/modifier`)}
-            className="w-full lg:w-auto text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white flex items-center justify-center gap-2"
-          >
-            <Edit className="h-4 w-4" />
-            Modifier
-          </Button>
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button
-                variant="destructive"
-                className="w-full lg:w-auto bg-red-600 hover:bg-red-700 flex items-center justify-center gap-2"
-                disabled={deleting}
-              >
-                {deleting ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Suppression...
-                  </>
-                ) : (
-                  <>
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Supprimer
-                  </>
-                )}
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Êtes-vous sûr de vouloir supprimer le livreur "{livreur.nom} {livreur.prenom}" ?
-                  Cette action est irréversible et supprimera toutes les données associées.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Annuler</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={handleDelete}
-                  className="bg-red-600 hover:bg-red-700"
-                >
-                  Supprimer
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
         </div>
       </div>
 
