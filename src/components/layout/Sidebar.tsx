@@ -230,14 +230,25 @@ export function AppSidebar() {
       badgeCount: badgeCounts['Relancé Autre Client'] ?? 0
     },
     {
-      title: 'Bons',
+      title: 'Bons pour admin',
       icon: FileText,
-      roles: ['admin', 'gestionnaire', 'livreur'],
+      roles: ['admin', 'gestionnaire'],
       hasDropdown: true,
       items: [
-        { title: 'Distribution', url: '/bons/distribution', icon: FileText },
-        { title: 'Paiement', url: '/bons/paiement', icon: CreditCard },
-        { title: 'Retour', url: '/bons/retour', icon: RotateCcw },
+        { title: 'Distribution', url: '/bons/distribution', icon: FileText, roles: ['admin', 'gestionnaire'] },
+        { title: 'Paiement', url: '/bons/paiement', icon: CreditCard, roles: ['admin', 'gestionnaire'] },
+        { title: 'Retour', url: '/bons/retour', icon: RotateCcw, roles: ['admin', 'gestionnaire'] },
+      ]
+    },
+    {
+      title: 'Bons pour livreur',
+      icon: FileText,
+      roles: ['admin', 'gestionnaire'],
+      hasDropdown: true,
+      items: [
+        { title: 'Distribution', url: '/bons/mes-distribution', icon: FileText, roles: ['admin', 'gestionnaire'] },
+        { title: 'Paiement', url: '/bons/mes-paiement', icon: CreditCard, roles: ['admin', 'gestionnaire'] },
+        { title: 'Retour', url: '/bons/mes-retour', icon: RotateCcw, roles: ['admin', 'gestionnaire'] },
       ]
     },
     {

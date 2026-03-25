@@ -161,6 +161,18 @@ export function FilteredColisView() {
         params.livreurId = livreurFilter;
       }
 
+      // Decide whether to ask server to filter by a single status
+      const useServerStatusFilter = filterStatuses !== 'exclude' && Array.isArray(filterStatuses) && filterStatuses.length === 1;
+
+      if (useServerStatusFilter) {
+        params.status = filterStatuses[0];
+      } else {
+        // For multi-status or exclude cases, fetch all matching items so we can filter client-side
+        // Use a large limit to get the full result set (acceptable for moderate datasets)
+        params.page = 1;
+        params.limit = 10000;
+      }
+
       const result = await api.getColis(params);
       const { data, error, count, totalPages: pages, hasNextPage: hasNext, hasPrevPage: hasPrev } = result;
 
@@ -172,24 +184,28 @@ export function FilteredColisView() {
         setHasNextPage(false);
         setHasPrevPage(false);
       } else if (data) {
-        // Filter by status on the client side
-        let filteredData;
-        if (filterStatuses === 'exclude') {
-          // For "En traitement": exclude en_attente, Livré, Retourné
-          filteredData = data.filter(colisItem =>
-            !['en_attente', 'Livré', 'Retourné'].includes(colisItem.statut)
-          );
+        if (useServerStatusFilter) {
+          // Server already filtered by single status — use server counts and pages
+          setColis(Array.isArray(data) ? data : []);
+          setTotalCount(count || 0);
+          setTotalPages(pages || 0);
+          setHasNextPage(hasNext || false);
+          setHasPrevPage(hasPrev || false);
         } else {
-          filteredData = data.filter(colisItem =>
-            filterStatuses.includes(colisItem.statut)
-          );
-        }
+          // Client-side filtering for multi-status or exclude
+          let filteredData;
+          if (filterStatuses === 'exclude') {
+            filteredData = data.filter(colisItem => !['en_attente', 'Livré', 'Retourné'].includes(colisItem.statut));
+          } else {
+            filteredData = data.filter(colisItem => filterStatuses.includes(colisItem.statut));
+          }
 
-        setColis(filteredData);
-        setTotalCount(filteredData.length);
-        setTotalPages(Math.ceil(filteredData.length / itemsPerPage));
-        setHasNextPage(currentPage < Math.ceil(filteredData.length / itemsPerPage));
-        setHasPrevPage(currentPage > 1);
+          setColis(filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage));
+          setTotalCount(filteredData.length);
+          setTotalPages(Math.ceil(filteredData.length / itemsPerPage));
+          setHasNextPage(currentPage < Math.ceil(filteredData.length / itemsPerPage));
+          setHasPrevPage(currentPage > 1);
+        }
       }
     } catch (error) {
       console.error('Error fetching colis:', error);
@@ -315,6 +331,7 @@ export function FilteredColisView() {
             <p className="text-gray-600 dark:text-gray-400">
               Liste des colis avec le statut: {STATUS_DISPLAY_NAMES[statusFilter as keyof typeof STATUS_DISPLAY_NAMES]}
             </p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Total: {totalCount} colis</p>
           </div>
         </div>
         <Button
@@ -534,19 +551,21 @@ export function FilteredColisView() {
               <div className="flex items-center gap-2">
                 <span className="text-sm text-gray-500 dark:text-gray-400">Afficher</span>
                 <Select value={itemsPerPage.toString()} onValueChange={(value) => {
-                  setItemsPerPage(Number(value));
-                  setCurrentPage(1);
-                }}>
-                  <SelectTrigger className="w-16 h-8">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="10">10</SelectItem>
-                    <SelectItem value="25">25</SelectItem>
-                    <SelectItem value="50">50</SelectItem>
-                  </SelectContent>
-                </Select>
+                    setItemsPerPage(Number(value));
+                    setCurrentPage(1);
+                  }}>
+                    <SelectTrigger className="w-16 h-8">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="10">10</SelectItem>
+                      <SelectItem value="25">25</SelectItem>
+                      <SelectItem value="50">50</SelectItem>
+                    </SelectContent>
+                  </Select>
+                <span className="text-sm text-gray-500 dark:text-gray-400">entrées</span>
               </div>
+              <span className="text-sm text-gray-500 dark:text-gray-400">Total: {totalCount} colis</span>
             </div>
           </div>
 

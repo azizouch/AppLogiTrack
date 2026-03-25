@@ -138,15 +138,26 @@ export function Dashboard() {
   ];
 
   // Get current date in French format
+  const capitalize = (word: string) =>
+    word.charAt(0).toUpperCase() + word.slice(1);
+
   const getCurrentDate = () => {
     const now = new Date();
-    const options: Intl.DateTimeFormatOptions = {
+
+    const parts = now.toLocaleDateString('fr-FR', {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
       day: 'numeric'
-    };
-    return now.toLocaleDateString('fr-FR', options);
+    }).split(' ');
+
+    return parts
+      .map((part, index) => {
+        // capitalize weekday (index 0) and month (index 2)
+        if (index === 0 || index === 2) return capitalize(part);
+        return part;
+      })
+      .join(' ');
   };
 
   // Render livreur dashboard if user is a livreur (case-insensitive)

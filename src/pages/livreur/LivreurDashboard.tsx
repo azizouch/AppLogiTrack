@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Package, Clock, CheckCircle, RotateCcw, User, MapPin, Truck, Calendar, Award, LucideIcon } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { api } from '@/lib/supabase';
@@ -204,15 +205,26 @@ export function LivreurDashboard() {
   }, [state.user?.id]);
 
   // Get current date in French format
+   const capitalize = (word: string) =>
+    word.charAt(0).toUpperCase() + word.slice(1);
+
   const getCurrentDate = () => {
     const now = new Date();
-    const options: Intl.DateTimeFormatOptions = {
+
+    const parts = now.toLocaleDateString('fr-FR', {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
       day: 'numeric'
-    };
-    return now.toLocaleDateString('fr-FR', options);
+    }).split(' ');
+
+    return parts
+      .map((part, index) => {
+        // capitalize weekday (index 0) and month (index 2)
+        if (index === 0 || index === 2) return capitalize(part);
+        return part;
+      })
+      .join(' ');
   };
 
   // Handle card click navigation
@@ -434,6 +446,30 @@ export function LivreurDashboard() {
           data={bonStats.paiement}
           loading={bonStatsLoading}
         />
+      </div>
+      {/* Quick links to livreur bons pages */}
+      <div className="mt-4">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg">Mes bons</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex gap-2">
+              <button className="flex items-center gap-2 bg-blue-600 text-white px-3 py-2 rounded" onClick={() => navigate('/bons/mes-distribution')}>
+                Bons Distribution
+                <Badge className="ml-2 bg-white text-black dark:bg-gray-700">{bonStats.distribution?.total ?? 0}</Badge>
+              </button>
+              <button className="flex items-center gap-2 bg-green-600 text-white px-3 py-2 rounded" onClick={() => navigate('/bons/mes-paiement')}>
+                Bons Paiement
+                <Badge className="ml-2 bg-white text-black dark:bg-gray-700">{bonStats.paiement?.total ?? 0}</Badge>
+              </button>
+              <button className="flex items-center gap-2 bg-red-600 text-white px-3 py-2 rounded" onClick={() => navigate('/bons/mes-retour')}>
+                Bons Retour
+                <Badge className="ml-2 bg-white text-black dark:bg-gray-700">{bonStats.retour?.total ?? 0}</Badge>
+              </button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
