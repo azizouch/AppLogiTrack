@@ -51,6 +51,13 @@ export function AppSidebar() {
   const isMobile = useIsMobile();
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [companyName, setCompanyName] = useState<string>(() => {
+    try {
+      return localStorage.getItem('companyName') || 'LogiTrack';
+    } catch (e) {
+      return 'LogiTrack';
+    }
+  });
   const [tooltip, setTooltip] = useState<{ text: string; x: number; y: number } | null>(null);
   const [dropdownPopup, setDropdownPopup] = useState<{ items: any[]; x: number; y: number } | null>(null);
   const [badgeCounts, setBadgeCounts] = useState<Record<string, number>>({});
@@ -68,15 +75,44 @@ export function AppSidebar() {
       } else {
         document.documentElement.classList.remove('dark');
       }
+      // Also update company name from storage so header reflects saved entreprise name
+      try {
+        const savedName = localStorage.getItem('companyName');
+        if (savedName) setCompanyName(savedName);
+      } catch (e) {
+        // ignore
+      }
     };
 
     // Initial theme setup
     updateTheme();
 
+    // Fetch company settings from server once on mount
+    const fetchCompany = async () => {
+      try {
+        const { data, error } = await api.getCompanySettings();
+        if (!error && data && data.nom) {
+          setCompanyName(data.nom);
+          try {
+            localStorage.setItem('companyName', data.nom);
+          } catch (e) {
+            // ignore
+          }
+        }
+      } catch (e) {
+        // ignore
+      }
+    };
+
+    fetchCompany();
+
     // Listen for localStorage changes from other components (like settings page)
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'theme') {
         updateTheme();
+      }
+      if (e.key === 'companyName') {
+        setCompanyName(e.newValue || 'LogiTrack');
       }
     };
 
@@ -408,7 +444,7 @@ export function AppSidebar() {
               }}
               onMouseLeave={(e) => e.currentTarget.blur()}
             >
-              LogiTrack
+              {companyName}
             </button>
           )}
           <div

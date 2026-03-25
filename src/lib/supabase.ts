@@ -1604,6 +1604,52 @@ export const api = {
     return { data, error }
   },
 
+  // Company settings (singleton table for app-wide settings)
+  getCompanySettings: async () => {
+    try {
+      const { data, error } = await supabase
+        .from('company_settings')
+        .select('*')
+        .single();
+
+      return { data, error };
+    } catch (err) {
+      return { data: null, error: err as any };
+    }
+  },
+
+  upsertCompanySettings: async (settings: { nom?: string; adresse?: string; ville?: string; telephone?: string; email?: string }) => {
+    try {
+      // Check if a settings row exists
+      const { data: existing, error: existingError } = await supabase
+        .from('company_settings')
+        .select('id')
+        .limit(1)
+        .single();
+
+      if (existing && existing.id) {
+        const { data, error } = await supabase
+          .from('company_settings')
+          .update(settings)
+          .eq('id', existing.id)
+          .select()
+          .single();
+
+        return { data, error };
+      } else {
+        const { data, error } = await supabase
+          .from('company_settings')
+          .insert(settings)
+          .select()
+          .single();
+
+        return { data, error };
+      }
+    } catch (err) {
+      return { data: null, error: err as any };
+    }
+  },
+
   // CRUD operations for Users/Livreurs
   createUser: async (user: Omit<User, 'id' | 'date_creation'>) => {
     const { data, error } = await supabase

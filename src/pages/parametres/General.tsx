@@ -14,6 +14,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
+import { api } from '@/lib/supabase';
 
 export function General() {
   const { toast } = useToast();
@@ -28,6 +29,30 @@ export function General() {
     telephone: '01 23 45 67 89',
     email: 'contact@logitrack.fr',
   });
+
+  // Load persisted company settings from server on mount
+  useEffect(() => {
+    let mounted = true;
+    const load = async () => {
+      try {
+        const { data, error } = await api.getCompanySettings();
+        if (!error && data && mounted) {
+          setCompanyInfo({
+            nom: data.nom || data.name || 'LogiTrack',
+            adresse: data.adresse || data.address || '',
+            ville: data.ville || '',
+            telephone: data.telephone || data.phone || '',
+            email: data.email || '',
+          });
+        }
+      } catch (e) {
+        // ignore - fallback to defaults
+      }
+    };
+
+    load();
+    return () => { mounted = false };
+  }, []);
 
   // System preferences state
   const [systemPrefs, setSystemPrefs] = useState({
@@ -91,8 +116,28 @@ export function General() {
   const handleSaveCompanyInfo = async () => {
     setSaving(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Persist to Supabase
+      const { data, error } = await api.upsertCompanySettings(companyInfo);
+
+      if (error) {
+        // If server save fails, fall back to localStorage as a degraded experience
+        try {
+          localStorage.setItem('companyInfo', JSON.stringify(companyInfo));
+          localStorage.setItem('companyName', companyInfo.nom || 'LogiTrack');
+        } catch (e) {
+          // ignore
+        }
+
+        throw error;
+      }
+
+      // Update localStorage to notify other components quickly
+      try {
+        localStorage.setItem('companyInfo', JSON.stringify(data));
+        localStorage.setItem('companyName', data.nom || data.name || 'LogiTrack');
+      } catch (e) {
+        // ignore
+      }
 
       toast({
         title: 'Succès',
