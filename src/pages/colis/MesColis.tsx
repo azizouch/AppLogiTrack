@@ -81,7 +81,11 @@ export function MesColis({
         query = query.or(`id.ilike.%${debouncedSearchTerm}%,client.nom.ilike.%${debouncedSearchTerm}%`);
       }
       if (statusFilter !== 'tous') {
-        query = query.eq('statut', statusFilter);
+        if (initialStatus === 'Relancé nouveau client') {
+          query = query.in('statut', ['Relancé nouveau client', 'Relancé Autre Client']);
+        } else {
+          query = query.eq('statut', statusFilter);
+        }
       }
 
       // Apply sorting

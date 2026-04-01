@@ -165,14 +165,15 @@ export function AppSidebar() {
     const fetchBadgeCounts = async () => {
       if (authState.user?.role?.toLowerCase() === 'livreur' && authState.user?.id) {
         try {
-          const { data, error } = await api.getColisCountsByStatus(authState.user.id, ['Relancé', 'Relancé Autre Client']);
+          const { data, error } = await api.getColisCountsByStatus(authState.user.id, ['Relancé', 'Relancé Autre Client', 'Relancé nouveau client']);
           if (data && !error) {
             setBadgeCounts(data);
           } else {
             // Set default counts if no data
             setBadgeCounts({
               'Relancé': 0,
-              'Relancé Autre Client': 0
+              'Relancé Autre Client': 0,
+              'Relancé nouveau client': 0
             });
           }
         } catch (error) {
@@ -180,7 +181,8 @@ export function AppSidebar() {
           // Set default counts on error
           setBadgeCounts({
             'Relancé': 0,
-            'Relancé Autre Client': 0
+            'Relancé Autre Client': 0,
+            'Relancé nouveau client': 0
           });
         }
       }
@@ -227,7 +229,7 @@ export function AppSidebar() {
       url: '/colis/relance-autre',
       icon: UserX,
       roles: ['livreur'],
-      badgeCount: badgeCounts['Relancé Autre Client'] ?? 0
+      badgeCount: badgeCounts['Relancé nouveau client'] ?? badgeCounts['Relancé Autre Client'] ?? 0
     },
     {
       title: 'Bons pour admin',
