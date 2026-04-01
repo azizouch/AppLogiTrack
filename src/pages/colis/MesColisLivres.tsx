@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Package, Search, Filter, RefreshCw, Phone, MessageCircle, MapPin, Building, CheckCircle, Info, Eye, Mail, House, Building2, Calendar, Send, MessageSquare, X } from 'lucide-react';
+import { Package, Search, Filter, RefreshCw, Phone, MessageCircle, MapPin, Building, CheckCircle, Info, Eye, Mail, House, Building2, Calendar, Send, MessageSquare, X, History } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -301,6 +301,14 @@ export function MesColisLivres() {
     }
   };
 
+  const getInitials = (text) => {
+    return text
+      .split(" ")
+      .map(word => word[0])
+      .join("")
+      .toUpperCase();
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -479,22 +487,26 @@ export function MesColisLivres() {
 
                     {/* Contact Buttons */}
                     <div className="mt-4">
-                      <div className="grid grid-cols-2 gap-2">
+                      <div className="grid grid-cols-4 sm:grid-cols-2 gap-2">
                         <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white text-xs">
                           <Phone className="h-3 w-3 mr-1" />
-                          Vendeur B
+                          <span className="sm:hidden">{getInitials("Vendeur B")}</span>
+                          <span className="hidden sm:inline">Vendeur B</span>
                         </Button>
                         <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white text-xs">
                           <MessageCircle className="h-3 w-3 mr-1" />
-                          Vendeur B
+                          <span className="sm:hidden">{getInitials("Vendeur B")}</span>
+                          <span className="hidden sm:inline">Vendeur B</span>
                         </Button>
                         <Button size="sm" className="bg-purple-600 hover:bg-purple-700 text-white text-xs">
                           <Phone className="h-3 w-3 mr-1" />
-                          Vendeur P
+                          <span className="sm:hidden">{getInitials("Vendeur P")}</span>
+                          <span className="hidden sm:inline">Vendeur P</span>
                         </Button>
                         <Button size="sm" className="bg-pink-600 hover:bg-pink-700 text-white text-xs">
                           <MessageCircle className="h-3 w-3 mr-1" />
-                          Vendeur P
+                          <span className="sm:hidden">{getInitials("Vendeur P")}</span>
+                          <span className="hidden sm:inline">Vendeur P</span>
                         </Button>
                       </div>
                     </div>
@@ -507,7 +519,15 @@ export function MesColisLivres() {
                         className="px-3 py-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/40 border border-blue-200 dark:border-blue-800"
                         onClick={() => handleReclamation(colisItem)}
                       >
-                        <Info className="h-4 w-4 text-blue-600" />
+                        <History className="h-4 w-4 text-blue-600" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="px-3 py-2 bg-cyan-50 dark:bg-cyan-900/20 rounded-lg hover:bg-cyan-100 dark:hover:bg-cyan-900/40 border border-cyan-200 dark:border-cyan-800"
+                        onClick={() => handleReclamation(colisItem)}
+                      >
+                        <Info className="h-4 w-4 text-cyan-600" />
                       </Button>
                       <Button
                         variant="ghost"

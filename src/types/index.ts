@@ -95,6 +95,8 @@ export interface Notification {
 export interface Bon {
   id: string;
   user_id: string; // Changed from livreur_id - can be any user
+  source_type?: 'admin' | 'livreur';
+  assigned_to?: string; // user id assigned (livreur for delivery)
   type: 'distribution' | 'paiement' | 'retour';
   date_creation: string;
   statut: string;

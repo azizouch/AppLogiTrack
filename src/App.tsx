@@ -231,14 +231,70 @@ const App = () => (
               </Layout>
             </ProtectedRoute>
           } />
-          <Route path="/bons/mes-retour" element={
+          <Route path="/admin/bons/admin/distribution" element={
+            <ProtectedRoute>
+              <Layout>
+                <Distribution />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/bons/admin/paiement" element={
+            <ProtectedRoute>
+              <Layout>
+                <Paiement />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/bons/admin/retour" element={
+            <ProtectedRoute>
+              <Layout>
+                <Retour />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/bons/livreurs/distribution" element={
+            <ProtectedRoute>
+              <Layout>
+                <MesDistribution />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/bons/livreurs/paiement" element={
+            <ProtectedRoute>
+              <Layout>
+                <MesPaiement />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/bons/livreurs/retour" element={
             <ProtectedRoute>
               <Layout>
                 <MesRetour />
               </Layout>
             </ProtectedRoute>
           } />
-          <Route path="/bons/mes-retour/:id" element={
+          <Route path="/livreur/bons/distribution" element={
+            <ProtectedRoute>
+              <Layout>
+                <MesDistribution />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/livreur/bons/paiement" element={
+            <ProtectedRoute>
+              <Layout>
+                <MesPaiement />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/livreur/bons/retour" element={
+            <ProtectedRoute>
+              <Layout>
+                <MesRetour />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/bons/mes-retour" element={
             <ProtectedRoute>
               <Layout>
                 <BonDetails />

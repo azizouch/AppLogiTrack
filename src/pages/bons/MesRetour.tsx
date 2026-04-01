@@ -40,7 +40,7 @@ export function MesRetour() {
         return;
       }
 
-      const userId = authState.user?.id;
+      const userId = authState.user?.role?.toLowerCase() === 'livreur' ? authState.user?.id : undefined;
 
       const { data, error, count, totalPages: pages, hasNextPage: hasNext, hasPrevPage: hasPrev } = await api.getBons({
         type: 'retour',

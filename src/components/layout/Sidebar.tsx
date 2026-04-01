@@ -235,9 +235,9 @@ export function AppSidebar() {
       roles: ['admin', 'gestionnaire'],
       hasDropdown: true,
       items: [
-        { title: 'Distribution', url: '/bons/distribution', icon: FileText, roles: ['admin', 'gestionnaire'] },
-        { title: 'Paiement', url: '/bons/paiement', icon: CreditCard, roles: ['admin', 'gestionnaire'] },
-        { title: 'Retour', url: '/bons/retour', icon: RotateCcw, roles: ['admin', 'gestionnaire'] },
+        { title: 'Distribution', url: '/admin/bons/admin/distribution', icon: FileText, roles: ['admin', 'gestionnaire'] },
+        { title: 'Paiement', url: '/admin/bons/admin/paiement', icon: CreditCard, roles: ['admin', 'gestionnaire'] },
+        { title: 'Retour', url: '/admin/bons/admin/retour', icon: RotateCcw, roles: ['admin', 'gestionnaire'] },
       ]
     },
     {
@@ -246,9 +246,20 @@ export function AppSidebar() {
       roles: ['admin', 'gestionnaire'],
       hasDropdown: true,
       items: [
-        { title: 'Distribution', url: '/bons/mes-distribution', icon: FileText, roles: ['admin', 'gestionnaire'] },
-        { title: 'Paiement', url: '/bons/mes-paiement', icon: CreditCard, roles: ['admin', 'gestionnaire'] },
-        { title: 'Retour', url: '/bons/mes-retour', icon: RotateCcw, roles: ['admin', 'gestionnaire'] },
+        { title: 'Distribution', url: '/admin/bons/livreurs/distribution', icon: FileText, roles: ['admin', 'gestionnaire'] },
+        { title: 'Paiement', url: '/admin/bons/livreurs/paiement', icon: CreditCard, roles: ['admin', 'gestionnaire'] },
+        { title: 'Retour', url: '/admin/bons/livreurs/retour', icon: RotateCcw, roles: ['admin', 'gestionnaire'] },
+      ]
+    },
+    {
+      title: 'Bons',
+      icon: FileText,
+      roles: ['livreur'],
+      hasDropdown: true,
+      items: [
+        { title: 'Distribution', url: '/bons/mes-distribution', icon: FileText, roles: ['livreur'] },
+        { title: 'Paiement', url: '/bons/mes-paiement', icon: CreditCard, roles: ['livreur'] },
+        { title: 'Retour', url: '/bons/mes-retour', icon: RotateCcw, roles: ['livreur'] },
       ]
     },
     {
@@ -353,6 +364,16 @@ export function AppSidebar() {
         const currentBonRoute = currentPath.match(bonRoutePattern)?.[0];
         const itemBonRoute = item.url.match(bonRoutePattern)?.[0];
 
+        if (currentBonRoute && itemBonRoute && currentBonRoute === itemBonRoute) {
+          return true;
+        }
+      }
+
+      // Admin/Livreur bons URLs pattern matching
+      if ((item.url.startsWith('/admin/bons/') || item.url.startsWith('/livreur/bons/')) && (currentPath.startsWith('/admin/bons/') || currentPath.startsWith('/livreur/bons/'))) {
+        const bonRoutePattern = /^\/(?:admin|livreur)\/bons\/(?:admin|livreurs|livreur)\/[^\/]+/;
+        const currentBonRoute = currentPath.match(bonRoutePattern)?.[0];
+        const itemBonRoute = item.url.match(bonRoutePattern)?.[0];
         if (currentBonRoute && itemBonRoute && currentBonRoute === itemBonRoute) {
           return true;
         }

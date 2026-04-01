@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Package, Search, Filter, RefreshCw, Phone, MessageCircle, MapPin, Building, Calendar, Eye, Info, CheckCircle, AlertCircle, Clock, House, Building2, Save, MessageSquare, CircleAlert, X, Send, Mail, RotateCcw } from 'lucide-react';
+import { Package, Search, Filter, RefreshCw, Phone, MessageCircle, MapPin, Building, Calendar, Eye, Info, CheckCircle, AlertCircle, Clock, House, Building2, Save, MessageSquare, CircleAlert, X, Send, Mail, RotateCcw, History } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,7 +15,17 @@ import { api, supabase } from '@/lib/supabase';
 import { Colis, Statut } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 
-export function MesColis() {
+type MesColisProps = {
+  initialStatus?: string;
+  pageTitle?: string;
+  pageDescription?: string;
+};
+
+export function MesColis({
+  initialStatus = 'tous',
+  pageTitle = 'Mes Colis',
+  pageDescription = 'Vue détaillée de vos colis avec filtres et tri',
+}: MesColisProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const { state } = useAuth();
@@ -27,7 +37,7 @@ export function MesColis() {
   const [isInitialized, setIsInitialized] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('tous');
+  const [statusFilter, setStatusFilter] = useState(initialStatus);
   const [sortBy, setSortBy] = useState('recent');
   const [dateFilter, setDateFilter] = useState('toutes');
   const [statuts, setStatuts] = useState<Statut[]>([]);
@@ -112,13 +122,13 @@ export function MesColis() {
     try {
       const { data, error } = await supabase
         .from('statuts')
-        .select('id, nom, couleur, type, actif')
+        .select('id, nom, couleur, type, actif, created_at')
         .eq('type', 'colis')
         .eq('actif', true)
         .order('ordre', { ascending: true });
 
       if (!error && data) {
-        setStatuts(data);
+        setStatuts(data as Statut[]);
       } else {
         console.error('Error fetching statuts:', error);
       }
@@ -147,6 +157,11 @@ export function MesColis() {
       fetchColis();
     }
   }, [state.user?.id, isInitialized]);
+
+  // Keep status filter in sync with initial status
+  useEffect(() => {
+    setStatusFilter(initialStatus);
+  }, [initialStatus]);
 
   // Filter changes useEffect
   useEffect(() => {
@@ -230,13 +245,13 @@ export function MesColis() {
   const resetFilters = () => {
     setSearchTerm('');
     setDebouncedSearchTerm('');
-    setStatusFilter('tous');
+    setStatusFilter(initialStatus);
     setSortBy('recent');
     setDateFilter('toutes');
     setCurrentPage(1);
   };
 
-  const hasActiveFilters = searchTerm || statusFilter !== 'tous' || sortBy !== 'recent' || dateFilter !== 'toutes';
+  const hasActiveFilters = searchTerm || (initialStatus === 'tous' && statusFilter !== 'tous') || sortBy !== 'recent' || dateFilter !== 'toutes';
 
   const totalPages = Math.ceil(totalCount / entriesPerPage);
 
@@ -437,8 +452,21 @@ export function MesColis() {
     }
   };
 
+  const getInitials = (text) => {
+    return text
+      .split(" ")
+      .map(word => word[0])
+      .join("")
+      .toUpperCase();
+  };
+
   return (
     <div className="space-y-6">
+      {/* Page Header */}
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{pageTitle}</h1>
+        <p className="text-gray-600 dark:text-gray-400">{pageDescription}</p>
+      </div>
       {/* Filters */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
@@ -476,7 +504,7 @@ export function MesColis() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 w-full">
           <div className="space-y-2">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
@@ -489,21 +517,23 @@ export function MesColis() {
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="Tous les statuts" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="tous">Tous les statuts</SelectItem>
-                {statuts.map((statut) => (
-                  <SelectItem key={statut.id} value={statut.nom}>
-                    {statut.nom}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {initialStatus === 'tous' && (
+            <div className="space-y-2">
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Tous les statuts" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="tous">Tous les statuts</SelectItem>
+                  {statuts.map((statut) => (
+                    <SelectItem key={statut.id} value={statut.nom}>
+                      {statut.nom}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           <div className="space-y-2">
             <Select value={sortBy} onValueChange={setSortBy}>
@@ -606,30 +636,34 @@ export function MesColis() {
                     </div>
 
                     {/* Contact Buttons */}
-                    <div className="mt-4">
-                      <div className="grid grid-cols-2 gap-2">
+                    <div className="mt-4 mb-4">
+                      <div className="grid grid-cols-4 sm:grid-cols-2 gap-2">
                         <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white text-xs">
                           <Phone className="h-3 w-3 mr-1" />
-                          Vendeur B
+                          <span className="sm:hidden">{getInitials("Vendeur B")}</span>
+                          <span className="hidden sm:inline">Vendeur B</span>
                         </Button>
                         <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white text-xs">
                           <MessageCircle className="h-3 w-3 mr-1" />
-                          Vendeur B
+                          <span className="sm:hidden">{getInitials("Vendeur B")}</span>
+                          <span className="hidden sm:inline">Vendeur B</span>
                         </Button>
                         <Button size="sm" className="bg-purple-600 hover:bg-purple-700 text-white text-xs">
                           <Phone className="h-3 w-3 mr-1" />
-                          Vendeur P
+                          <span className="sm:hidden">{getInitials("Vendeur P")}</span>
+                          <span className="hidden sm:inline">Vendeur P</span>
                         </Button>
                         <Button size="sm" className="bg-pink-600 hover:bg-pink-700 text-white text-xs">
                           <MessageCircle className="h-3 w-3 mr-1" />
-                          Vendeur P
+                          <span className="sm:hidden">{getInitials("Vendeur P")}</span>
+                          <span className="hidden sm:inline">Vendeur P</span>
                         </Button>
                       </div>
                     </div>
 
                     {/* Status Change Button - Hidden for delivered packages */}
                     {colisItem.statut !== 'Livré' && colisItem.statut !== 'livre' && (
-                      <div className="mt-4 mb-4">
+                      <div className="mb-4">
                         <Button
                           className="w-full bg-amber-600 hover:bg-amber-700 text-white"
                           onClick={() => handleStatusChange(colisItem)}
@@ -641,14 +675,22 @@ export function MesColis() {
                     )}
 
                     {/* Bottom Action Icons */}
-                    <div className="flex justify-center gap-3 pt-2 pb-2">
+                    <div className="flex justify-center gap-3 pb-2">
                       <Button
                         variant="ghost"
                         size="sm"
                         className="px-3 py-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/40 border border-blue-200 dark:border-blue-800"
                         onClick={() => handleReclamation(colisItem)}
                       >
-                        <Info className="h-4 w-4 text-blue-600" />
+                        <History className="h-4 w-4 text-blue-600" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="px-3 py-2 bg-cyan-50 dark:bg-cyan-900/20 rounded-lg hover:bg-cyan-100 dark:hover:bg-cyan-900/40 border border-cyan-200 dark:border-cyan-800"
+                        onClick={() => handleReclamation(colisItem)}
+                      >
+                        <Info className="h-4 w-4 text-cyan-600" />
                       </Button>
                       <Button
                         variant="ghost"

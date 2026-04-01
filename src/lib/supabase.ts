@@ -1974,7 +1974,9 @@ export const api = {
     limit?: number;
     search?: string;
     type?: 'distribution' | 'paiement' | 'retour';
+    sourceType?: 'admin' | 'livreur';
     userId?: string;
+    assignedTo?: string;
     statut?: string;
     sortBy?: 'recent' | 'oldest';
   }) => {
@@ -1983,12 +1985,13 @@ export const api = {
       limit = 10,
       search = '',
       type,
+      sourceType,
       userId,
+      assignedTo,
       statut,
       sortBy = 'recent'
     } = params || {};
 
-    // Query with basic fields first, then try to join if possible
     let query = supabase
       .from('bons')
       .select('*', { count: 'exact' });
@@ -2007,6 +2010,10 @@ export const api = {
       }
     }
 
+    if (sourceType) {
+      query = query.eq('source_type', sourceType);
+    }
+
     if (userId) {
       try {
         // Try user_id first (after migration), fallback to livreur_id (before migration)
@@ -2018,6 +2025,10 @@ export const api = {
           console.log('Neither user_id nor livreur_id column found');
         }
       }
+    }
+
+    if (assignedTo) {
+      query = query.eq('assigned_to', assignedTo);
     }
 
     if (statut) {
