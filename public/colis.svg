@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <style>
+    .icon { stroke: #0f172a; }
+    @media (prefers-color-scheme: dark) {
+      .icon { stroke: #ffffff; }
+    }
+  </style>
+  <path class="icon" d="M21 16V8a2 2 0 0 0-1-1.73L13 2.27a2 2 0 0 0-2 0L4 6.27A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4.73a2 2 0 0 0 2 0l7-4.73A2 2 0 0 0 21 16z" />
+  <path class="icon" d="M3.27 6.96 12 10.4l8.73-3.44" />
+  <path class="icon" d="M12 22.5V10.4" />
+  <path class="icon" d="M7 7.5l5 2.5 5-2.5" />
+</svg>

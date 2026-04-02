@@ -81,7 +81,8 @@ export function MesColis({
         query = query.or(`id.ilike.%${debouncedSearchTerm}%,client.nom.ilike.%${debouncedSearchTerm}%`);
       }
       if (statusFilter !== 'tous') {
-        if (initialStatus === 'Relancé nouveau client') {
+        const isRelanceAutreGroup = ['Relancé nouveau client', 'Relancé Autre Client'].includes(statusFilter);
+        if (isRelanceAutreGroup) {
           query = query.in('statut', ['Relancé nouveau client', 'Relancé Autre Client']);
         } else {
           query = query.eq('statut', statusFilter);
@@ -1095,7 +1096,8 @@ export function MesColis({
             </div>
           </div>
 
-          <DialogFooter>
+          <DialogFooter
+            className='gap-2'>
             <Button variant="outline" onClick={() => setShowStatusModal(false)}>
               Annuler
             </Button>

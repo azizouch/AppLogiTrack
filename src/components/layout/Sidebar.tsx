@@ -229,7 +229,7 @@ export function AppSidebar() {
       url: '/colis/relance-autre',
       icon: UserX,
       roles: ['livreur'],
-      badgeCount: badgeCounts['Relancé nouveau client'] ?? badgeCounts['Relancé Autre Client'] ?? 0
+      badgeCount: (badgeCounts['Relancé nouveau client'] ?? 0) + (badgeCounts['Relancé Autre Client'] ?? 0)
     },
     {
       title: 'Bons pour admin',

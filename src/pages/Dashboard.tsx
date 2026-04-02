@@ -182,7 +182,7 @@ export function Dashboard() {
         {statsCards.map((stat) => (
           <Card
             key={stat.title}
-            className={`${stat.bgColor} border-l-4 border-t border-r border-b ${stat.borderColor} shadow-lg cursor-pointer hover:shadow-xl transition-shadow duration-200`}
+            className={`${stat.bgColor} border-l-4 border-t border-r border-b ${stat.borderColor} shadow-[-4px_0_6px_rgba(0,0,0,0.1)] cursor-pointer hover:shadow-xl transition-shadow duration-200`}
             onClick={() => handleCardClick(stat.status)}
           >
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
