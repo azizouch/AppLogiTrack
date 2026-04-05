@@ -279,6 +279,9 @@ export function MesColis({
     if (role === 'gestionnaire') {
       return 'Logitrack Gestionnaire';
     }
+    if (role === 'livreur') {
+      return `${item.user?.prenom ?? ''} ${item.user?.nom ?? ''}`.trim() || 'Livreur';
+    }
     if (item.user?.prenom || item.user?.nom) {
       return `${item.user?.prenom ?? ''} ${item.user?.nom ?? ''}`.trim();
     }
@@ -416,6 +419,7 @@ export function MesColis({
 
     setIsUpdating(true);
     try {
+      // Update colis status
       const { error } = await api.updateColis(selectedColis.id, {
         statut: newStatus
       });
@@ -426,14 +430,78 @@ export function MesColis({
           description: 'Impossible de mettre à jour le statut',
           variant: 'destructive',
         });
-      } else {
-        toast({
-          title: 'Succès',
-          description: 'Statut mis à jour avec succès',
-        });
-        setShowStatusModal(false);
-        fetchColis(); // Refresh the list
+        return;
       }
+
+      // Get current user for historique
+      const { data: userData } = await supabase.auth.getUser();
+      const currentUserId = userData?.user?.id || null;
+
+      // Find the corresponding utilisateur record using the auth_id field
+      let utilisateurId = null;
+      if (currentUserId) {
+        const { data: utilisateur, error: userError } = await supabase
+          .from('utilisateurs')
+          .select('id, nom, prenom, role, auth_id')
+          .eq('auth_id', currentUserId)
+          .maybeSingle();
+
+        if (!userError && utilisateur) {
+          utilisateurId = utilisateur.id;
+        }
+      }
+
+      // Add to historique only if we have a valid utilisateur
+      if (utilisateurId) {
+        const historiqueEntry: any = {
+          colis_id: selectedColis.id,
+          statut: newStatus,
+          date: new Date().toISOString(),
+          utilisateur: utilisateurId
+        };
+
+        const { error: historiqueError } = await supabase
+          .from('historique_colis')
+          .insert(historiqueEntry);
+
+        if (historiqueError) {
+          console.error('Error inserting historique:', historiqueError);
+          // Don't throw here - we still want the status update to succeed
+          toast({
+            title: 'Avertissement',
+            description: 'Le statut a été mis à jour mais l\'historique n\'a pas pu être enregistré',
+            variant: 'destructive',
+          });
+        }
+      } else {
+        console.error('No utilisateur ID found - inserting historique without utilisateur');
+        // Try inserting without utilisateur field
+        const historiqueEntry: any = {
+          colis_id: selectedColis.id,
+          statut: newStatus,
+          date: new Date().toISOString()
+        };
+
+        const { error: historiqueError } = await supabase
+          .from('historique_colis')
+          .insert(historiqueEntry);
+
+        if (historiqueError) {
+          console.error('Error inserting historique without utilisateur:', historiqueError);
+          toast({
+            title: 'Avertissement',
+            description: 'Le statut a été mis à jour mais l\'historique n\'a pas pu être enregistré (utilisateur non trouvé)',
+            variant: 'destructive',
+          });
+        }
+      }
+
+      toast({
+        title: 'Succès',
+        description: 'Statut mis à jour avec succès',
+      });
+      setShowStatusModal(false);
+      fetchColis(); // Refresh the list
     } catch (error) {
       toast({
         title: 'Erreur',
@@ -512,57 +580,6 @@ export function MesColis({
       toast({
         title: 'Erreur',
         description: 'Impossible d\'envoyer la réclamation',
-        variant: 'destructive',
-      });
-    }
-  };
-
-
-
-  const submitStatusChange = async () => {
-    if (!selectedColis || !newStatus) return;
-
-    try {
-      // Update colis status
-      const { error: updateError } = await supabase
-        .from('colis')
-        .update({
-          statut: newStatus,
-          date_mise_a_jour: new Date().toISOString()
-        })
-        .eq('id', selectedColis.id);
-
-      if (updateError) {
-        throw new Error(updateError.message);
-      }
-
-      // Get current user for historique
-      const { data: userData } = await supabase.auth.getUser();
-      const currentUserId = userData?.user?.id || null;
-
-      // Add to historique
-      const historiqueEntry = {
-        colis_id: selectedColis.id,
-        statut: newStatus,
-        date: new Date().toISOString(),
-        utilisateur: currentUserId
-      };
-
-      await supabase
-        .from('historique_colis')
-        .insert(historiqueEntry);
-
-      toast({
-        title: 'Statut mis à jour',
-        description: 'Le statut du colis a été mis à jour avec succès',
-      });
-      setShowStatusModal(false);
-      setStatusNote('');
-      fetchColis(true);
-    } catch (error) {
-      toast({
-        title: 'Erreur',
-        description: 'Une erreur est survenue lors de la mise à jour',
         variant: 'destructive',
       });
     }
