@@ -994,30 +994,34 @@ export function MesColis({
                     <div className="space-y-2">
                       {suiviHistory.map((item) => (
                         <div key={item.id} className="border rounded-xl shadow-md dark:border-gray-800 bg-white dark:bg-slate-950 dark:shadow-sm p-3 sm:p-4 text-xs sm:text-sm text-gray-900 dark:text-gray-100">
-                          <div className="block sm:hidden grid grid-cols-2 gap-3 pb-3 border-b border-gray-100 dark:border-gray-800">
-                            <div>
-                              <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Code d'envoi</div>
-                              <div className="font-medium break-all">{item.colis_id || selectedColis?.id || 'N/A'}</div>
+                          <div className="block sm:hidden space-y-3 pb-3 border-b border-gray-100 dark:border-gray-800">
+                            <div className="grid grid-cols-2 gap-3">
+                              <div>
+                                <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Code d'envoi</div>
+                                <div className="font-medium break-all">{item.colis_id || selectedColis?.id || 'N/A'}</div>
+                              </div>
+                              <div>
+                                <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Date</div>
+                                <div className="text-muted-foreground">{formatDateTime(item.date)}</div>
+                              </div>
+                              <div>
+                                <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">État</div>
+                                <Badge className={`${getEtatBadgeClass(selectedColisEtat)} text-xs py-1 px-2 hover:bg-transparent`}>{selectedColisEtat}</Badge>
+                              </div>
+                              <div>
+                                <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Status</div>
+                                <div>{getStatusBadge(item.statut)}</div>
+                              </div>
                             </div>
-                            <div>
-                              <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">État</div>
-                              <Badge className={`${getEtatBadgeClass(selectedColisEtat)} text-xs py-1 px-2 hover:bg-transparent`}>{selectedColisEtat}</Badge>
-                            </div>
-                            <div>
-                              <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Status</div>
-                              <div>{getStatusBadge(item.statut)}</div>
-                            </div>
-                            <div>
-                              <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Date</div>
-                              <div className="text-muted-foreground">{formatDateTime(item.date)}</div>
-                            </div>
-                            <div className="col-span-2">
-                              <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Infos</div>
-                              <div className="text-gray-600 dark:text-gray-300">Mise à jour du statut du colis.</div>
-                            </div>
-                            <div className="col-span-2">
-                              <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Action par</div>
-                              <div className="font-medium">{getActionParLabel(item)}</div>
+                            <div className="grid grid-cols-1 gap-3">
+                              <div>
+                                <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Infos</div>
+                                <div className="text-gray-600 dark:text-gray-300">Mise à jour du statut du colis.</div>
+                              </div>
+                              <div>
+                                <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Action par</div>
+                                <div className="font-medium">{getActionParLabel(item)}</div>
+                              </div>
                             </div>
                           </div>
 
