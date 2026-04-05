@@ -77,6 +77,7 @@ export interface HistoriqueColis {
   statut: string;
   utilisateur?: string;
   user?: {
+    role?: string;
     nom: string;
     prenom?: string;
   };

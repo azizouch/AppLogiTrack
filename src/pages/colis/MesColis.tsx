@@ -12,7 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/contexts/AuthContext';
 import { api, supabase } from '@/lib/supabase';
 
-import { Colis, Statut } from '@/types';
+import { Colis, HistoriqueColis, Statut } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 
 type MesColisProps = {
@@ -47,9 +47,13 @@ export function MesColis({
 
   // Modal states
   const [selectedColis, setSelectedColis] = useState<Colis | null>(null);
+  const [selectedColisEtat, setSelectedColisEtat] = useState('Non Payé');
   const [showReclamationModal, setShowReclamationModal] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showStatusModal, setShowStatusModal] = useState(false);
+  const [showSuiviModal, setShowSuiviModal] = useState(false);
+  const [suiviHistory, setSuiviHistory] = useState<HistoriqueColis[]>([]);
+  const [loadingSuivi, setLoadingSuivi] = useState(false);
   const [reclamationText, setReclamationText] = useState('');
   const [newStatus, setNewStatus] = useState('');
   const [statusNote, setStatusNote] = useState('');
@@ -217,20 +221,71 @@ export function MesColis({
     return colorMap[couleur] || 'bg-gray-500 text-white';
   };
 
+  const getStatusBadgeClass = (couleur: string) => {
+    const badgeColorMap: { [key: string]: string } = {
+      blue: 'bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-900 dark:text-blue-200',
+      green: 'bg-green-100 text-green-800 border-green-300 dark:bg-green-900 dark:text-green-200',
+      red: 'bg-red-100 text-red-800 border-red-300 dark:bg-red-900 dark:text-red-200',
+      yellow: 'bg-yellow-100 text-yellow-800 border-yellow-300 dark:bg-yellow-900 dark:text-yellow-200',
+      orange: 'bg-orange-100 text-orange-800 border-orange-300 dark:bg-orange-900 dark:text-orange-200',
+      purple: 'bg-purple-100 text-purple-800 border-purple-300 dark:bg-purple-900 dark:text-purple-200',
+      pink: 'bg-pink-100 text-pink-800 border-pink-300 dark:bg-pink-900 dark:text-pink-200',
+      gray: 'bg-gray-100 text-gray-800 border-gray-300 dark:bg-gray-900 dark:text-gray-300',
+      teal: 'bg-teal-100 text-teal-800 border-teal-300 dark:bg-teal-900 dark:text-teal-200',
+      indigo: 'bg-indigo-100 text-indigo-800 border-indigo-300 dark:bg-indigo-900 dark:text-indigo-200',
+      lime: 'bg-lime-100 text-lime-800 border-lime-300 dark:bg-lime-900 dark:text-lime-200',
+      cyan: 'bg-cyan-100 text-cyan-800 border-cyan-300 dark:bg-cyan-900 dark:text-cyan-200',
+      amber: 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-900 dark:text-amber-200',
+    };
+    return badgeColorMap[couleur] || 'bg-gray-100 text-gray-800 border-gray-300 dark:bg-gray-900 dark:text-gray-300';
+  };
+
   const getStatusBadge = (statut: string) => {
     const statutData = statuts.find(s => s.nom === statut);
 
     if (statutData && statutData.couleur) {
-      const colorClass = getColorClass(statutData.couleur);
+      const badgeClass = getStatusBadgeClass(statutData.couleur);
       return (
-        <Badge className={`${colorClass} border-0`}>
+        <Badge className={`${badgeClass} text-xs py-1 px-3 hover:bg-transparent`}>
           {statutData.nom}
         </Badge>
       );
     }
 
     // Fallback for unknown status
-    return <Badge className="bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300">{statut}</Badge>;
+    return <Badge className="bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300 text-xs py-1 px-3 hover:bg-transparent">{statut}</Badge>;
+  };
+
+  const getEtatBadgeClass = (etat: string) => {
+    switch ((etat || '').toLowerCase()) {
+      case 'payé':
+      case 'paye':
+      case 'paid':
+        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 border-green-300';
+      case 'non payé':
+      case 'non paye':
+      case 'unpaid':
+        return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 border-red-300';
+      default:
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300 border-gray-300';
+    }
+  };
+
+  const getActionParLabel = (item: HistoriqueColis) => {
+    const role = item.user?.role?.toLowerCase();
+    if (role === 'admin') {
+      return 'Logitrack Admin';
+    }
+    if (role === 'gestionnaire') {
+      return 'Logitrack Gestionnaire';
+    }
+    if (item.user?.prenom || item.user?.nom) {
+      return `${item.user?.prenom ?? ''} ${item.user?.nom ?? ''}`.trim();
+    }
+    if (item.utilisateur) {
+      return item.utilisateur;
+    }
+    return 'Système';
   };
 
   const getStatusIcon = (statut: string) => {
@@ -264,6 +319,62 @@ export function MesColis({
   const handleReclamation = (colisItem: Colis) => {
     setSelectedColis(colisItem);
     setShowReclamationModal(true);
+  };
+
+  const handleSuivi = async (colisItem: Colis) => {
+    setSelectedColis(colisItem);
+    setShowSuiviModal(true);
+    setLoadingSuivi(true);
+    try {
+      const [historyResult, bonResult] = await Promise.all([
+        supabase
+          .from('historique_colis')
+          .select(`
+            id,
+            colis_id,
+            date,
+            statut,
+            utilisateur,
+            user:utilisateurs(role, nom, prenom)
+          `)
+          .eq('colis_id', colisItem.id)
+          .order('date', { ascending: false }),
+        supabase
+          .from('bon_colis')
+          .select('bon:bons(type, statut)')
+          .eq('colis_id', colisItem.id),
+      ]);
+
+      if (historyResult.error) {
+        console.error('Error fetching suivi history:', historyResult.error);
+        setSuiviHistory([]);
+      } else {
+        const historyData: HistoriqueColis[] = (historyResult.data || []).map((item: any) => ({
+          ...item,
+          user: Array.isArray(item.user) ? item.user[0] : item.user,
+        }));
+        setSuiviHistory(historyData);
+      }
+
+      if (bonResult.error) {
+        console.error('Error fetching colis payment state:', bonResult.error);
+        setSelectedColisEtat('Non Payé');
+      } else {
+        const hasPaidBon = (bonResult.data || []).some((entry: any) => {
+          const bonType = entry?.bon?.type?.toLowerCase();
+          const bonStatut = entry?.bon?.statut?.toLowerCase();
+          return bonType === 'paiement' && ['complété', 'complete', 'payé', 'paye', 'paid'].includes(bonStatut);
+        });
+
+        setSelectedColisEtat(hasPaidBon ? 'Payé' : 'Non Payé');
+      }
+    } catch (error) {
+      console.error('Error fetching suivi history:', error);
+      setSuiviHistory([]);
+      setSelectedColisEtat('Non Payé');
+    } finally {
+      setLoadingSuivi(false);
+    }
   };
 
   const handleWhatsApp = (colisItem: Colis) => {
@@ -463,6 +574,17 @@ export function MesColis({
       .map(word => word[0])
       .join("")
       .toUpperCase();
+  };
+
+  const formatDateTime = (dateString: string) => {
+    if (!dateString) return '';
+    return new Intl.DateTimeFormat('fr-FR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(new Date(dateString));
   };
 
   return (
@@ -685,7 +807,7 @@ export function MesColis({
                         variant="ghost"
                         size="sm"
                         className="px-3 py-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/40 border border-blue-200 dark:border-blue-800"
-                        onClick={() => handleReclamation(colisItem)}
+                        onClick={() => handleSuivi(colisItem)}
                       >
                         <History className="h-4 w-4 text-blue-600" />
                       </Button>
@@ -812,6 +934,113 @@ export function MesColis({
             <Button onClick={submitReclamation} disabled={!reclamationText.trim()}>
               <Send className="mr-2 h-5 w-5" />
               Envoyer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Suivi du Colis Modal */}
+      <Dialog open={showSuiviModal} onOpenChange={setShowSuiviModal}>
+        <DialogContent className="max-w-sm sm:max-w-md md:max-w-2xl lg:max-w-4xl xl:max-w-7xl max-h-[90vh] flex flex-col">
+          <DialogHeader className="flex-shrink-0">
+            <DialogTitle className="text-xl flex items-center gap-2">
+              <History className="h-5 w-5" />
+              Détails du suivi
+            </DialogTitle>
+            <DialogDescription>
+              Historique des statuts et actions liées au colis {selectedColis?.id}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+            <div className="space-y-4 py-3 px-0">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2 sm:gap-4">
+                <div className="flex items-center justify-between rounded-lg border border-gray-200 shadow-lg dark:border-gray-800 p-4 lg:p-3 bg-white dark:bg-slate-950">
+                  <h3 className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white">Code d'envoi</h3>
+                  <p className="text-xs sm:text-sm text-muted-foreground break-all">{selectedColis?.id || 'N/A'}</p>
+                </div>
+                <div className="flex items-center justify-between rounded-lg border border-gray-200 shadow-lg dark:border-gray-800 p-4 lg:p-3  bg-white dark:bg-slate-950">
+                  <h3 className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white">Client</h3>
+                  <p className="text-xs sm:text-sm text-muted-foreground">{selectedColis?.client?.nom || 'N/A'}</p>
+                </div>
+                <div className="flex items-center justify-between rounded-lg border border-gray-200 shadow-lg dark:border-gray-800 p-3  bg-white dark:bg-slate-950">
+                  <h3 className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white">État du colis</h3>
+                  <div className="inline-flex items-center gap-2">
+                    <Badge className={`${getEtatBadgeClass(selectedColisEtat)} text-xs py-1 px-2 hover:bg-transparent`}>{selectedColisEtat}</Badge>
+                  </div>
+                </div>
+              </div>
+
+              {loadingSuivi ? (
+                <div className="text-center py-8">
+                  <RefreshCw className="h-8 w-8 animate-spin mx-auto text-gray-400" />
+                  <p className="text-gray-500 mt-2 text-sm">Chargement du suivi...</p>
+                </div>
+              ) : suiviHistory.length === 0 ? (
+                <div className="rounded-lg border border-dashed border-gray-300 dark:border-gray-700 p-4 sm:p-6 text-center text-xs sm:text-sm text-gray-500 dark:text-gray-400">
+                  Aucun historique de suivi disponible pour ce colis.
+                </div>
+              ) : (
+                <div>
+                  <div className="space-y-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                    <div className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-6 gap-1 sm:gap-4 items-center rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-slate-950 px-1 sm:px-4 py-1 sm:py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      <span>Code d'envoi</span>
+                      <span>État</span>
+                      <span>Status</span>
+                      <span className="text-right">Date</span>
+                      <span>Infos</span>
+                      <span>Action</span>
+                    </div>
+                    <div className="space-y-2">
+                      {suiviHistory.map((item) => (
+                        <div key={item.id} className="border rounded-xl shadow-md dark:border-gray-800 bg-white dark:bg-slate-950 dark:shadow-sm p-3 sm:p-4 text-xs sm:text-sm text-gray-900 dark:text-gray-100">
+                          <div className="block sm:hidden grid grid-cols-2 gap-3 pb-3 border-b border-gray-100 dark:border-gray-800">
+                            <div>
+                              <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Code d'envoi</div>
+                              <div className="font-medium break-all">{item.colis_id || selectedColis?.id || 'N/A'}</div>
+                            </div>
+                            <div>
+                              <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">État</div>
+                              <Badge className={`${getEtatBadgeClass(selectedColisEtat)} text-xs py-1 px-2 hover:bg-transparent`}>{selectedColisEtat}</Badge>
+                            </div>
+                            <div>
+                              <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Status</div>
+                              <div>{getStatusBadge(item.statut)}</div>
+                            </div>
+                            <div>
+                              <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Date</div>
+                              <div className="text-muted-foreground">{formatDateTime(item.date)}</div>
+                            </div>
+                            <div className="col-span-2">
+                              <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Infos</div>
+                              <div className="text-gray-600 dark:text-gray-300">Mise à jour du statut du colis.</div>
+                            </div>
+                            <div className="col-span-2">
+                              <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Action par</div>
+                              <div className="font-medium">{getActionParLabel(item)}</div>
+                            </div>
+                          </div>
+
+                          <div className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-6 gap-1 sm:gap-4 items-center">
+                            <span className="font-medium break-all">{item.colis_id || selectedColis?.id || 'N/A'}</span>
+                            <Badge className={`${getEtatBadgeClass(selectedColisEtat)} text-xs py-1 px-2 hover:bg-transparent`}>{selectedColisEtat}</Badge>
+                            <div className="flex items-center justify-start">{getStatusBadge(item.statut)}</div>
+                            <span className="text-right text-muted-foreground">{formatDateTime(item.date)}</span>
+                            <span className="text-gray-600 dark:text-gray-300">Mise à jour du statut du colis.</span>
+                            <span className="font-medium truncate">{getActionParLabel(item)}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <DialogFooter className="flex justify-end gap-2 pt-2 flex-shrink-0">
+            <Button variant="outline" size="sm" onClick={() => setShowSuiviModal(false)}>
+              Fermer
             </Button>
           </DialogFooter>
         </DialogContent>
