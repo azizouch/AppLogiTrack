@@ -117,6 +117,45 @@ export function MesColis({
           }
         }
 
+        // Apply date filter
+        if (dateFilter !== 'toutes') {
+          const now = new Date();
+          const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          const yesterday = new Date(today);
+          yesterday.setDate(yesterday.getDate() - 1);
+
+          filteredColis = filteredColis.filter(colis => {
+            const colisDate = new Date(colis.date_creation);
+            const colisDateOnly = new Date(colisDate.getFullYear(), colisDate.getMonth(), colisDate.getDate());
+
+            switch (dateFilter) {
+              case 'aujourd_hui':
+                return colisDateOnly.getTime() === today.getTime();
+              case 'hier':
+                return colisDateOnly.getTime() === yesterday.getTime();
+              case '7_derniers_jours':
+                const sevenDaysAgo = new Date(today);
+                sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+                return colisDateOnly >= sevenDaysAgo;
+              case '30_derniers_jours':
+                const thirtyDaysAgo = new Date(today);
+                thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+                return colisDateOnly >= thirtyDaysAgo;
+              case 'ce_mois':
+                return colisDate.getMonth() === now.getMonth() && colisDate.getFullYear() === now.getFullYear();
+              case 'le_mois_dernier':
+                const lastMonth = now.getMonth() === 0 ? 11 : now.getMonth() - 1;
+                const lastMonthYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
+                return colisDate.getMonth() === lastMonth && colisDate.getFullYear() === lastMonthYear;
+              case 'periode_personnalisee':
+                // For now, treat as "all dates" - could be extended with date picker
+                return true;
+              default:
+                return true;
+            }
+          });
+        }
+
         // Apply sorting
         if (sortBy === 'recent') {
           filteredColis.sort((a, b) => new Date(b.date_creation).getTime() - new Date(a.date_creation).getTime());
@@ -153,6 +192,54 @@ export function MesColis({
             query = query.in('statut', ['Relancé nouveau client', 'Relancé Autre Client']);
           } else {
             query = query.eq('statut', statusFilter);
+          }
+        }
+
+        // Apply date filter
+        if (dateFilter !== 'toutes') {
+          const now = new Date();
+          const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+          switch (dateFilter) {
+            case 'aujourd_hui':
+              const todayStart = new Date(today);
+              const todayEnd = new Date(today);
+              todayEnd.setHours(23, 59, 59, 999);
+              query = query.gte('date_creation', todayStart.toISOString()).lte('date_creation', todayEnd.toISOString());
+              break;
+            case 'hier':
+              const yesterday = new Date(today);
+              yesterday.setDate(yesterday.getDate() - 1);
+              const yesterdayStart = new Date(yesterday);
+              const yesterdayEnd = new Date(yesterday);
+              yesterdayEnd.setHours(23, 59, 59, 999);
+              query = query.gte('date_creation', yesterdayStart.toISOString()).lte('date_creation', yesterdayEnd.toISOString());
+              break;
+            case '7_derniers_jours':
+              const sevenDaysAgo = new Date(today);
+              sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+              query = query.gte('date_creation', sevenDaysAgo.toISOString());
+              break;
+            case '30_derniers_jours':
+              const thirtyDaysAgo = new Date(today);
+              thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+              query = query.gte('date_creation', thirtyDaysAgo.toISOString());
+              break;
+            case 'ce_mois':
+              const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+              const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+              query = query.gte('date_creation', monthStart.toISOString()).lte('date_creation', monthEnd.toISOString());
+              break;
+            case 'le_mois_dernier':
+              const lastMonth = now.getMonth() === 0 ? 11 : now.getMonth() - 1;
+              const lastMonthYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
+              const lastMonthStart = new Date(lastMonthYear, lastMonth, 1);
+              const lastMonthEnd = new Date(lastMonthYear, lastMonth + 1, 0, 23, 59, 59, 999);
+              query = query.gte('date_creation', lastMonthStart.toISOString()).lte('date_creation', lastMonthEnd.toISOString());
+              break;
+            case 'periode_personnalisee':
+              // For now, no filtering - could be extended with date picker
+              break;
           }
         }
 
@@ -424,7 +511,7 @@ export function MesColis({
       }
       // If it already has country code or is in correct format, use as is
 
-      const message = `Bonjour, concernant votre colis ${colisItem.id}`;
+      const message = `مرحباً، بخصوص طردكم ${colisItem.id}`;
       window.open(`https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`, '_blank');
     }
   };
