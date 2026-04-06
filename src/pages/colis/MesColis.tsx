@@ -511,7 +511,7 @@ export function MesColis({
       }
       // If it already has country code or is in correct format, use as is
 
-      const message = `مرحباً، بخصوص طردكم ${colisItem.id}`;
+      const message = `Bonjour, concernant votre colis ${colisItem.id}`;
       window.open(`https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`, '_blank');
     }
   };

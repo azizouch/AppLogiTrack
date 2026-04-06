@@ -317,14 +317,17 @@ export function ColisList() {
     const totalFrais = selectedColis.reduce((sum, c) => sum + (c.frais || 0), 0);
     const totalGeneral = totalPrix + totalFrais;
 
-    // Create printable content with LogiTrack design
+    const currentDate = new Date();
+    const formattedDate = currentDate.toLocaleDateString('fr-FR');
+    const formattedTime = currentDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+
     const printContent = `
       <!DOCTYPE html>
       <html lang="fr">
       <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Liste des Colis - ${new Date().toLocaleDateString('fr-FR')}</title>
+        <title>Liste des Colis - ${formattedDate}</title>
         <style>
           body {
             margin: 0;
@@ -350,255 +353,287 @@ export function ColisList() {
           }
 
           .container {
-            max-width: 1000px;
+            max-width: 1060px;
             margin: 0 auto;
             padding: 20px;
           }
 
+          .top-bar {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            color: #475569;
+            font-size: 12px;
+          }
+
           .header {
             text-align: center;
-            margin-bottom: 20px;
-            border-bottom: 3px solid #2563eb;
-            padding-bottom: 15px;
+            margin-bottom: 16px;
           }
 
-          .logo-section {
-            margin-bottom: 10px;
-          }
-
-          .logo-text {
-            color: #2563eb;
-            font-size: 28px;
-            font-weight: bold;
-            vertical-align: middle;
-            display: inline-block;
-            line-height: 30px;
+          .title {
+            color: #1d4ed8;
+            font-size: 32px;
+            font-weight: 800;
+            margin: 0;
+            letter-spacing: 0.02em;
           }
 
           .subtitle {
-            color: #666;
-            font-size: 16px;
-            margin: 0;
+            color: #475569;
+            font-size: 15px;
+            margin: 6px 0 0;
           }
 
-          .info-section {
+          .divider {
+            height: 4px;
+            width: 100%;
+            background: #1d4ed8;
+            margin: 18px 0 24px;
+            border-radius: 2px;
+          }
+
+          .info-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 18px;
+            margin-bottom: 22px;
+          }
+
+          .info-card {
+            border: 1px solid #dbeafe;
+            background: #eff6ff;
+            border-radius: 14px;
+            padding: 18px;
+          }
+
+          .info-card h3 {
+            margin: 0 0 12px;
+            font-size: 16px;
+            color: #1d4ed8;
+          }
+
+          .info-row {
             display: flex;
             justify-content: space-between;
-            gap: 20px;
-            margin-bottom: 20px;
-          }
-
-          .info-box {
-            flex: 1;
-            background: #f8fafc;
-            padding: 15px;
-            border-radius: 6px;
-            border-left: 2px solid #2563eb;
-          }
-
-          .info-title {
-            color: #2563eb;
-            margin-bottom: 12px;
-            font-size: 16px;
-            margin-top: 0;
-            font-weight: bold;
-          }
-
-          .info-item {
+            align-items: center;
             margin-bottom: 8px;
             font-size: 14px;
+            color: #0f172a;
           }
 
           .info-label {
-            font-weight: bold;
             color: #475569;
           }
 
           .info-value {
-            color: #1e293b;
+            font-weight: 700;
+          }
+
+          .status-pill {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            background: #2563eb;
+            color: white;
+            letter-spacing: 0.02em;
           }
 
           .table-section {
-            margin: 20px 0 15px 0;
+            margin-top: 10px;
           }
 
           .table-title {
-            color: #2563eb;
-            margin-bottom: 15px;
+            margin: 0 0 12px;
             font-size: 18px;
-            font-weight: bold;
+            font-weight: 700;
+            color: #1d4ed8;
           }
 
-          .table-container {
-            border: 1px solid #e2e8f0;
-            border-radius: 6px;
+          .table-wrapper {
+            width: 100%;
+            border: 1px solid #dbeafe;
+            border-radius: 12px;
             overflow: hidden;
-            background: white;
+          }
+
+          .table-header,
+          .table-row,
+          .table-total-row {
+            display: flex;
+            align-items: center;
+            width: 100%;
           }
 
           .table-header {
             background: #2563eb;
             color: white;
-            display: flex;
-            font-weight: 600;
+            font-weight: 700;
             font-size: 12px;
             text-transform: uppercase;
-            min-height: 40px;
-          }
-
-          .table-header-cell {
-            padding: 12px 8px;
-            border-right: 1px solid rgba(255,255,255,0.2);
-            display: flex;
-            align-items: center;
-          }
-
-          .table-row {
-            display: flex;
-            border-bottom: 1px solid #e2e8f0;
-            font-size: 12px;
-            min-height: 30px;
-          }
-
-          .table-row:nth-child(even) {
-            background: #f8fafc;
+            letter-spacing: 0.02em;
           }
 
           .table-cell {
-            padding: 8px 6px;
-            border-right: 1px solid #e2e8f0;
-            display: flex;
-            align-items: center;
+            padding: 12px 10px;
+            border-right: 1px solid rgba(255,255,255,0.12);
+            min-height: 42px;
+            font-size: 12px;
+            color: #0f172a;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
           }
 
-          .table-cell.center {
-            justify-content: center;
+          .table-cell:last-child {
+            border-right: none;
+          }
+
+          .table-row {
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 12px;
+          }
+
+          .table-row:nth-child(even) {
+            background: #f8fbff;
+          }
+
+          .table-row .table-cell {
+            color: #0f172a;
+            white-space: nowrap;
+          }
+
+          .table-cell.small {
+            font-size: 11px;
           }
 
           .table-cell.price {
-            font-weight: 600;
-            color: #059669;
+            color: #047857;
+            font-weight: 700;
           }
 
-          .total-row {
-            background: #f1f5f9;
-            border-top: 2px solid #2563eb;
-            border-bottom: 1px solid #e2e8f0;
-            font-weight: 600;
+          .table-cell.status {
+            color: #1d4ed8;
+            font-weight: 700;
+          }
+
+          .table-total-row {
+            background: #eff6ff;
+            font-weight: 700;
+          }
+
+          .footer-summary {
+            margin-top: 20px;
+            padding: 18px;
+            border: 1px solid #dbeafe;
+            border-radius: 12px;
+            background: #f8fbff;
+          }
+
+          .footer-summary p {
+            margin: 6px 0;
             font-size: 14px;
-            min-height: 40px;
+            color: #0f172a;
           }
 
-          .total-general-row {
-            background: #f1f5f9;
-            border-top: 1px solid #2563eb;
-            font-weight: 600;
-            font-size: 14px;
-            min-height: 40px;
+          .footer-summary .label {
+            color: #475569;
           }
 
-          .status-badge {
-            display: inline-block;
-            padding: 4px 10px;
-            border-radius: 10px;
-            font-size: 12px;
-            font-weight: 600;
-            text-transform: uppercase;
-            background: #dbeafe;
-            color: #1e40af;
+          .footer-summary .value {
+            color: #047857;
+            font-weight: 700;
           }
         </style>
       </head>
       <body>
         <div class="container">
-          <!-- Header -->
+          <div class="top-bar">
+            <div>${formattedDate} ${formattedTime}</div>
+            <div>Liste des Colis - ${formattedDate}</div>
+            <div></div>
+          </div>
+
           <div class="header">
-            <div class="logo-section">
-              <span class="logo-text">LISTE DES COLIS</span>
-            </div>
+            <h1 class="title">LISTE DES COLIS</h1>
             <p class="subtitle">LogiTrack - Système de gestion logistique</p>
           </div>
 
-          <!-- Info Section -->
-          <div class="info-section">
-            <div class="info-box">
-              <h3 class="info-title">Informations générales</h3>
-              <div class="info-item">
-                <span class="info-label">Date d'impression:</span> <span class="info-value">${new Date().toLocaleDateString('fr-FR')}</span>
-              </div>
-              <div class="info-item">
-                <span class="info-label">Nombre de colis:</span> <span class="info-value">${selectedColis.length} colis</span>
-              </div>
-              <div class="info-item">
-                <span class="info-label">Statut:</span> <span class="status-badge">SÉLECTIONNÉS</span>
-              </div>
-            </div>
+          <div class="divider"></div>
 
-            <div class="info-box">
-              <h3 class="info-title">Totaux</h3>
-              <div class="info-item">
-                <span class="info-label">Total Prix:</span> <span class="info-value">${totalPrix.toFixed(2)} DH</span>
+          <div class="info-grid">
+            <div class="info-card">
+              <h3>Informations générales</h3>
+              <div class="info-row"><span class="info-label">Date d'impression</span><span class="info-value">${formattedDate}</span></div>
+              <div class="info-row"><span class="info-label">Nombre de colis</span><span class="info-value">${selectedColis.length}</span></div>
+              <div class="info-row"><span class="info-label">Statut</span><span class="status-pill">SÉLECTIONNÉS</span></div>
+            </div>
+            <div class="info-card">
+              <h3>Totaux</h3>
+              <div class="info-row"><span class="info-label">Total Prix</span><span class="info-value">${totalPrix.toFixed(2)} DH</span></div>
+              <div class="info-row"><span class="info-label">Total Frais</span><span class="info-value">${totalFrais.toFixed(2)} DH</span></div>
+              <div class="info-row"><span class="info-label">Total Général</span><span class="info-value">${totalGeneral.toFixed(2)} DH</span></div>
+            </div>
+          </div>
+
+          <div class="table-section">
+            <h2 class="table-title">Liste des Colis (${selectedColis.length} colis)</h2>
+            <div class="table-wrapper">
+              <div class="table-header">
+                <div class="table-cell" style="flex: 0.9; min-width: 100px;">ID Colis</div>
+                <div class="table-cell" style="flex: 1; min-width: 100px;">Client</div>
+                <div class="table-cell" style="flex: 0.9; min-width: 90px;">Téléphone</div>
+                <div class="table-cell" style="flex: 1; min-width: 100px;">Entreprise</div>
+                <div class="table-cell" style="flex: 0.9; min-width: 80px;">Adresse Livraison</div>
+                <div class="table-cell" style="flex: 0.8; min-width: 70px;">Statut</div>
+                <div class="table-cell" style="flex: 0.7; min-width: 60px;">Prix (DH)</div>
+                <div class="table-cell" style="flex: 0.7; min-width: 60px;">Frais (DH)</div>
+                <div class="table-cell" style="flex: 0.8; min-width: 70px;">Total (DH)</div>
+                <div class="table-cell" style="flex: 0.9; min-width: 85px;">Date Création</div>
+                <div class="table-cell" style="flex: 0.9; min-width: 85px;">Date Maj</div>
+                <div class="table-cell" style="flex: 1; min-width: 100px;">Livreur</div>
+                <div class="table-cell" style="flex: 1.2; min-width: 120px;">Notes</div>
               </div>
-              <div class="info-item">
-                <span class="info-label">Total Frais:</span> <span class="info-value">${totalFrais.toFixed(2)} DH</span>
-              </div>
-              <div class="info-item">
-                <span class="info-label">Total Général:</span> <span class="info-value">${totalGeneral.toFixed(2)} DH</span>
+              ${selectedColis.map(colisItem => `
+                <div class="table-row">
+                  <div class="table-cell" style="flex: 0.9; min-width: 100px;"><strong>${colisItem.id}</strong></div>
+                  <div class="table-cell" style="flex: 1; min-width: 100px;">${colisItem.client?.nom || ''}</div>
+                  <div class="table-cell" style="flex: 0.9; min-width: 90px;">${colisItem.client?.telephone || ''}</div>
+                  <div class="table-cell" style="flex: 1; min-width: 100px;">${colisItem.entreprise?.nom || ''}</div>
+                  <div class="table-cell" style="flex: 0.9; min-width: 80px;">${colisItem.adresse_livraison || ''}</div>
+                  <div class="table-cell status" style="flex: 0.8; min-width: 70px;">${colisItem.statut}</div>
+                  <div class="table-cell price" style="flex: 0.7; min-width: 60px;">${(colisItem.prix || 0).toFixed(2)}</div>
+                  <div class="table-cell price" style="flex: 0.7; min-width: 60px;">${(colisItem.frais || 0).toFixed(2)}</div>
+                  <div class="table-cell price" style="flex: 0.8; min-width: 70px;">${((colisItem.prix || 0) + (colisItem.frais || 0)).toFixed(2)}</div>
+                  <div class="table-cell" style="flex: 0.9; min-width: 85px;">${new Date(colisItem.date_creation).toLocaleDateString('fr-FR')}</div>
+                  <div class="table-cell" style="flex: 0.9; min-width: 85px;">${colisItem.date_mise_a_jour ? new Date(colisItem.date_mise_a_jour).toLocaleDateString('fr-FR') : ''}</div>
+                  <div class="table-cell" style="flex: 1; min-width: 100px;">${colisItem.livreur ? `${colisItem.livreur.prenom || ''} ${colisItem.livreur.nom}`.trim() : 'Non assigné'}</div>
+                  <div class="table-cell" style="flex: 1.2; min-width: 120px;">${colisItem.notes || ''}</div>
+                </div>5; min-width: 100px;"><strong>TOTAL</strong></div>
+                <div class="table-cell price" style="flex: 0.7;"><strong>${totalPrix.toFixed(2)}</strong></div>
+                <div class="table-cell price" style="flex: 0.7;"><strong>${totalFrais.toFixed(2)}</strong></div>
+                <div class="table-cell price" style="flex: 0.8;"><strong>${totalGeneral.toFixed(2)}</strong></div>
+                <div class="table-cell" style="flex: 2.5x: 0.9;"><strong>${totalPrix.toFixed(2)}</strong></div>
+                <div class="table-cell price" style="flex: 0.9;"><strong>${totalFrais.toFixed(2)}</strong></div>
+                <div class="table-cell price" style="flex: 0.9;"><strong>${totalGeneral.toFixed(2)}</strong></div>
+                <div class="table-cell" style="flex: 2.2;"></div>
               </div>
             </div>
           </div>
 
-          <!-- Colis Table -->
-          <div class="table-section">
-            <h3 class="table-title">Liste des Colis (${selectedColis.length} colis)</h3>
-            <div class="table-container">
-              <!-- Table Header -->
-              <div class="table-header">
-                <div class="table-header-cell" style="flex: 1;">ID Colis</div>
-                <div class="table-header-cell" style="flex: 1;">Client</div>
-                <div class="table-header-cell" style="flex: 1;">Téléphone</div>
-                <div class="table-header-cell" style="flex: 1;">Entreprise</div>
-                <div class="table-header-cell" style="flex: 0.8;">Statut</div>
-                <div class="table-header-cell" style="flex: 0.8;">Prix (DH)</div>
-                <div class="table-header-cell" style="flex: 0.8;">Frais (DH)</div>
-                <div class="table-header-cell" style="flex: 0.8;">Total (DH)</div>
-                <div class="table-header-cell" style="flex: 1;">Date création</div>
-                <div class="table-header-cell" style="flex: 1;">Livreur</div>
-              </div>
-
-              <!-- Table Body -->
-              ${selectedColis.map((colisItem, index) => `
-                <div class="table-row">
-                  <div class="table-cell"><strong>${colisItem.id}</strong></div>
-                  <div class="table-cell">${colisItem.client?.nom || ''}</div>
-                  <div class="table-cell">${colisItem.client?.telephone || ''}</div>
-                  <div class="table-cell">${colisItem.entreprise?.nom || ''}</div>
-                  <div class="table-cell center">${colisItem.statut}</div>
-                  <div class="table-cell center price">${(colisItem.prix || 0).toFixed(2)}</div>
-                  <div class="table-cell center price">${(colisItem.frais || 0).toFixed(2)}</div>
-                  <div class="table-cell center price">${((colisItem.prix || 0) + (colisItem.frais || 0)).toFixed(2)}</div>
-                  <div class="table-cell center">${new Date(colisItem.date_creation).toLocaleDateString('fr-FR')}</div>
-                  <div class="table-cell">${colisItem.livreur ? `${colisItem.livreur.prenom || ''} ${colisItem.livreur.nom}`.trim() : 'Non assigné'}</div>
-                </div>
-              `).join('')}
-
-              <!-- Total Row -->
-              <div class="total-row">
-                <div class="table-cell" style="flex: 5.4;"><strong>TOTAL</strong></div>
-                <div class="table-cell center" style="flex: 0.8;"></div>
-                <div class="table-cell center price" style="flex: 0.8;"><strong>${totalPrix.toFixed(2)}</strong></div>
-                <div class="table-cell center price" style="flex: 0.8;"><strong>${totalFrais.toFixed(2)}</strong></div>
-                <div class="table-cell center price" style="flex: 0.8;"><strong>${totalGeneral.toFixed(2)}</strong></div>
-                <div class="table-cell center" style="flex: 2.6;"></div>
-              </div>
-            </div>
+          <div class="footer-summary">
+            <p><span class="label">Total Prix:</span> <span class="value">${totalPrix.toFixed(2)} DH</span></p>
+            <p><span class="label">Total Frais:</span> <span class="value">${totalFrais.toFixed(2)} DH</span></p>
+            <p><span class="label">Total Général:</span> <span class="value">${totalGeneral.toFixed(2)} DH</span></p>
           </div>
         </div>
       </body>
       </html>
     `;
 
-    // Open print dialog
     const printWindow = window.open('', '_blank');
     if (printWindow) {
       printWindow.document.write(printContent);
@@ -814,12 +849,11 @@ export function ColisList() {
                 </TableHead>
                 <TableHead className="text-gray-900 font-medium">ID Colis</TableHead>
                 <TableHead className="text-gray-900 font-medium">Client</TableHead>
+                <TableHead className="text-gray-900 font-medium">Téléphone</TableHead>
                 <TableHead className="text-gray-900 font-medium">Entreprise</TableHead>
                 <TableHead className="text-gray-900 font-medium">Statut</TableHead>
                 <TableHead className="text-gray-900 font-medium">Prix</TableHead>
                 <TableHead className="text-gray-900 font-medium">Frais</TableHead>
-                <TableHead className="text-gray-900 font-medium">Date de création</TableHead>
-                <TableHead className="text-gray-900 font-medium">Livreur</TableHead>
                 <TableHead className="text-gray-900 font-medium text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -851,6 +885,7 @@ export function ColisList() {
                     </TableCell>
                     <TableCell className="font-mono text-sm text-gray-900 dark:text-gray-100">{colisItem.id}</TableCell>
                     <TableCell className="text-gray-900 dark:text-gray-100">{colisItem.client?.nom}</TableCell>
+                    <TableCell className="text-gray-900 dark:text-gray-100">{colisItem.client?.telephone || '-'}</TableCell>
                     <TableCell className="text-gray-900 dark:text-gray-100">{colisItem.entreprise?.nom}</TableCell>
                     <TableCell><StatusBadge statut={colisItem.statut} statuts={statuts} /></TableCell>
                     <TableCell className="text-gray-900 dark:text-gray-100">
@@ -858,12 +893,6 @@ export function ColisList() {
                     </TableCell>
                     <TableCell className="text-gray-900 dark:text-gray-100">
                       {colisItem.frais ? `${colisItem.frais} DH` : '-'}
-                    </TableCell>
-                    <TableCell className="text-gray-900 dark:text-gray-100">
-                      {new Date(colisItem.date_creation).toLocaleDateString('fr-FR')}
-                    </TableCell>
-                    <TableCell className="text-sm text-gray-600 dark:text-gray-400">
-                      {getLivreurInfo(colisItem)}
                     </TableCell>
                     <TableCell className="text-right">
                       <Button
@@ -879,7 +908,7 @@ export function ColisList() {
                 ))
               ) : (
                 <TableRow className="border-b border-gray-200 dark:border-gray-600 bg-white dark:bg-transparent">
-                  <TableCell colSpan={10} className="text-center py-8 text-gray-500 dark:text-gray-400">
+                  <TableCell colSpan={12} className="text-center py-8 text-gray-500 dark:text-gray-400">
                     Aucun colis trouvé
                   </TableCell>
                 </TableRow>
@@ -888,7 +917,7 @@ export function ColisList() {
           </Table>
         </div>
 
-        {/* Pagination */}
+        {/* Pagination */}8
         {totalPages > 1 && (
           <TablePagination
             currentPage={currentPage}
