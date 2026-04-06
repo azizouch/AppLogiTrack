@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { StatusBadge } from '@/components/ui/status-badge';
 import { useAuth } from '@/contexts/AuthContext';
 import { api, supabase } from '@/lib/supabase';
 
@@ -57,6 +58,8 @@ export function MesColis({
   const [reclamationText, setReclamationText] = useState('');
   const [newStatus, setNewStatus] = useState('');
   const [statusNote, setStatusNote] = useState('');
+  const [reportDate, setReportDate] = useState('');
+  const [currentReportDate, setCurrentReportDate] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
 
   const fetchColis = async (isRefresh = false) => {
@@ -221,41 +224,6 @@ export function MesColis({
     return colorMap[couleur] || 'bg-gray-500 text-white';
   };
 
-  const getStatusBadgeClass = (couleur: string) => {
-    const badgeColorMap: { [key: string]: string } = {
-      blue: 'bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-900 dark:text-blue-200',
-      green: 'bg-green-100 text-green-800 border-green-300 dark:bg-green-900 dark:text-green-200',
-      red: 'bg-red-100 text-red-800 border-red-300 dark:bg-red-900 dark:text-red-200',
-      yellow: 'bg-yellow-100 text-yellow-800 border-yellow-300 dark:bg-yellow-900 dark:text-yellow-200',
-      orange: 'bg-orange-100 text-orange-800 border-orange-300 dark:bg-orange-900 dark:text-orange-200',
-      purple: 'bg-purple-100 text-purple-800 border-purple-300 dark:bg-purple-900 dark:text-purple-200',
-      pink: 'bg-pink-100 text-pink-800 border-pink-300 dark:bg-pink-900 dark:text-pink-200',
-      gray: 'bg-gray-100 text-gray-800 border-gray-300 dark:bg-gray-900 dark:text-gray-300',
-      teal: 'bg-teal-100 text-teal-800 border-teal-300 dark:bg-teal-900 dark:text-teal-200',
-      indigo: 'bg-indigo-100 text-indigo-800 border-indigo-300 dark:bg-indigo-900 dark:text-indigo-200',
-      lime: 'bg-lime-100 text-lime-800 border-lime-300 dark:bg-lime-900 dark:text-lime-200',
-      cyan: 'bg-cyan-100 text-cyan-800 border-cyan-300 dark:bg-cyan-900 dark:text-cyan-200',
-      amber: 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-900 dark:text-amber-200',
-    };
-    return badgeColorMap[couleur] || 'bg-gray-100 text-gray-800 border-gray-300 dark:bg-gray-900 dark:text-gray-300';
-  };
-
-  const getStatusBadge = (statut: string) => {
-    const statutData = statuts.find(s => s.nom === statut);
-
-    if (statutData && statutData.couleur) {
-      const badgeClass = getStatusBadgeClass(statutData.couleur);
-      return (
-        <Badge className={`${badgeClass} text-xs py-1 px-3 hover:bg-transparent`}>
-          {statutData.nom}
-        </Badge>
-      );
-    }
-
-    // Fallback for unknown status
-    return <Badge className="bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300 text-xs py-1 px-3 hover:bg-transparent">{statut}</Badge>;
-  };
-
   const getEtatBadgeClass = (etat: string) => {
     switch ((etat || '').toLowerCase()) {
       case 'payé':
@@ -338,6 +306,7 @@ export function MesColis({
             date,
             statut,
             utilisateur,
+            informations,
             user:utilisateurs(role, nom, prenom)
           `)
           .eq('colis_id', colisItem.id)
@@ -407,11 +376,53 @@ export function MesColis({
     setShowDetailsModal(true);
   };
 
-  const handleStatusChange = (colisItem: Colis) => {
+  const loadReportDateForColis = async (colisId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('historique_colis')
+        .select('informations')
+        .eq('colis_id', colisId)
+        .eq('statut', 'Reporté')
+        .order('date', { ascending: false })
+        .limit(1);
+
+      if (!error && data && data.length > 0) {
+        const informations = data[0].informations;
+        if (informations?.startsWith('Reporté pour le')) {
+          const dateMatch = informations.match(/Reporté pour le\s+(\d{2})\/(\d{2})\/(\d{4})/);
+          if (dateMatch) {
+            const [, day, month, year] = dateMatch;
+            const dateStr = `${year}-${month}-${day}`;
+            setCurrentReportDate(dateStr);
+            setReportDate(dateStr);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error loading report date:', error);
+    }
+  };
+
+  const handleStatusChange = async (colisItem: Colis) => {
     setSelectedColis(colisItem);
     setNewStatus(colisItem.statut || '');
     setStatusNote('');
+    setReportDate('');
+    setCurrentReportDate('');
+
+    if (colisItem.statut === 'Reporté') {
+      await loadReportDateForColis(colisItem.id);
+    }
+
     setShowStatusModal(true);
+  };
+
+  const getMinDate = () => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   };
 
   const updateColisStatus = async () => {
@@ -420,17 +431,51 @@ export function MesColis({
     setIsUpdating(true);
     try {
       // Update colis status
-      const { error } = await api.updateColis(selectedColis.id, {
-        statut: newStatus
-      });
-
-      if (error) {
+      if (newStatus === 'Reporté' && !reportDate) {
         toast({
           title: 'Erreur',
-          description: 'Impossible de mettre à jour le statut',
+          description: 'Veuillez sélectionner une date de report.',
           variant: 'destructive',
         });
+        setIsUpdating(false);
         return;
+      }
+
+      // Validate that the date is not in the past
+      if (newStatus === 'Reporté' && reportDate) {
+        const selectedDate = new Date(reportDate);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        if (selectedDate < today) {
+          toast({
+            title: 'Erreur',
+            description: 'Vous ne pouvez pas sélectionner une date passée. Veuillez choisir une date à partir d\'aujourd\'hui.',
+            variant: 'destructive',
+          });
+          setIsUpdating(false);
+          return;
+        }
+      }
+
+      // Check if status is staying "Reporté" and date is being changed
+      const isStatusUnchanged = selectedColis.statut === newStatus;
+      const isReportDateChanged = newStatus === 'Reporté' && reportDate && selectedColis.statut === 'Reporté';
+
+      // Only update the colis status if it's actually changing
+      if (!isStatusUnchanged) {
+        const { error } = await api.updateColis(selectedColis.id, {
+          statut: newStatus
+        });
+
+        if (error) {
+          toast({
+            title: 'Erreur',
+            description: 'Impossible de mettre à jour le statut',
+            variant: 'destructive',
+          });
+          return;
+        }
       }
 
       // Get current user for historique
@@ -451,14 +496,25 @@ export function MesColis({
         }
       }
 
-      // Add to historique only if we have a valid utilisateur
-      if (utilisateurId) {
+      // Add to historique only if we have a valid utilisateur and either status changed or date changed
+      if (utilisateurId && (!isStatusUnchanged || isReportDateChanged)) {
         const historiqueEntry: any = {
           colis_id: selectedColis.id,
           statut: newStatus,
           date: new Date().toISOString(),
           utilisateur: utilisateurId
         };
+
+        const noteParts: string[] = [];
+        if (newStatus === 'Reporté' && reportDate) {
+          noteParts.push(`Reporté pour le ${formatDate(reportDate)}`);
+        }
+        if (statusNote.trim()) {
+          noteParts.push(statusNote.trim());
+        }
+        if (noteParts.length > 0) {
+          historiqueEntry.informations = noteParts.join(' — ');
+        }
 
         const { error: historiqueError } = await supabase
           .from('historique_colis')
@@ -482,6 +538,17 @@ export function MesColis({
           date: new Date().toISOString()
         };
 
+        const noteParts: string[] = [];
+        if (newStatus === 'Reporté' && reportDate) {
+          noteParts.push(`Reporté pour le ${formatDate(reportDate)}`);
+        }
+        if (statusNote.trim()) {
+          noteParts.push(statusNote.trim());
+        }
+        if (noteParts.length > 0) {
+          historiqueEntry.informations = noteParts.join(' — ');
+        }
+
         const { error: historiqueError } = await supabase
           .from('historique_colis')
           .insert(historiqueEntry);
@@ -498,7 +565,7 @@ export function MesColis({
 
       toast({
         title: 'Succès',
-        description: 'Statut mis à jour avec succès',
+        description: isReportDateChanged ? 'Date de report mise à jour avec succès' : 'Statut mis à jour avec succès',
       });
       setShowStatusModal(false);
       fetchColis(); // Refresh the list
@@ -602,6 +669,48 @@ export function MesColis({
       hour: '2-digit',
       minute: '2-digit',
     }).format(new Date(dateString));
+  };
+
+  const formatDate = (dateString: string) => {
+    if (!dateString) return '';
+    return new Intl.DateTimeFormat('fr-FR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    }).format(new Date(dateString));
+  };
+
+  const renderInformations = (informations?: string) => {
+    if (!informations) {
+      return <span className="text-gray-600 dark:text-gray-300">Mise à jour du statut du colis.</span>;
+    }
+
+    // Check if it starts with "Reporté pour le"
+    if (informations.startsWith('Reporté pour le')) {
+      // Extract "Reporté pour le" label and the rest
+      const labelMatch = informations.match(/^Reporté pour le\s+(.+?)(?:\s+—\s+(.+))?$/);
+      
+      if (labelMatch) {
+        const dateAndRest = labelMatch[1]; // "DD/MM/YYYY" or "DD/MM/YYYY — note"
+        const additionalNote = labelMatch[2]; // optional additional note
+
+        return (
+          <div className="text-gray-700 dark:text-gray-200">
+            <span className="font-bold text-black dark:text-white">Reporté pour le</span>
+            <span className="text-gray-600 dark:text-gray-300"> : {dateAndRest}</span>
+            {additionalNote && (
+              <>
+                <span className="text-gray-600 dark:text-gray-300"> — </span>
+                <span className="text-gray-600 dark:text-gray-300">{additionalNote}</span>
+              </>
+            )}
+          </div>
+        );
+      }
+    }
+
+    // Default rendering for non-report statuses
+    return <span className="text-gray-600 dark:text-gray-300">{informations}</span>;
   };
 
   return (
@@ -764,7 +873,7 @@ export function MesColis({
                       </div>
 
                       {/* Status Badge */}
-                      {getStatusBadge(colisItem.statut)}
+                      <StatusBadge statut={colisItem.statut} statuts={statuts} />
                     </div>
 
                     {/* Company and Price */}
@@ -1004,8 +1113,8 @@ export function MesColis({
                       <span>Code d'envoi</span>
                       <span>État</span>
                       <span>Status</span>
-                      <span className="text-right">Date</span>
-                      <span>Infos</span>
+                      <span>Date</span>
+                      <span>Informations</span>
                       <span>Action</span>
                     </div>
                     <div className="space-y-2">
@@ -1014,29 +1123,29 @@ export function MesColis({
                           <div className="block sm:hidden space-y-3 pb-3 border-b border-gray-100 dark:border-gray-800">
                             <div className="grid grid-cols-2 gap-3">
                               <div>
-                                <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Code d'envoi</div>
+                                <div className="text-[10px] uppercase tracking-[0.2em] text-black dark:text-white font-bold">Code d'envoi</div>
                                 <div className="font-medium break-all">{item.colis_id || selectedColis?.id || 'N/A'}</div>
                               </div>
                               <div>
-                                <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Date</div>
+                                <div className="text-[10px] uppercase tracking-[0.2em] text-black dark:text-white font-bold">Date</div>
                                 <div className="text-muted-foreground">{formatDateTime(item.date)}</div>
                               </div>
                               <div>
-                                <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">État</div>
+                                <div className="text-[10px] uppercase tracking-[0.2em] text-black dark:text-white font-bold">État</div>
                                 <Badge className={`${getEtatBadgeClass(selectedColisEtat)} text-xs py-1 px-2 hover:bg-transparent`}>{selectedColisEtat}</Badge>
                               </div>
                               <div>
-                                <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Status</div>
-                                <div>{getStatusBadge(item.statut)}</div>
+                                <div className="text-[10px] uppercase tracking-[0.2em] text-black dark:text-white font-bold">Status</div>
+                                <div><StatusBadge statut={item.statut} statuts={statuts} /></div>
                               </div>
                             </div>
                             <div className="grid grid-cols-1 gap-3">
                               <div>
-                                <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Infos</div>
-                                <div className="text-gray-600 dark:text-gray-300">Mise à jour du statut du colis.</div>
+                                <div className="text-[10px] uppercase tracking-[0.2em] text-black dark:text-white font-bold">Infos</div>
+                                <div>{renderInformations(item.informations)}</div>
                               </div>
                               <div>
-                                <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Action par</div>
+                                <div className="text-[10px] uppercase tracking-[0.2em] text-black dark:text-white font-bold">Action par</div>
                                 <div className="font-medium">{getActionParLabel(item)}</div>
                               </div>
                             </div>
@@ -1045,9 +1154,9 @@ export function MesColis({
                           <div className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-6 gap-1 sm:gap-4 items-center">
                             <span className="font-medium break-all">{item.colis_id || selectedColis?.id || 'N/A'}</span>
                             <Badge className={`${getEtatBadgeClass(selectedColisEtat)} text-xs py-1 px-2 hover:bg-transparent`}>{selectedColisEtat}</Badge>
-                            <div className="flex items-center justify-start">{getStatusBadge(item.statut)}</div>
-                            <span className="text-right text-muted-foreground">{formatDateTime(item.date)}</span>
-                            <span className="text-gray-600 dark:text-gray-300">Mise à jour du statut du colis.</span>
+                            <div className="flex items-center justify-start"><StatusBadge statut={item.statut} statuts={statuts} /></div>
+                            <span className="text-muted-foreground">{formatDateTime(item.date)}</span>
+                            <div>{renderInformations(item.informations)}</div>
                             <span className="font-medium truncate">{getActionParLabel(item)}</span>
                           </div>
                         </div>
@@ -1099,7 +1208,7 @@ export function MesColis({
                   </div>
                   <div>
                     <h4 className="text-xs font-medium text-muted-foreground">Statut</h4>
-                    {getStatusBadge(selectedColis.statut)}
+                    <StatusBadge statut={selectedColis.statut} statuts={statuts} />
                   </div>
                   <div>
                     <h4 className="text-xs font-medium text-muted-foreground">Prix</h4>
@@ -1296,9 +1405,7 @@ export function MesColis({
               <div className="flex justify-between items-center">
                 <p className="text-sm font-medium">Statut actuel:</p>
                 {selectedColis && (
-                  <Badge variant="outline" className={getStatusColor(selectedColis.statut || 'En attente')}>
-                    {selectedColis.statut || 'En attente'}
-                  </Badge>
+                  <div><StatusBadge statut={selectedColis.statut || 'En attente'} statuts={statuts} /></div>
                 )}
               </div>
             </div>
@@ -1335,7 +1442,35 @@ export function MesColis({
               </Select>
             </div>
 
-            <div className="space-y-2">
+            {newStatus === 'Reporté' && (
+              <div className="space-y-2">
+                <Label htmlFor="reportDate">Date de report</Label>
+                <Input
+                  id="reportDate"
+                  type="date"
+                  min={getMinDate()}
+                  value={reportDate}
+                  className="dark:bg-slate-900 dark:text-white dark:border-gray-700 dark:[&::-webkit-calendar-picker-indicator]:invert dark:[&::-webkit-calendar-picker-indicator]:brightness-200"
+                  onChange={(e) => {
+                    const selected = new Date(e.target.value);
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+
+                    if (selected < today) {
+                      toast({
+                        title: 'Erreur',
+                        description: 'Vous ne pouvez pas sélectionner une date passée. Veuillez choisir une date à partir d\'aujourd\'hui.',
+                        variant: 'destructive',
+                      });
+                    } else {
+                      setReportDate(e.target.value);
+                    }
+                  }}
+                />
+              </div>
+            )}
+
+            {/* <div className="space-y-2">
               <Label htmlFor="statusNote">Note (optionnel)</Label>
               <Textarea
                 id="statusNote"
@@ -1343,7 +1478,7 @@ export function MesColis({
                 value={statusNote}
                 onChange={(e) => setStatusNote(e.target.value)}
               />
-            </div>
+            </div> */}
           </div>
 
           <DialogFooter
@@ -1353,7 +1488,7 @@ export function MesColis({
             </Button>
             <Button
               onClick={updateColisStatus}
-              disabled={isUpdating || newStatus === selectedColis?.statut}
+              disabled={isUpdating || (newStatus === selectedColis?.statut && (!reportDate || reportDate === currentReportDate))}
             >
               {isUpdating ? (
                 <>

@@ -20,13 +20,6 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -44,6 +37,7 @@ import { useDebounce } from '@/hooks/useDebounce';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { AddColisModal } from '@/components/modals/AddColisModal';
+import { AssignColisModal } from '@/components/modals/AssignColisModal';
 
 export function Livreurs() {
   const navigate = useNavigate();
@@ -69,10 +63,6 @@ export function Livreurs() {
   // Assignment modal state
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [selectedLivreur, setSelectedLivreur] = useState<UserType | null>(null);
-  const [unassignedColis, setUnassignedColis] = useState<Colis[]>([]);
-  const [colisSearchTerm, setColisSearchTerm] = useState('');
-  const [loadingColis, setLoadingColis] = useState(false);
-  const debouncedColisSearch = useDebounce(colisSearchTerm, 300);
 
   // Add colis modal state
   const [showAddColisModal, setShowAddColisModal] = useState(false);
@@ -223,82 +213,15 @@ export function Livreurs() {
   };
 
   // Open assignment modal
-  const openAssignModal = async (livreur: UserType) => {
+  const openAssignModal = (livreur: UserType) => {
     setSelectedLivreur(livreur);
     setShowAssignModal(true);
-    await fetchUnassignedColis();
   };
 
-  // Fetch unassigned colis
-  const fetchUnassignedColis = async () => {
-    setLoadingColis(true);
-    try {
-      const { data, error } = await api.getColis({
-        livreurId: 'unassigned',
-        limit: 100
-      });
-
-      if (error) {
-        console.error('Error fetching unassigned colis:', error);
-        toast({
-          title: 'Erreur',
-          description: 'Impossible de charger les colis non assignés',
-          variant: 'destructive',
-        });
-      } else if (data) {
-        setUnassignedColis(data);
-      }
-    } catch (error) {
-      console.error('Error fetching unassigned colis:', error);
-      toast({
-        title: 'Erreur',
-        description: 'Une erreur est survenue lors du chargement',
-        variant: 'destructive',
-      });
-    } finally {
-      setLoadingColis(false);
-    }
-  };
-
-  // Close assignment modal
-  const closeAssignModal = () => {
-    setShowAssignModal(false);
-    setSelectedLivreur(null);
-    setUnassignedColis([]);
-    setColisSearchTerm('');
-  };
-
-  // Assign colis to livreur
-  const assignColis = async (colisId: string) => {
-    if (!selectedLivreur) return;
-
-    try {
-      const { error } = await api.updateColis(colisId, {
-        livreur_id: selectedLivreur.id
-      });
-
-      if (error) {
-        toast({
-          title: 'Erreur',
-          description: 'Impossible d\'assigner le colis',
-          variant: 'destructive',
-        });
-      } else {
-        toast({
-          title: 'Succès',
-          description: 'Colis assigné avec succès',
-        });
-
-        // Remove assigned colis from the list
-        setUnassignedColis(prev => prev.filter(c => c.id !== colisId));
-      }
-    } catch (error) {
-      toast({
-        title: 'Erreur',
-        description: 'Une erreur est survenue',
-        variant: 'destructive',
-      });
-    }
+  // Handle colis assigned callback
+  const handleColisAssigned = async () => {
+    // Refresh the livreurs list to update counts
+    await fetchLivreurs();
   };
 
   // Handle new colis creation
@@ -309,8 +232,6 @@ export function Livreurs() {
     });
     // Close the add colis modal
     setShowAddColisModal(false);
-    // Optionally refresh the unassigned colis list if needed
-    // fetchUnassignedColis();
   };
 
   // Get status color
@@ -617,141 +538,12 @@ export function Livreurs() {
       )}
 
       {/* Assignment Modal */}
-      <Dialog open={showAssignModal} onOpenChange={closeAssignModal}>
-        <DialogContent
-          className="max-w-4xl max-h-[90vh] flex flex-col"
-          preventOutsideClick={true}
-        >
-          <DialogHeader className="flex-shrink-0">
-            <DialogTitle className="flex items-center gap-2">
-              <User className="h-5 w-5" />
-              Assigner des colis à {selectedLivreur?.nom} {selectedLivreur?.prenom} (LIV-{selectedLivreur?.id.slice(-3).toUpperCase()})
-            </DialogTitle>
-            <DialogDescription>
-              Sélectionnez les colis à assigner à ce livreur ou créez un nouveau colis.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="flex-1 flex flex-col space-y-4 min-h-0">
-            {/* Search and New Colis Button */}
-            <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 flex-shrink-0">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                <Input
-                  placeholder="Rechercher un colis..."
-                  value={colisSearchTerm}
-                  onChange={(e) => setColisSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-              <Button
-                onClick={() => setShowAddColisModal(true)}
-                className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Nouveau colis
-              </Button>
-            </div>
-
-            {/* Colis List */}
-            <div className="border rounded-lg flex-1 flex flex-col min-h-0">
-              <div className="p-4 border-b bg-gray-50 dark:bg-gray-800 flex-shrink-0">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-medium text-gray-900 dark:text-white">
-                    Colis non assignés
-                  </h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    {unassignedColis.length} colis disponibles
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex-1 overflow-y-auto">
-                {loadingColis ? (
-                  <div className="p-8 text-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                    <p className="text-gray-500 dark:text-gray-400 mt-2">Chargement...</p>
-                  </div>
-                ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>ID</TableHead>
-                        <TableHead>Client</TableHead>
-                        <TableHead>Entreprise</TableHead>
-                        <TableHead>Prix</TableHead>
-                        <TableHead>Statut</TableHead>
-                        <TableHead>Action</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {unassignedColis
-                        .filter(colis =>
-                          !debouncedColisSearch ||
-                          colis.id.toLowerCase().includes(debouncedColisSearch.toLowerCase()) ||
-                          colis.client?.nom.toLowerCase().includes(debouncedColisSearch.toLowerCase())
-                        )
-                        .map((colis) => (
-                          <TableRow key={colis.id}>
-                            <TableCell className="font-mono text-sm">
-                              {colis.id}
-                            </TableCell>
-                            <TableCell>
-                              <div>
-                                <div className="font-medium">{colis.client?.nom}</div>
-                                <div className="text-sm text-gray-500">{colis.client?.telephone}</div>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              {colis.entreprise?.nom || '-'}
-                            </TableCell>
-                            <TableCell>
-                              {colis.prix} DH
-                            </TableCell>
-                            <TableCell>
-                              <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300">
-                                {colis.statut}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <Button
-                                size="sm"
-                                onClick={() => assignColis(colis.id)}
-                                className="bg-blue-600 hover:bg-blue-700"
-                              >
-                                <User className="h-4 w-4 mr-1" />
-                                Assigner
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                    </TableBody>
-                  </Table>
-                )}
-
-                {!loadingColis && unassignedColis.length === 0 && (
-                  <div className="p-8 text-center">
-                    <Package className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                    <p className="text-gray-500 dark:text-gray-400">
-                      Aucun colis non assigné disponible
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Footer - Fixed at bottom */}
-          <div className="flex justify-end pt-4 border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
-            <Button
-              variant="outline"
-              onClick={closeAssignModal}
-            >
-              Fermer
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <AssignColisModal
+        livreur={selectedLivreur}
+        isOpen={showAssignModal}
+        onOpenChange={setShowAssignModal}
+        onColisAssigned={handleColisAssigned}
+      />
 
       {/* Add Colis Modal */}
       {selectedLivreur && (

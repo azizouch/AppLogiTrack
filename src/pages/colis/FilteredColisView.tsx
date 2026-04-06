@@ -23,7 +23,8 @@ import { TablePagination } from '@/components/ui/table-pagination';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
-import { Colis, User } from '@/types';
+import { StatusBadge } from '@/components/ui/status-badge';
+import { Colis, User, Statut } from '@/types';
 import { api } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useDebounce } from '@/hooks/useDebounce';
@@ -76,6 +77,7 @@ export function FilteredColisView() {
   const [livreurFilter, setLivreurFilter] = useState('all');
   const [sortBy, setSortBy] = useState('recent');
   const [livreurs, setLivreurs] = useState<User[]>([]);
+  const [statuts, setStatuts] = useState<any[]>([]);
 
   // Modal states
   const [selectedColis, setSelectedColis] = useState<Colis | null>(null);
@@ -85,28 +87,6 @@ export function FilteredColisView() {
 
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
   const isLivreur = state.user?.role?.toLowerCase() === 'livreur';
-
-  // Status badge component
-  const getStatusBadge = (status: string) => {
-    const statusConfig = {
-      'en_attente': { color: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300', icon: Clock, label: 'En attente' },
-      'pris_en_charge': { color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300', icon: Truck, label: 'Pris en charge' },
-      'en_cours': { color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300', icon: Package, label: 'En cours' },
-      'Livré': { color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300', icon: CheckCircle, label: 'Livré' },
-      'Retourné': { color: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300', icon: XCircle, label: 'Retourné' },
-      'Annulé': { color: 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300', icon: AlertCircle, label: 'Annulé' }
-    };
-
-    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig['en_attente'];
-    const IconComponent = config.icon;
-
-    return (
-      <Badge className={`${config.color} flex items-center gap-1 w-fit`}>
-        <IconComponent className="h-3 w-3" />
-        {config.label}
-      </Badge>
-    );
-  };
 
   // Get the database statuses to filter by
   const getFilterStatuses = useCallback(() => {
@@ -129,7 +109,16 @@ export function FilteredColisView() {
       console.error('Error fetching livreurs:', error);
     }
   }, []);
-
+  const fetchStatuts = useCallback(async () => {
+    try {
+      const result = await api.getStatuts('colis');
+      if (result.data) {
+        setStatuts(result.data);
+      }
+    } catch (error) {
+      console.error('Error fetching statuts:', error);
+    }
+  }, []);
   // Fetch colis data with filters
   const fetchColis = useCallback(async (isRefresh = false) => {
     try {
@@ -225,7 +214,8 @@ export function FilteredColisView() {
     if (!isLivreur) {
       fetchLivreurs();
     }
-  }, [fetchColis, fetchLivreurs, isLivreur]);
+    fetchStatuts();
+  }, [fetchColis, fetchLivreurs, fetchStatuts, isLivreur]);
 
   // Handle refresh
   const handleRefresh = () => {
@@ -440,7 +430,7 @@ export function FilteredColisView() {
                         </div>
 
                         {/* Status Badge */}
-                        {getStatusBadge(colisItem.statut)}
+                        <StatusBadge statut={colisItem.statut} statuts={statuts} />
                       </div>
 
                       {/* Company and Price */}
@@ -603,7 +593,7 @@ export function FilteredColisView() {
                       <TableCell className="font-mono text-sm text-gray-900 dark:text-gray-100">{colisItem.id}</TableCell>
                       <TableCell className="text-gray-900 dark:text-gray-100">{colisItem.client?.nom}</TableCell>
                       <TableCell className="text-gray-900 dark:text-gray-100">{colisItem.entreprise?.nom}</TableCell>
-                      <TableCell>{getStatusBadge(colisItem.statut)}</TableCell>
+                      <TableCell><StatusBadge statut={colisItem.statut} statuts={statuts} /></TableCell>
                       <TableCell className="text-gray-900 dark:text-gray-100">
                         {colisItem.prix ? `${colisItem.prix} DH` : '-'}
                       </TableCell>
@@ -717,7 +707,7 @@ export function FilteredColisView() {
                   </div>
                   <div>
                     <h4 className="text-xs font-medium text-muted-foreground">Statut</h4>
-                    {getStatusBadge(selectedColis.statut)}
+                    <StatusBadge statut={selectedColis.statut} statuts={statuts} />
                   </div>
                   <div>
                     <h4 className="text-xs font-medium text-muted-foreground">Prix</h4>

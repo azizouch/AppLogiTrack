@@ -1,9 +1,11 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Plus, Search, Filter, RefreshCw, X, Package, Upload } from 'lucide-react';
+import { Plus, Search, Filter, RefreshCw, X, Package, Upload, Trash2, Download, FileText, Printer } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Table,
   TableBody,
@@ -20,6 +22,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { TablePagination } from '@/components/ui/table-pagination';
+import { StatusBadge } from '@/components/ui/status-badge';
 import { Colis, User, Statut } from '@/types';
 import { api } from '@/lib/supabase';
 import { ImportColisModal } from '@/components/modals/ImportColisModal';
@@ -54,6 +57,9 @@ export function ColisList() {
   const [hasNextPage, setHasNextPage] = useState(false);
   const [hasPrevPage, setHasPrevPage] = useState(false);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+
+  // Bulk operations state
+  const [selectedColisIds, setSelectedColisIds] = useState<string[]>([]);
 
   // Debounced search term for performance
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
@@ -93,6 +99,8 @@ export function ColisList() {
         setTotalPages(pages);
         setHasNextPage(hasNext);
         setHasPrevPage(hasPrev);
+        // Clear selected colis when data changes
+        setSelectedColisIds([]);
       }
     } catch (error) {
       console.error('Error fetching colis:', error);
@@ -151,19 +159,6 @@ export function ColisList() {
     }
   }, [debouncedSearchTerm, statusFilter, delivererFilter, sortBy]);
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'En cours':
-        return <Badge variant="secondary" className="bg-orange-100 text-orange-800 border-orange-300">En cours</Badge>;
-      case 'Livré':
-        return <Badge variant="secondary" className="bg-green-100 text-green-800 border-green-300">Livré</Badge>;
-      case 'Retourné':
-        return <Badge variant="secondary" className="bg-red-100 text-red-800 border-red-300">Retourné</Badge>;
-      default:
-        return <Badge variant="outline">{status}</Badge>;
-    }
-  };
-
   const getLivreurInfo = (colis: Colis) => {
     if (!colis.livreur_id || !colis.livreur) {
       return 'Non assigné';
@@ -189,10 +184,428 @@ export function ColisList() {
     setDelivererFilter('all');
     setSortBy('recent');
     setCurrentPage(1);
+    setSelectedColisIds([]); // Clear selected colis when resetting filters
   };
 
   // Check if any filters are active
   const hasActiveFilters = searchTerm || statusFilter !== 'all' || delivererFilter !== 'all' || sortBy !== 'recent';
+
+  // Bulk operations functions
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedColisIds(colis.map(c => c.id));
+    } else {
+      setSelectedColisIds([]);
+    }
+  };
+
+  const handleSelectColis = (colisId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedColisIds(prev => [...prev, colisId]);
+    } else {
+      setSelectedColisIds(prev => prev.filter(id => id !== colisId));
+    }
+  };
+
+  const isAllSelected = colis.length > 0 && selectedColisIds.length === colis.length;
+  const isIndeterminate = selectedColisIds.length > 0 && selectedColisIds.length < colis.length;
+
+  const handleBulkDelete = async () => {
+    if (selectedColisIds.length === 0) return;
+
+    if (!confirm(`Êtes-vous sûr de vouloir supprimer ${selectedColisIds.length} colis ?`)) {
+      return;
+    }
+
+    try {
+      const deletePromises = selectedColisIds.map(id => api.deleteColis(id));
+      await Promise.allSettled(deletePromises);
+
+      setSelectedColisIds([]);
+      await fetchColis();
+    } catch (error) {
+      console.error('Error deleting colis:', error);
+    }
+  };
+
+  const handleExportExcel = () => {
+    const selectedColis = colis.filter(c => selectedColisIds.includes(c.id));
+
+    if (selectedColis.length === 0) return;
+
+    // Prepare data for Excel
+    const excelData = selectedColis.map(colisItem => ({
+      'ID Colis': colisItem.id,
+      'Client': colisItem.client?.nom || '',
+      'Téléphone Client': colisItem.client?.telephone || '',
+      'Entreprise': colisItem.entreprise?.nom || '',
+      'Statut': colisItem.statut,
+      'Prix (DH)': colisItem.prix || 0,
+      'Frais (DH)': colisItem.frais || 0,
+      'Total (DH)': (colisItem.prix || 0) + (colisItem.frais || 0),
+      'Date de création': new Date(colisItem.date_creation).toLocaleDateString('fr-FR'),
+      'Livreur': colisItem.livreur ? `${colisItem.livreur.prenom || ''} ${colisItem.livreur.nom}`.trim() : 'Non assigné'
+    }));
+
+    // Create workbook and worksheet
+    const workbook = XLSX.utils.book_new();
+    const worksheet = XLSX.utils.json_to_sheet(excelData);
+
+    // Set column widths
+    worksheet['!cols'] = [
+      { width: 15 }, // ID Colis
+      { width: 20 }, // Client
+      { width: 15 }, // Téléphone Client
+      { width: 20 }, // Entreprise
+      { width: 12 }, // Statut
+      { width: 12 }, // Prix
+      { width: 12 }, // Frais
+      { width: 12 }, // Total
+      { width: 15 }, // Date de création
+      { width: 20 }  // Livreur
+    ];
+
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Colis');
+    const filename = `colis_export_${new Date().toISOString().split('T')[0]}.xlsx`;
+    XLSX.writeFile(workbook, filename);
+  };
+
+  const handleExportCSV = () => {
+    const selectedColis = colis.filter(c => selectedColisIds.includes(c.id));
+
+    if (selectedColis.length === 0) return;
+
+    // Prepare CSV data
+    const csvData = selectedColis.map(colisItem => ({
+      'ID Colis': colisItem.id,
+      'Client': colisItem.client?.nom || '',
+      'Téléphone Client': colisItem.client?.telephone || '',
+      'Entreprise': colisItem.entreprise?.nom || '',
+      'Statut': colisItem.statut,
+      'Prix (DH)': colisItem.prix || 0,
+      'Frais (DH)': colisItem.frais || 0,
+      'Total (DH)': (colisItem.prix || 0) + (colisItem.frais || 0),
+      'Date de création': new Date(colisItem.date_creation).toLocaleDateString('fr-FR'),
+      'Livreur': colisItem.livreur ? `${colisItem.livreur.prenom || ''} ${colisItem.livreur.nom}`.trim() : 'Non assigné'
+    }));
+
+    // Create CSV content
+    const headers = Object.keys(csvData[0]);
+    const csvContent = [
+      headers.join(','),
+      ...csvData.map(row => headers.map(header => `"${row[header as keyof typeof row]}"`).join(','))
+    ].join('\n');
+
+    // Download CSV file
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `colis_export_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handlePrint = () => {
+    const selectedColis = colis.filter(c => selectedColisIds.includes(c.id));
+
+    if (selectedColis.length === 0) return;
+
+    const totalPrix = selectedColis.reduce((sum, c) => sum + (c.prix || 0), 0);
+    const totalFrais = selectedColis.reduce((sum, c) => sum + (c.frais || 0), 0);
+    const totalGeneral = totalPrix + totalFrais;
+
+    // Create printable content with LogiTrack design
+    const printContent = `
+      <!DOCTYPE html>
+      <html lang="fr">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Liste des Colis - ${new Date().toLocaleDateString('fr-FR')}</title>
+        <style>
+          body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+            line-height: 1.4;
+            background: white;
+          }
+
+          @media print {
+            body {
+              margin: 0;
+              padding: 20px;
+              font-size: 12px;
+              line-height: 1.2;
+            }
+            .no-print { display: none; }
+            * {
+              -webkit-print-color-adjust: exact !important;
+              color-adjust: exact !important;
+            }
+          }
+
+          .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+          }
+
+          .header {
+            text-align: center;
+            margin-bottom: 20px;
+            border-bottom: 3px solid #2563eb;
+            padding-bottom: 15px;
+          }
+
+          .logo-section {
+            margin-bottom: 10px;
+          }
+
+          .logo-text {
+            color: #2563eb;
+            font-size: 28px;
+            font-weight: bold;
+            vertical-align: middle;
+            display: inline-block;
+            line-height: 30px;
+          }
+
+          .subtitle {
+            color: #666;
+            font-size: 16px;
+            margin: 0;
+          }
+
+          .info-section {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            margin-bottom: 20px;
+          }
+
+          .info-box {
+            flex: 1;
+            background: #f8fafc;
+            padding: 15px;
+            border-radius: 6px;
+            border-left: 2px solid #2563eb;
+          }
+
+          .info-title {
+            color: #2563eb;
+            margin-bottom: 12px;
+            font-size: 16px;
+            margin-top: 0;
+            font-weight: bold;
+          }
+
+          .info-item {
+            margin-bottom: 8px;
+            font-size: 14px;
+          }
+
+          .info-label {
+            font-weight: bold;
+            color: #475569;
+          }
+
+          .info-value {
+            color: #1e293b;
+          }
+
+          .table-section {
+            margin: 20px 0 15px 0;
+          }
+
+          .table-title {
+            color: #2563eb;
+            margin-bottom: 15px;
+            font-size: 18px;
+            font-weight: bold;
+          }
+
+          .table-container {
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            overflow: hidden;
+            background: white;
+          }
+
+          .table-header {
+            background: #2563eb;
+            color: white;
+            display: flex;
+            font-weight: 600;
+            font-size: 12px;
+            text-transform: uppercase;
+            min-height: 40px;
+          }
+
+          .table-header-cell {
+            padding: 12px 8px;
+            border-right: 1px solid rgba(255,255,255,0.2);
+            display: flex;
+            align-items: center;
+          }
+
+          .table-row {
+            display: flex;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 12px;
+            min-height: 30px;
+          }
+
+          .table-row:nth-child(even) {
+            background: #f8fafc;
+          }
+
+          .table-cell {
+            padding: 8px 6px;
+            border-right: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+          }
+
+          .table-cell.center {
+            justify-content: center;
+          }
+
+          .table-cell.price {
+            font-weight: 600;
+            color: #059669;
+          }
+
+          .total-row {
+            background: #f1f5f9;
+            border-top: 2px solid #2563eb;
+            border-bottom: 1px solid #e2e8f0;
+            font-weight: 600;
+            font-size: 14px;
+            min-height: 40px;
+          }
+
+          .total-general-row {
+            background: #f1f5f9;
+            border-top: 1px solid #2563eb;
+            font-weight: 600;
+            font-size: 14px;
+            min-height: 40px;
+          }
+
+          .status-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            background: #dbeafe;
+            color: #1e40af;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <!-- Header -->
+          <div class="header">
+            <div class="logo-section">
+              <span class="logo-text">LISTE DES COLIS</span>
+            </div>
+            <p class="subtitle">LogiTrack - Système de gestion logistique</p>
+          </div>
+
+          <!-- Info Section -->
+          <div class="info-section">
+            <div class="info-box">
+              <h3 class="info-title">Informations générales</h3>
+              <div class="info-item">
+                <span class="info-label">Date d'impression:</span> <span class="info-value">${new Date().toLocaleDateString('fr-FR')}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Nombre de colis:</span> <span class="info-value">${selectedColis.length} colis</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Statut:</span> <span class="status-badge">SÉLECTIONNÉS</span>
+              </div>
+            </div>
+
+            <div class="info-box">
+              <h3 class="info-title">Totaux</h3>
+              <div class="info-item">
+                <span class="info-label">Total Prix:</span> <span class="info-value">${totalPrix.toFixed(2)} DH</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Total Frais:</span> <span class="info-value">${totalFrais.toFixed(2)} DH</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Total Général:</span> <span class="info-value">${totalGeneral.toFixed(2)} DH</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Colis Table -->
+          <div class="table-section">
+            <h3 class="table-title">Liste des Colis (${selectedColis.length} colis)</h3>
+            <div class="table-container">
+              <!-- Table Header -->
+              <div class="table-header">
+                <div class="table-header-cell" style="flex: 1;">ID Colis</div>
+                <div class="table-header-cell" style="flex: 1;">Client</div>
+                <div class="table-header-cell" style="flex: 1;">Téléphone</div>
+                <div class="table-header-cell" style="flex: 1;">Entreprise</div>
+                <div class="table-header-cell" style="flex: 0.8;">Statut</div>
+                <div class="table-header-cell" style="flex: 0.8;">Prix (DH)</div>
+                <div class="table-header-cell" style="flex: 0.8;">Frais (DH)</div>
+                <div class="table-header-cell" style="flex: 0.8;">Total (DH)</div>
+                <div class="table-header-cell" style="flex: 1;">Date création</div>
+                <div class="table-header-cell" style="flex: 1;">Livreur</div>
+              </div>
+
+              <!-- Table Body -->
+              ${selectedColis.map((colisItem, index) => `
+                <div class="table-row">
+                  <div class="table-cell"><strong>${colisItem.id}</strong></div>
+                  <div class="table-cell">${colisItem.client?.nom || ''}</div>
+                  <div class="table-cell">${colisItem.client?.telephone || ''}</div>
+                  <div class="table-cell">${colisItem.entreprise?.nom || ''}</div>
+                  <div class="table-cell center">${colisItem.statut}</div>
+                  <div class="table-cell center price">${(colisItem.prix || 0).toFixed(2)}</div>
+                  <div class="table-cell center price">${(colisItem.frais || 0).toFixed(2)}</div>
+                  <div class="table-cell center price">${((colisItem.prix || 0) + (colisItem.frais || 0)).toFixed(2)}</div>
+                  <div class="table-cell center">${new Date(colisItem.date_creation).toLocaleDateString('fr-FR')}</div>
+                  <div class="table-cell">${colisItem.livreur ? `${colisItem.livreur.prenom || ''} ${colisItem.livreur.nom}`.trim() : 'Non assigné'}</div>
+                </div>
+              `).join('')}
+
+              <!-- Total Row -->
+              <div class="total-row">
+                <div class="table-cell" style="flex: 5.4;"><strong>TOTAL</strong></div>
+                <div class="table-cell center" style="flex: 0.8;"></div>
+                <div class="table-cell center price" style="flex: 0.8;"><strong>${totalPrix.toFixed(2)}</strong></div>
+                <div class="table-cell center price" style="flex: 0.8;"><strong>${totalFrais.toFixed(2)}</strong></div>
+                <div class="table-cell center price" style="flex: 0.8;"><strong>${totalGeneral.toFixed(2)}</strong></div>
+                <div class="table-cell center" style="flex: 2.6;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    // Open print dialog
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(printContent);
+      printWindow.document.close();
+      printWindow.print();
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -240,17 +653,61 @@ export function ColisList() {
             <Filter className="h-4 w-4 text-gray-500 dark:text-gray-400" />
             <span className="font-medium text-gray-700 dark:text-gray-300">Filtres</span>
           </div>
-          {hasActiveFilters && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={resetFilters}
-              className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-            >
-              <X className="mr-2 h-4 w-4" />
-              Réinitialiser
-            </Button>
-          )}
+          <div className="flex items-center gap-2">
+            {/* Bulk operations buttons - shown when colis are selected */}
+            {selectedColisIds.length > 0 && (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleBulkDelete}
+                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Supprimer ({selectedColisIds.length})
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleExportExcel}
+                  className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                >
+                  <Download className="mr-2 h-4 w-4" />
+                  Excel
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleExportCSV}
+                  className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                >
+                  <FileText className="mr-2 h-4 w-4" />
+                  CSV
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handlePrint}
+                  className="text-purple-600 hover:text-purple-700 hover:bg-purple-50"
+                >
+                  <Printer className="mr-2 h-4 w-4" />
+                  Imprimer
+                </Button>
+              </>
+            )}
+            {/* Reset filters button - shown when filters are active */}
+            {hasActiveFilters && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={resetFilters}
+                className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+              >
+                <X className="mr-2 h-4 w-4" />
+                Réinitialiser
+              </Button>
+            )}
+          </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -345,6 +802,16 @@ export function ColisList() {
           <Table className="bg-transparent min-w-full">
             <TableHeader>
               <TableRow className="border-b border-gray-200 dark:border-gray-600" style={{ backgroundColor: 'hsl(210, 40%, 96.1%)' }}>
+                <TableHead className="w-12">
+                  <Checkbox
+                    className='dark:border-gray-900'
+                    checked={isAllSelected}
+                    ref={(el) => {
+                      if (el) el.indeterminate = isIndeterminate;
+                    }}
+                    onCheckedChange={handleSelectAll}
+                  />
+                </TableHead>
                 <TableHead className="text-gray-900 font-medium">ID Colis</TableHead>
                 <TableHead className="text-gray-900 font-medium">Client</TableHead>
                 <TableHead className="text-gray-900 font-medium">Entreprise</TableHead>
@@ -364,6 +831,7 @@ export function ColisList() {
                     <TableCell><div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div></TableCell>
                     <TableCell><div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div></TableCell>
                     <TableCell><div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div></TableCell>
+                    <TableCell><div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div></TableCell>
                     <TableCell><div className="h-6 bg-gray-200 dark:bg-gray-600 rounded animate-pulse w-16"></div></TableCell>
                     <TableCell><div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div></TableCell>
                     <TableCell><div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div></TableCell>
@@ -375,10 +843,16 @@ export function ColisList() {
               ) : colis.length > 0 ? (
                 colis.map((colisItem) => (
                   <TableRow key={colisItem.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-200 dark:border-gray-600 bg-white dark:bg-transparent">
+                    <TableCell>
+                      <Checkbox
+                        checked={selectedColisIds.includes(colisItem.id)}
+                        onCheckedChange={(checked) => handleSelectColis(colisItem.id, checked as boolean)}
+                      />
+                    </TableCell>
                     <TableCell className="font-mono text-sm text-gray-900 dark:text-gray-100">{colisItem.id}</TableCell>
                     <TableCell className="text-gray-900 dark:text-gray-100">{colisItem.client?.nom}</TableCell>
                     <TableCell className="text-gray-900 dark:text-gray-100">{colisItem.entreprise?.nom}</TableCell>
-                    <TableCell>{getStatusBadge(colisItem.statut)}</TableCell>
+                    <TableCell><StatusBadge statut={colisItem.statut} statuts={statuts} /></TableCell>
                     <TableCell className="text-gray-900 dark:text-gray-100">
                       {colisItem.prix ? `${colisItem.prix} DH` : '-'}
                     </TableCell>
@@ -405,7 +879,7 @@ export function ColisList() {
                 ))
               ) : (
                 <TableRow className="border-b border-gray-200 dark:border-gray-600 bg-white dark:bg-transparent">
-                  <TableCell colSpan={9} className="text-center py-8 text-gray-500 dark:text-gray-400">
+                  <TableCell colSpan={10} className="text-center py-8 text-gray-500 dark:text-gray-400">
                     Aucun colis trouvé
                   </TableCell>
                 </TableRow>

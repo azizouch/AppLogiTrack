@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
+import { StatusBadge } from '@/components/ui/status-badge';
 import { api, supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -109,23 +110,6 @@ export function ViewColis() {
       fetchData();
     }
   }, [id, navigate, toast, returnTo]);
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'En cours':
-        return <Badge variant="secondary" className="bg-orange-100 text-orange-800 border-orange-300 dark:bg-orange-900 dark:text-orange-200 dark:border-orange-700">En cours</Badge>;
-      case 'Livré':
-        return <Badge variant="secondary" className="bg-green-100 text-green-800 border-green-300 dark:bg-green-900 dark:text-green-200 dark:border-green-700">Livré</Badge>;
-      case 'Retourné':
-        return <Badge variant="secondary" className="bg-red-100 text-red-800 border-red-300 dark:bg-red-900 dark:text-red-200 dark:border-red-700">Retourné</Badge>;
-      case 'Annulé':
-        return <Badge variant="secondary" className="bg-gray-100 text-gray-800 border-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600">Annulé</Badge>;
-      case 'Refusé':
-        return <Badge variant="secondary" className="bg-purple-100 text-purple-800 border-purple-300 dark:bg-purple-900 dark:text-purple-200 dark:border-purple-700">Refusé</Badge>;
-      default:
-        return <Badge variant="outline" className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300">{status}</Badge>;
-    }
-  };
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -458,7 +442,7 @@ export function ViewColis() {
                 </div>
                 <div>
                   <h3 className="font-medium text-gray-900 dark:text-white mb-1">Statut actuel</h3>
-                  {getStatusBadge(colis.statut)}
+                  <StatusBadge statut={colis.statut} statuts={statuses} />
                 </div>
               </div>
 
@@ -513,7 +497,7 @@ export function ViewColis() {
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
-                        {getStatusBadge(item.statut)}
+                        <StatusBadge statut={item.statut} statuts={statuses} />
                         <span className="text-sm text-gray-500 dark:text-gray-400">
                           {formatDate(item.date)}
                         </span>

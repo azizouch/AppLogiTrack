@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { StatusBadge } from '@/components/ui/status-badge';
 import { useAuth } from '@/contexts/AuthContext';
 import { api, supabase } from '@/lib/supabase';
 
@@ -181,39 +182,6 @@ export function MesColisLivres() {
   useEffect(() => {
     fetchStatuts();
   }, []);
-
-  const getColorClass = (couleur: string) => {
-    const colorMap: { [key: string]: string } = {
-      'blue': 'bg-blue-500 text-white',
-      'green': 'bg-green-500 text-white',
-      'red': 'bg-red-500 text-white',
-      'yellow': 'bg-yellow-500 text-black',
-      'orange': 'bg-orange-500 text-white',
-      'purple': 'bg-purple-500 text-white',
-      'pink': 'bg-pink-500 text-white',
-      'gray': 'bg-gray-500 text-white',
-      'teal': 'bg-teal-500 text-white',
-      'indigo': 'bg-indigo-500 text-white',
-      'lime': 'bg-lime-500 text-black',
-      'cyan': 'bg-cyan-500 text-white',
-      'amber': 'bg-amber-500 text-black',
-    };
-    return colorMap[couleur] || 'bg-gray-500 text-white';
-  };
-
-  const getStatusBadge = (statut: string) => {
-    const statutData = statuts.find(s => s.nom === statut);
-    if (statutData && statutData.couleur) {
-      return (
-        <Badge className={`${getColorClass(statutData.couleur)} border-0`}>
-          {statutData.nom}
-        </Badge>
-      );
-    }
-
-    // Fallback for unknown status
-    return <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">{statut}</Badge>;
-  };
 
   const resetFilters = () => {
     setSearchTerm('');
@@ -470,7 +438,7 @@ export function MesColisLivres() {
                       </div>
 
                       {/* Status Badge */}
-                      {getStatusBadge(colisItem.statut)}
+                      <StatusBadge statut={colisItem.statut} statuts={statuts} />
                     </div>
 
                     {/* Company and Price */}
@@ -681,7 +649,7 @@ export function MesColisLivres() {
                   </div>
                   <div>
                     <h4 className="text-xs font-medium text-muted-foreground">Statut</h4>
-                    {getStatusBadge(selectedColis.statut)}
+                    <StatusBadge statut={selectedColis.statut} statuts={statuts} />
                   </div>
                   <div>
                     <h4 className="text-xs font-medium text-muted-foreground">Prix</h4>
