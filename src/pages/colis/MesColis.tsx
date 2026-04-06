@@ -72,53 +72,114 @@ export function MesColis({
         setLoading(true);
       }
 
-      // Direct Supabase query - no complex recovery logic
-      let query = supabase
-        .from('colis')
-        .select(`
-          *,
-          client:clients(*),
-          entreprise:entreprises(*),
-          livreur:utilisateurs(*)
-        `, { count: 'exact' })
-        .eq('livreur_id', state.user.id);
-
-      // Apply filters
       if (debouncedSearchTerm) {
-        query = query.or(`id.ilike.%${debouncedSearchTerm}%,client.nom.ilike.%${debouncedSearchTerm}%`);
-      }
-      if (statusFilter !== 'tous') {
-        const isRelanceAutreGroup = ['Relancé nouveau client', 'Relancé Autre Client'].includes(statusFilter);
-        if (isRelanceAutreGroup) {
-          query = query.in('statut', ['Relancé nouveau client', 'Relancé Autre Client']);
-        } else {
-          query = query.eq('statut', statusFilter);
+        // When searching, use a broader query that includes related data
+        const searchTerm = `%${debouncedSearchTerm}%`;
+
+        // Get all colis for this livreur first
+        const { data: allColis, error: allError } = await supabase
+          .from('colis')
+          .select(`
+            *,
+            client:clients(*),
+            entreprise:entreprises(*),
+            livreur:utilisateurs(*)
+          `)
+          .eq('livreur_id', state.user.id);
+
+        if (allError) {
+          console.error('Error fetching all colis:', allError);
+          setColis([]);
+          setTotalCount(0);
+          setLoading(false);
+          setRefreshing(false);
+          return;
         }
-      }
 
-      // Apply sorting
-      if (sortBy === 'recent') {
-        query = query.order('date_creation', { ascending: false });
-      } else if (sortBy === 'oldest') {
-        query = query.order('date_creation', { ascending: true });
-      } else if (sortBy === 'status') {
-        query = query.order('statut');
-      }
+        // Filter results client-side
+        let filteredColis = (allColis || []).filter(colis => {
+          const searchLower = debouncedSearchTerm.toLowerCase();
+          return (
+            colis.id.toLowerCase().includes(searchLower) ||
+            (colis.client?.nom && colis.client.nom.toLowerCase().includes(searchLower)) ||
+            (colis.client?.telephone && colis.client.telephone.toLowerCase().includes(searchLower)) ||
+            (colis.entreprise?.nom && colis.entreprise.nom.toLowerCase().includes(searchLower))
+          );
+        });
 
-      // Apply pagination
-      const from = (currentPage - 1) * entriesPerPage;
-      const to = from + entriesPerPage - 1;
-      query = query.range(from, to);
+        // Apply status filter
+        if (statusFilter !== 'tous') {
+          const isRelanceAutreGroup = ['Relancé nouveau client', 'Relancé Autre Client'].includes(statusFilter);
+          if (isRelanceAutreGroup) {
+            filteredColis = filteredColis.filter(c => ['Relancé nouveau client', 'Relancé Autre Client'].includes(c.statut));
+          } else {
+            filteredColis = filteredColis.filter(c => c.statut === statusFilter);
+          }
+        }
 
-      const { data, error, count } = await query;
+        // Apply sorting
+        if (sortBy === 'recent') {
+          filteredColis.sort((a, b) => new Date(b.date_creation).getTime() - new Date(a.date_creation).getTime());
+        } else if (sortBy === 'oldest') {
+          filteredColis.sort((a, b) => new Date(a.date_creation).getTime() - new Date(b.date_creation).getTime());
+        } else if (sortBy === 'status') {
+          filteredColis.sort((a, b) => (a.statut || '').localeCompare(b.statut || ''));
+        }
 
-      if (error) {
-        console.error('MesColis: Query error:', error);
-        setColis([]);
-        setTotalCount(0);
+        // Apply pagination
+        const totalCount = filteredColis.length;
+        const from = (currentPage - 1) * entriesPerPage;
+        const to = from + entriesPerPage;
+        const paginatedResults = filteredColis.slice(from, to);
+
+        setColis(paginatedResults);
+        setTotalCount(totalCount);
       } else {
-        setColis(data || []);
-        setTotalCount(count || 0);
+        // Normal query without search
+        let query = supabase
+          .from('colis')
+          .select(`
+            *,
+            client:clients(*),
+            entreprise:entreprises(*),
+            livreur:utilisateurs(*)
+          `, { count: 'exact' })
+          .eq('livreur_id', state.user.id);
+
+        // Apply status filter
+        if (statusFilter !== 'tous') {
+          const isRelanceAutreGroup = ['Relancé nouveau client', 'Relancé Autre Client'].includes(statusFilter);
+          if (isRelanceAutreGroup) {
+            query = query.in('statut', ['Relancé nouveau client', 'Relancé Autre Client']);
+          } else {
+            query = query.eq('statut', statusFilter);
+          }
+        }
+
+        // Apply sorting
+        if (sortBy === 'recent') {
+          query = query.order('date_creation', { ascending: false });
+        } else if (sortBy === 'oldest') {
+          query = query.order('date_creation', { ascending: true });
+        } else if (sortBy === 'status') {
+          query = query.order('statut');
+        }
+
+        // Apply pagination
+        const from = (currentPage - 1) * entriesPerPage;
+        const to = from + entriesPerPage - 1;
+        query = query.range(from, to);
+
+        const { data, error, count } = await query;
+
+        if (error) {
+          console.error('MesColis: Query error:', error);
+          setColis([]);
+          setTotalCount(0);
+        } else {
+          setColis(data || []);
+          setTotalCount(count || 0);
+        }
       }
     } catch (error: any) {
       console.error('Error in fetchColis:', error);
@@ -351,7 +412,18 @@ export function MesColis({
 
   const handleWhatsApp = (colisItem: Colis) => {
     if (colisItem.client?.telephone) {
-      const phoneNumber = colisItem.client.telephone.replace(/\D/g, '');
+      let phoneNumber = colisItem.client.telephone.replace(/\D/g, ''); // Remove all non-digits
+
+      // Handle Moroccan phone numbers
+      if (phoneNumber.startsWith('0')) {
+        // Remove leading 0 and add Moroccan country code
+        phoneNumber = '212' + phoneNumber.substring(1);
+      } else if (phoneNumber.length === 9 && !phoneNumber.startsWith('212')) {
+        // If it's 9 digits without country code, add Moroccan country code
+        phoneNumber = '212' + phoneNumber;
+      }
+      // If it already has country code or is in correct format, use as is
+
       const message = `Bonjour, concernant votre colis ${colisItem.id}`;
       window.open(`https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`, '_blank');
     }
@@ -359,7 +431,17 @@ export function MesColis({
 
   const handleSMS = (colisItem: Colis) => {
     if (colisItem.client?.telephone) {
-      const phoneNumber = colisItem.client.telephone.replace(/\D/g, '');
+      let phoneNumber = colisItem.client.telephone.replace(/\D/g, ''); // Remove all non-digits
+
+      // Handle Moroccan phone numbers
+      if (phoneNumber.startsWith('0')) {
+        // Remove leading 0 and add Moroccan country code
+        phoneNumber = '212' + phoneNumber.substring(1);
+      } else if (phoneNumber.length === 9 && !phoneNumber.startsWith('212')) {
+        // If it's 9 digits without country code, add Moroccan country code
+        phoneNumber = '212' + phoneNumber;
+      }
+
       const message = `Bonjour, concernant votre colis ${colisItem.id}`;
       window.open(`sms:${phoneNumber}?body=${encodeURIComponent(message)}`, '_blank');
     }
@@ -367,7 +449,12 @@ export function MesColis({
 
   const handleCall = (colisItem: Colis) => {
     if (colisItem.client?.telephone) {
-      window.open(`tel:${colisItem.client.telephone}`, '_blank');
+      let phoneNumber = colisItem.client.telephone;
+
+      // For calling, keep the original format but ensure it's clean
+      phoneNumber = phoneNumber.replace(/\s+/g, ''); // Remove spaces
+
+      window.open(`tel:${phoneNumber}`, '_blank');
     }
   };
 
