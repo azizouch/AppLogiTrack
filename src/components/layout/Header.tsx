@@ -1,16 +1,5 @@
 
 import { Search, Bell, User, Menu, X, LogOut, CheckCircle, XCircle, Settings, Check, Trash2, CheckCheck, Loader2, AlertCircle } from 'lucide-react';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -57,8 +46,28 @@ export function Header() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [showMobileNotifications, setShowMobileNotifications] = useState(false);
   const [showDesktopNotifications, setShowDesktopNotifications] = useState(false);
+  const [dismissedNotificationIds, setDismissedNotificationIds] = useState<string[]>([]);
+  const [confirmDeleteNotificationId, setConfirmDeleteNotificationId] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (!state.user?.id) {
+      setDismissedNotificationIds([]);
+      return;
+    }
 
+    try {
+      const stored = localStorage.getItem(`notificationDropdownDismissedIds_${state.user.id}`);
+      if (stored) {
+        const parsed = JSON.parse(stored) as string[];
+        if (Array.isArray(parsed)) {
+          setDismissedNotificationIds(parsed);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading dismissed notifications from localStorage:', error);
+      setDismissedNotificationIds([]);
+    }
+  }, [state.user?.id]);
 
   // Fetch notifications
   const fetchNotifications = async () => {
@@ -68,8 +77,9 @@ export function Header() {
       const { data, error } = await api.getNotifications(state.user.id);
 
       if (!error && data) {
-        setNotifications(data);
-        setUnreadCount(data.filter(n => !n.lu).length);
+        const filtered = data.filter(n => !dismissedNotificationIds.includes(n.id));
+        setNotifications(filtered);
+        setUnreadCount(filtered.filter(n => !n.lu).length);
       }
     } catch (error) {
       console.error('Error fetching notifications:', error);
@@ -116,20 +126,20 @@ export function Header() {
     }
   };
 
-  // Delete notification
-  const deleteNotification = async (notificationId: string) => {
-    try {
-      const { error } = await api.deleteNotification(notificationId);
-      if (!error) {
-        setNotifications(prev => prev.filter(notif => notif.id !== notificationId));
-        setUnreadCount(prev => {
-          const notification = notifications.find(n => n.id === notificationId);
-          return notification && !notification.lu ? Math.max(0, prev - 1) : prev;
-        });
-      }
-    } catch (error) {
-      // Silently handle error - user will see if deletion failed
+  // Dismiss notification from the dropdown only (do not delete from database)
+  const deleteNotification = (notificationId: string) => {
+    const notification = notifications.find(n => n.id === notificationId);
+    const nextDismissedIds = Array.from(new Set([...dismissedNotificationIds, notificationId]));
+    setDismissedNotificationIds(nextDismissedIds);
+    localStorage.setItem(
+      `notificationDropdownDismissedIds_${state.user?.id || 'guest'}`,
+      JSON.stringify(nextDismissedIds)
+    );
+    setNotifications(prev => prev.filter(notif => notif.id !== notificationId));
+    if (notification && !notification.lu) {
+      setUnreadCount(prev => Math.max(0, prev - 1));
     }
+    setConfirmDeleteNotificationId(null);
   };
 
   // Format relative time
@@ -157,7 +167,7 @@ export function Header() {
       const interval = setInterval(fetchNotifications, 30000);
       return () => clearInterval(interval);
     }
-  }, [state.user?.id, state.user?.role]);
+  }, [state.user?.id, state.user?.role, dismissedNotificationIds]);
 
   // Force close logout dialog when component unmounts (during logout)
   useEffect(() => {
@@ -357,40 +367,43 @@ export function Header() {
                                   <p className={`text-sm ${!notification.lu ? 'font-medium' : ''}`}>
                                     {notification.titre}
                                   </p>
-                                  <AlertDialog>
-                                    <AlertDialogTrigger asChild>
+                                  <Popover
+                                    open={confirmDeleteNotificationId === notification.id}
+                                    onOpenChange={(open) => setConfirmDeleteNotificationId(open ? notification.id : null)}
+                                  >
+                                    <PopoverTrigger asChild>
                                       <Button
                                         variant="ghost"
                                         size="icon"
                                         className="h-6 w-6 text-muted-foreground hover:text-foreground ml-2"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          e.preventDefault();
-                                        }}
+                                        onClick={(e) => e.stopPropagation()}
                                       >
                                         <Trash2 className="h-3.5 w-3.5" />
                                         <span className="sr-only">Supprimer</span>
                                       </Button>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                      <AlertDialogHeader>
-                                        <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                          Êtes-vous sûr de vouloir supprimer cette notification ?
-                                          Cette action est irréversible.
-                                        </AlertDialogDescription>
-                                      </AlertDialogHeader>
-                                      <AlertDialogFooter>
-                                        <AlertDialogCancel>Annuler</AlertDialogCancel>
-                                        <AlertDialogAction
-                                          onClick={() => deleteNotification(notification.id)}
-                                          className="bg-red-600 hover:bg-red-700"
-                                        >
-                                          Supprimer
-                                        </AlertDialogAction>
-                                      </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                  </AlertDialog>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-56 p-3" align="end">
+                                      <div className="space-y-2">
+                                        <p className="text-sm font-medium text-foreground">Supprimer cette notification ?</p>
+                                        <div className="flex justify-end gap-2">
+                                          <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => setConfirmDeleteNotificationId(null)}
+                                          >
+                                            Annuler
+                                          </Button>
+                                          <Button
+                                            variant="destructive"
+                                            size="sm"
+                                            onClick={() => deleteNotification(notification.id)}
+                                          >
+                                            Supprimer
+                                          </Button>
+                                        </div>
+                                      </div>
+                                    </PopoverContent>
+                                  </Popover>
                                 </div>
                                 <p className="text-xs text-muted-foreground line-clamp-2">
                                   {notification.message}
@@ -562,40 +575,43 @@ export function Header() {
                                   <p className={`text-sm ${!notification.lu ? 'font-medium' : ''}`}>
                                     {notification.titre}
                                   </p>
-                                  <AlertDialog>
-                                    <AlertDialogTrigger asChild>
+                                  <Popover
+                                    open={confirmDeleteNotificationId === notification.id}
+                                    onOpenChange={(open) => setConfirmDeleteNotificationId(open ? notification.id : null)}
+                                  >
+                                    <PopoverTrigger asChild>
                                       <Button
                                         variant="ghost"
                                         size="icon"
                                         className="h-6 w-6 text-muted-foreground hover:text-foreground ml-2"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          e.preventDefault();
-                                        }}
+                                        onClick={(e) => e.stopPropagation()}
                                       >
                                         <Trash2 className="h-3.5 w-3.5" />
                                         <span className="sr-only">Supprimer</span>
                                       </Button>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                      <AlertDialogHeader>
-                                        <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                          Êtes-vous sûr de vouloir supprimer cette notification ?
-                                          Cette action est irréversible.
-                                        </AlertDialogDescription>
-                                      </AlertDialogHeader>
-                                      <AlertDialogFooter>
-                                        <AlertDialogCancel>Annuler</AlertDialogCancel>
-                                        <AlertDialogAction
-                                          onClick={() => deleteNotification(notification.id)}
-                                          className="bg-red-600 hover:bg-red-700"
-                                        >
-                                          Supprimer
-                                        </AlertDialogAction>
-                                      </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                  </AlertDialog>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-56 p-3" align="end">
+                                      <div className="space-y-2">
+                                        <p className="text-sm font-medium text-foreground">Supprimer cette notification ?</p>
+                                        <div className="flex justify-end gap-2">
+                                          <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => setConfirmDeleteNotificationId(null)}
+                                          >
+                                            Annuler
+                                          </Button>
+                                          <Button
+                                            variant="destructive"
+                                            size="sm"
+                                            onClick={() => deleteNotification(notification.id)}
+                                          >
+                                            Supprimer
+                                          </Button>
+                                        </div>
+                                      </div>
+                                    </PopoverContent>
+                                  </Popover>
                                 </div>
                                 <p className="text-xs text-muted-foreground line-clamp-2">
                                   {notification.message}
