@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { LoginPage } from '@/components/auth/LoginPage';
 import { LogiTrackLoader } from '@/components/ui/logitrack-loader';
@@ -43,6 +44,14 @@ export function ProtectedRoute({ children, roles }: ProtectedRouteProps) {
             <p className="text-gray-600 dark:text-gray-400 text-lg">
               Vous n'avez pas les permissions nécessaires pour accéder à cette page.
             </p>
+            <div className="mt-6">
+              <Link
+                to="/"
+                className="inline-flex items-center justify-center rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                Return to Home
+              </Link>
+            </div>
             {process.env.NODE_ENV === 'development' && (
               <div className="mt-4 text-sm text-gray-500">
                 <p>Required roles: {roles.join(', ')}</p>

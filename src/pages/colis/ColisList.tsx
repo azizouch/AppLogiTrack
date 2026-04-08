@@ -612,14 +612,23 @@ export function ColisList() {
                   <div class="table-cell" style="flex: 0.9; min-width: 85px;">${colisItem.date_mise_a_jour ? new Date(colisItem.date_mise_a_jour).toLocaleDateString('fr-FR') : ''}</div>
                   <div class="table-cell" style="flex: 1; min-width: 100px;">${colisItem.livreur ? `${colisItem.livreur.prenom || ''} ${colisItem.livreur.nom}`.trim() : 'Non assigné'}</div>
                   <div class="table-cell" style="flex: 1.2; min-width: 120px;">${colisItem.notes || ''}</div>
-                </div>5; min-width: 100px;"><strong>TOTAL</strong></div>
+                </div>
+              `).join('')}
+              <div class="table-row">
+                <div class="table-cell" style="flex: 0.9; min-width: 100px;"><strong>TOTAL</strong></div>
+                <div class="table-cell" style="flex: 1;"></div>
+                <div class="table-cell" style="flex: 0.9;"></div>
+                <div class="table-cell" style="flex: 1;"></div>
+                <div class="table-cell" style="flex: 0.9;"></div>
+                <div class="table-cell" style="flex: 0.8;"></div>
                 <div class="table-cell price" style="flex: 0.7;"><strong>${totalPrix.toFixed(2)}</strong></div>
                 <div class="table-cell price" style="flex: 0.7;"><strong>${totalFrais.toFixed(2)}</strong></div>
                 <div class="table-cell price" style="flex: 0.8;"><strong>${totalGeneral.toFixed(2)}</strong></div>
-                <div class="table-cell" style="flex: 2.5x: 0.9;"><strong>${totalPrix.toFixed(2)}</strong></div>
-                <div class="table-cell price" style="flex: 0.9;"><strong>${totalFrais.toFixed(2)}</strong></div>
-                <div class="table-cell price" style="flex: 0.9;"><strong>${totalGeneral.toFixed(2)}</strong></div>
-                <div class="table-cell" style="flex: 2.2;"></div>
+                <div class="table-cell" style="flex: 0.9;"></div>
+                <div class="table-cell" style="flex: 0.9;"></div>
+                <div class="table-cell" style="flex: 1;"></div>
+                <div class="table-cell" style="flex: 1.2;"></div>
+              </div>
               </div>
             </div>
           </div>
@@ -883,7 +892,7 @@ export function ColisList() {
                         onCheckedChange={(checked) => handleSelectColis(colisItem.id, checked as boolean)}
                       />
                     </TableCell>
-                    <TableCell className="font-mono text-sm text-gray-900 dark:text-gray-100">{colisItem.id}</TableCell>
+                    <TableCell className="text-sm text-gray-900 dark:text-gray-100">{colisItem.id}</TableCell>
                     <TableCell className="text-gray-900 dark:text-gray-100">{colisItem.client?.nom}</TableCell>
                     <TableCell className="text-gray-900 dark:text-gray-100">{colisItem.client?.telephone || '-'}</TableCell>
                     <TableCell className="text-gray-900 dark:text-gray-100">{colisItem.entreprise?.nom}</TableCell>

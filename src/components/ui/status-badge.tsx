@@ -1,16 +1,16 @@
 import { Badge } from "@/components/ui/badge";
 import { getStatusBadgeClass } from "@/lib/utils";
+import { Statut } from "@/types";
 
 interface StatusBadgeProps {
-  statut: string;
-  statuts: Array<{
-    nom: string;
-    couleur: string;
-  }>;
+  statut?: string;
+  status?: string;
+  statuts?: Statut[];
 }
 
-export function StatusBadge({ statut, statuts }: StatusBadgeProps) {
-  const statutData = statuts.find(s => s.nom === statut);
+export function StatusBadge({ statut, status, statuts }: StatusBadgeProps) {
+  const currentStatus = statut ?? status ?? 'Inconnu';
+  const statutData = statuts?.find(s => s.nom === currentStatus);
 
   if (statutData && statutData.couleur) {
     const badgeClass = getStatusBadgeClass(statutData.couleur);
@@ -22,5 +22,9 @@ export function StatusBadge({ statut, statuts }: StatusBadgeProps) {
   }
 
   // Fallback for unknown status
-  return <Badge className="bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300 text-xs py-1 px-3 hover:bg-transparent">{statut}</Badge>;
+  return (
+    <Badge className="bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300 text-xs py-1 px-3 hover:bg-transparent">
+      {currentStatus}
+    </Badge>
+  );
 }

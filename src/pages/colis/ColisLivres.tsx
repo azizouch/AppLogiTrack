@@ -356,7 +356,7 @@ export function ColisLivres() {
               ) : colis.length > 0 ? (
                 colis.map((colisItem) => (
                   <TableRow key={colisItem.id} className="border-b border-gray-200 dark:border-gray-600 bg-white dark:bg-transparent hover:bg-gray-50 dark:hover:bg-gray-700/20">
-                    <TableCell className="font-mono text-sm text-gray-900 dark:text-gray-100">{colisItem.id}</TableCell>
+                    <TableCell className="text-sm text-gray-900 dark:text-gray-100">{colisItem.id}</TableCell>
                     <TableCell className="text-gray-900 dark:text-gray-100">{colisItem.client?.nom}</TableCell>
                     <TableCell className="text-gray-900 dark:text-gray-100">{colisItem.entreprise?.nom}</TableCell>
                     <TableCell className="text-gray-900 dark:text-gray-100">

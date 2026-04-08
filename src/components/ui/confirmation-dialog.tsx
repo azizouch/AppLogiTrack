@@ -60,15 +60,15 @@ export function ConfirmationDialog({
           {description}
         </AlertDialogDescription>
         <AlertDialogFooter className="gap-2">
-          <AlertDialogCancel className="bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-300 dark:border-gray-600">
+          <AlertDialogCancel className="border-0 text-gray-900 dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-3xl shadow-xl">
             {cancelText}
           </AlertDialogCancel>
           <AlertDialogAction
             onClick={handleConfirm}
             className={`${
               variant === 'destructive'
-                ? 'bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800 text-white'
-                : 'bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white'
+                ? 'border-0 bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800 text-white rounded-3xl shadow-xl'
+                : 'border-0 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white rounded-3xl shadow-xl'
             }`}
           >
             {confirmText}

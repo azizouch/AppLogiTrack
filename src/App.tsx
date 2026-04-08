@@ -21,6 +21,7 @@ import { MesColisAnnules } from "@/pages/colis/MesColisAnnules";
 import { ColisRelance } from "@/pages/colis/ColisRelance";
 import { RelanceAutreClient } from "@/pages/colis/RelanceAutreClient";
 import { FilteredColisView } from "@/pages/colis/FilteredColisView";
+import { MesFilteredColisView } from "@/pages/colis/MesFilteredColisView";
 import { Profile } from "@/pages/profile/Profile";
 import { Settings } from "@/pages/profile/Settings";
 import { Distribution } from "@/pages/bons/Distribution";
@@ -73,56 +74,56 @@ const App = () => (
 
           {/* Colis Routes */}
           <Route path="/colis" element={
-            <ProtectedRoute>
+            <ProtectedRoute roles={["Admin", "Gestionnaire"]}>
               <Layout>
                 <ColisList />
               </Layout>
             </ProtectedRoute>
           } />
           <Route path="/colis/ajouter" element={
-            <ProtectedRoute>
+            <ProtectedRoute roles={["Admin", "Gestionnaire"]}>
               <Layout>
                 <AddColis />
               </Layout>
             </ProtectedRoute>
           } />
           <Route path="/colis/:id" element={
-            <ProtectedRoute>
+            <ProtectedRoute roles={["Admin", "Gestionnaire"]}>
               <Layout>
                 <ViewColis />
               </Layout>
             </ProtectedRoute>
           } />
           <Route path="/colis/:id/modifier" element={
-            <ProtectedRoute>
+            <ProtectedRoute roles={["Admin", "Gestionnaire"]}>
               <Layout>
                 <UpdateColis />
               </Layout>
             </ProtectedRoute>
           } />
           <Route path="/colis/livres" element={
-            <ProtectedRoute>
+            <ProtectedRoute roles={["Admin", "Gestionnaire"]}>
               <Layout>
                 <ColisLivres />
               </Layout>
             </ProtectedRoute>
           } />
           <Route path="/colis/refuses" element={
-            <ProtectedRoute>
+            <ProtectedRoute roles={["Admin", "Gestionnaire"]}>
               <Layout>
                 <ColisRefuses />
               </Layout>
             </ProtectedRoute>
           } />
           <Route path="/colis/annules" element={
-            <ProtectedRoute>
+            <ProtectedRoute roles={["Admin", "Gestionnaire"]}>
               <Layout>
                 <ColisAnnules />
               </Layout>
             </ProtectedRoute>
           } />
           <Route path="/colis/filtered" element={
-            <ProtectedRoute>
+            <ProtectedRoute roles={["Admin", "Gestionnaire"]}>
               <Layout>
                 <FilteredColisView />
               </Layout>
@@ -131,30 +132,37 @@ const App = () => (
 
           {/* Livreur Colis Routes */}
           <Route path="/colis/mes-colis" element={
-            <ProtectedRoute>
+            <ProtectedRoute roles={["Livreur"]}>
               <Layout>
                 <MesColis />
               </Layout>
             </ProtectedRoute>
           } />
           <Route path="/colis/mes-livres" element={
-            <ProtectedRoute>
+            <ProtectedRoute roles={["Livreur"]}>
               <Layout>
                 <MesColisLivres />
               </Layout>
             </ProtectedRoute>
           } />
           <Route path="/colis/mes-refuses" element={
-            <ProtectedRoute>
+            <ProtectedRoute roles={["Livreur"]}>
               <Layout>
                 <MesColisRefuses />
               </Layout>
             </ProtectedRoute>
           } />
           <Route path="/colis/mes-annules" element={
-            <ProtectedRoute>
+            <ProtectedRoute roles={["Livreur"]}>
               <Layout>
                 <MesColisAnnules />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/colis/mes-filtered" element={
+            <ProtectedRoute roles={["Livreur"]}>
+              <Layout>
+                <MesFilteredColisView />
               </Layout>
             </ProtectedRoute>
           } />

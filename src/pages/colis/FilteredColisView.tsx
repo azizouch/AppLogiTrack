@@ -590,7 +590,7 @@ export function FilteredColisView() {
                 ) : colis.length > 0 ? (
                   colis.map((colisItem) => (
                     <TableRow key={colisItem.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-200 dark:border-gray-600 bg-white dark:bg-transparent">
-                      <TableCell className="font-mono text-sm text-gray-900 dark:text-gray-100">{colisItem.id}</TableCell>
+                      <TableCell className="text-sm text-gray-900 dark:text-gray-100">{colisItem.id}</TableCell>
                       <TableCell className="text-gray-900 dark:text-gray-100">{colisItem.client?.nom}</TableCell>
                       <TableCell className="text-gray-900 dark:text-gray-100">{colisItem.entreprise?.nom}</TableCell>
                       <TableCell><StatusBadge statut={colisItem.statut} statuts={statuts} /></TableCell>
@@ -677,7 +677,7 @@ export function FilteredColisView() {
 
       {/* Colis Details Modal */}
       <Dialog open={showDetailsModal} onOpenChange={setShowDetailsModal}>
-        <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-2xl lg:max-w-4xl xl:max-w-5xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-xl flex items-center">
               <Package className="mr-2 h-5 w-5" />
@@ -699,7 +699,7 @@ export function FilteredColisView() {
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
                   <div>
                     <h4 className="text-xs font-medium text-muted-foreground">ID Colis</h4>
-                    <p className="font-mono bg-muted p-1 rounded text-xs">{selectedColis.id}</p>
+                    <p className="bg-muted p-1 rounded text-xs">{selectedColis.id}</p>
                   </div>
                   <div>
                     <h4 className="text-xs font-medium text-muted-foreground">Date</h4>
@@ -808,7 +808,7 @@ export function FilteredColisView() {
                   <MessageCircle className="mr-2 h-4 w-4" />
                   Contacts Vendeurs
                 </h3>
-                <div className="space-y-3">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   {/* Vendeur B */}
                   <div className="space-y-2">
                     <h4 className="text-sm font-medium text-gray-900 dark:text-white">Vendeur B</h4>

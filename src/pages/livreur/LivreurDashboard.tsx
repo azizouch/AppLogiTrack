@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { api } from '@/lib/supabase';
+import { isDateTodayLocal, isDateThisMonthLocal } from '@/lib/utils';
 import { CircularStats } from '@/components/ui/circular-stats';
 
 import { useToast } from '@/hooks/use-toast';
@@ -89,6 +90,16 @@ interface LivreurStats {
   livraisonsCeMois: number;
 }
 
+const isDeliveredStatus = (statut?: string) => {
+  const normalized = (statut || '').toLowerCase().trim();
+  return normalized === 'livré' || normalized === 'livre';
+};
+
+const isReturnedStatus = (statut?: string) => {
+  const normalized = (statut || '').toLowerCase().trim();
+  return normalized === 'retourné' || normalized === 'retourne' || normalized === 'retour';
+};
+
 export function LivreurDashboard() {
   const { state } = useAuth();
   const { toast } = useToast();
@@ -145,9 +156,6 @@ export function LivreurDashboard() {
         }
 
         if (colisData) {
-          const today = new Date();
-          const todayStr = today.toISOString().split('T')[0];
-
           // Calculate statistics
           const aLivrerAujourdhui = colisData.filter(colis =>
             colis.statut === 'en_attente' || colis.statut === 'pris_en_charge'
@@ -158,20 +166,19 @@ export function LivreurDashboard() {
           ).length;
 
           const livresAujourdhui = colisData.filter(colis =>
-            colis.statut === 'Livré' &&
-            colis.date_mise_a_jour?.startsWith(todayStr)
+            isDeliveredStatus(colis.statut) &&
+            isDateTodayLocal(colis.date_mise_a_jour)
           ).length;
 
           const retournes = colisData.filter(colis =>
-            colis.statut === 'Retourné'
+            isReturnedStatus(colis.statut)
           ).length;
 
-          // Get today's colis items for the activity list
           const todayItems = colisData.filter(colis =>
             colis.statut === 'en_attente' ||
             colis.statut === 'pris_en_charge' ||
             colis.statut === 'en_cours' ||
-            (colis.statut === 'Livré' && colis.date_mise_a_jour?.startsWith(todayStr))
+            (isDeliveredStatus(colis.statut) && isDateTodayLocal(colis.date_mise_a_jour))
           );
 
           setTodayColisItems(todayItems);
@@ -181,11 +188,26 @@ export function LivreurDashboard() {
             enCours,
             livresAujourdhui,
             retournes,
-            livraisonsATemps: livresAujourdhui, // Use delivered today as on-time deliveries
+            livraisonsATemps: livresAujourdhui,
             colisEnCours: enCours,
             colisRetournes: retournes,
-            progressionJournaliere: livresAujourdhui + enCours, // Progress = delivered + in progress
-            livraisonsCeMois: colisData.filter(colis => colis.statut === 'Livré').length
+            progressionJournaliere: livresAujourdhui + enCours,
+            livraisonsCeMois: colisData.filter(colis =>
+              isDeliveredStatus(colis.statut) && isDateThisMonthLocal(colis.date_mise_a_jour)
+            ).length
+          });
+        } else {
+          setTodayColisItems([]);
+          setStats({
+            aLivrerAujourdhui: 0,
+            enCours: 0,
+            livresAujourdhui: 0,
+            retournes: 0,
+            livraisonsATemps: 0,
+            colisEnCours: 0,
+            colisRetournes: 0,
+            progressionJournaliere: 0,
+            livraisonsCeMois: 0
           });
         }
 
@@ -229,7 +251,7 @@ export function LivreurDashboard() {
 
   // Handle card click navigation
   const handleCardClick = (status: string) => {
-    navigate(`/colis/filtered?status=${status}`);
+    navigate(`/colis/mes-filtered?status=${status}`);
   };
 
   const statsCards = [
@@ -308,7 +330,7 @@ export function LivreurDashboard() {
         {statsCards.map((stat) => (
           <Card
             key={stat.title}
-            className={`${stat.bgColor} border-l-4 border-t border-r border-b ${stat.borderColor} shadow-lg cursor-pointer hover:shadow-xl transition-shadow duration-200`}
+            className={`${stat.bgColor} border-l border-t-4 border-r border-b ${stat.borderColor} shadow-lg cursor-pointer hover:shadow-xl transition-shadow duration-200`}
             onClick={() => handleCardClick(stat.status)}
           >
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -323,6 +345,56 @@ export function LivreurDashboard() {
             </CardContent>
           </Card>
         ))}
+      </div>
+
+      {/* Quick links to livreur bons pages */}
+      <div className="mt-4">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg">Mes bons</CardTitle>
+          </CardHeader>
+
+          <CardContent>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              {/* BLUE */}
+              <button
+                className="flex justify-between items-center w-full sm:w-auto 
+                          bg-gradient-to-r from-blue-400 via-blue-500 to-blue-700 
+                          text-white px-3 py-2 rounded-lg border-l-4 border-blue-700"
+                onClick={() => navigate('/bons/mes-distribution')}
+              >
+                <span>Bons Distribution</span>
+                <Badge className="ml-2 bg-white text-black dark:bg-gray-700">
+                  {bonStats.distribution?.total ?? 0}
+                </Badge>
+              </button>
+              {/* GREEN */}
+              <button
+                className="flex justify-between items-center w-full sm:w-auto 
+                          bg-gradient-to-r from-green-400 via-green-500 to-green-700 
+                          text-white px-3 py-2 rounded-lg border-l-4 border-green-700"
+                onClick={() => navigate('/bons/mes-paiement')}
+              >
+                <span>Bons Paiement</span>
+                <Badge className="ml-2 bg-white text-black dark:bg-gray-700">
+                  {bonStats.paiement?.total ?? 0}
+                </Badge>
+              </button>
+              {/* RED */}
+              <button
+                className="flex justify-between items-center w-full sm:w-auto 
+                          bg-gradient-to-r from-red-400 via-red-500 to-red-700 
+                          text-white px-3 py-2 rounded-lg border-l-4 border-red-700"
+                onClick={() => navigate('/bons/mes-retour')}
+              >
+                <span>Bons Retour</span>
+                <Badge className="ml-2 bg-white text-black dark:bg-gray-700">
+                  {bonStats.retour?.total ?? 0}
+                </Badge>
+              </button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Three Column Layout */}
@@ -446,30 +518,6 @@ export function LivreurDashboard() {
           data={bonStats.paiement}
           loading={bonStatsLoading}
         />
-      </div>
-      {/* Quick links to livreur bons pages */}
-      <div className="mt-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Mes bons</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex gap-2">
-              <button className="flex items-center gap-2 bg-blue-600 text-white px-3 py-2 rounded" onClick={() => navigate('/bons/mes-distribution')}>
-                Bons Distribution
-                <Badge className="ml-2 bg-white text-black dark:bg-gray-700">{bonStats.distribution?.total ?? 0}</Badge>
-              </button>
-              <button className="flex items-center gap-2 bg-green-600 text-white px-3 py-2 rounded" onClick={() => navigate('/bons/mes-paiement')}>
-                Bons Paiement
-                <Badge className="ml-2 bg-white text-black dark:bg-gray-700">{bonStats.paiement?.total ?? 0}</Badge>
-              </button>
-              <button className="flex items-center gap-2 bg-red-600 text-white px-3 py-2 rounded" onClick={() => navigate('/bons/mes-retour')}>
-                Bons Retour
-                <Badge className="ml-2 bg-white text-black dark:bg-gray-700">{bonStats.retour?.total ?? 0}</Badge>
-              </button>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </div>
   );

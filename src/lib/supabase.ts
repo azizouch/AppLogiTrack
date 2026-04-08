@@ -1138,7 +1138,7 @@ export const api = {
   getStatuts: async (type?: string) => {
     let query = supabase
       .from('statuts')
-      .select('id, nom, type, couleur, ordre, actif')
+      .select('id, nom, type, couleur, ordre, actif, created_at')
       .eq('actif', true)
       .order('ordre', { ascending: true })
 
@@ -1477,6 +1477,19 @@ export const api = {
     const { data, error } = await supabase
       .from('colis')
       .update(updates)
+      .eq('id', id)
+      .select()
+      .single()
+    return { data, error }
+  },
+
+  updateColisStatus: async (id: string, newStatus: string) => {
+    const { data, error } = await supabase
+      .from('colis')
+      .update({
+        statut: newStatus,
+        date_mise_a_jour: new Date().toISOString()
+      })
       .eq('id', id)
       .select()
       .single()

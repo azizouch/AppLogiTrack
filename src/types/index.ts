@@ -54,6 +54,16 @@ export interface Colis {
   prix: number;
   frais: number;
   adresse_livraison?: string;
+  date_livraison_prevue?: string;
+  numero_colis?: string;
+  poids?: number;
+  nombre_colis?: number;
+  valeur_colis?: number;
+  client_nom?: string;
+  client_prenom?: string;
+  client_telephone?: string;
+  client_email?: string;
+  commentaires?: string;
   client?: Client;
   entreprise?: Entreprise;
   livreur?: User;

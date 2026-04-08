@@ -5,6 +5,33 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+const parseDateString = (dateString?: string | null) => {
+  if (!dateString) return null;
+  const date = new Date(dateString);
+  return Number.isNaN(date.getTime()) ? null : date;
+};
+
+export const isDateTodayLocal = (dateString?: string | null) => {
+  const date = parseDateString(dateString);
+  if (!date) return false;
+  const now = new Date();
+  return (
+    date.getFullYear() === now.getFullYear() &&
+    date.getMonth() === now.getMonth() &&
+    date.getDate() === now.getDate()
+  );
+};
+
+export const isDateThisMonthLocal = (dateString?: string | null) => {
+  const date = parseDateString(dateString);
+  if (!date) return false;
+  const now = new Date();
+  return (
+    date.getFullYear() === now.getFullYear() &&
+    date.getMonth() === now.getMonth()
+  );
+};
+
 export const getStatusBadgeClass = (couleur: string) => {
   const badgeColorMap: { [key: string]: string } = {
     blue: 'text-blue-300 border-blue-300 bg-transparent dark:text-blue-200',
