@@ -1,19 +1,19 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Package, Search, Filter, RefreshCw, Phone, MessageCircle, MapPin, Building, Ban, Info, Eye, Mail, House, Building2, Calendar, X } from 'lucide-react';
+import { Package, Search, Filter, RefreshCw, Phone, MessageCircle, MapPin, Building, Ban, Info, Eye, Mail, House, Building2, Calendar, X, Clock, History } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+
 import { StatusBadge } from '@/components/ui/status-badge';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
+import { useColisModals } from '@/hooks/useColisModals';
 import { api, supabase } from '@/lib/supabase';
 import { Colis } from '@/types';
-import { useToast } from '@/hooks/use-toast';
+import { ColisDetailsModal, ColisReclamationModal, ColisSuiviModal, handleWhatsApp, handleSMS, handleCall } from '@/components/colis';
 
 export function MesColisAnnules() {
   const navigate = useNavigate();
@@ -33,10 +33,18 @@ export function MesColisAnnules() {
   const [totalCount, setTotalCount] = useState(0);
 
   // Modal states
-  const [selectedColis, setSelectedColis] = useState<Colis | null>(null);
-  const [showReclamationModal, setShowReclamationModal] = useState(false);
-  const [showDetailsModal, setShowDetailsModal] = useState(false);
-  const [reclamationText, setReclamationText] = useState('');
+  const {
+    selectedColis,
+    showReclamationModal,
+    showDetailsModal,
+    showSuiviModal,
+    setShowReclamationModal,
+    setShowDetailsModal,
+    setShowSuiviModal,
+    handleReclamation,
+    handleViewDetails,
+    handleSuivi,
+  } = useColisModals();
   const [statuts, setStatuts] = useState<any[]>([]);
 
   const fetchColis = async (isRefresh = false) => {
@@ -157,80 +165,6 @@ export function MesColisAnnules() {
   const hasActiveFilters = searchTerm || sortBy !== 'recent' || dateFilter !== 'toutes';
   const totalPages = Math.ceil(totalCount / entriesPerPage);
 
-  // Modal handlers
-  const handleReclamation = (colisItem: Colis) => {
-    setSelectedColis(colisItem);
-    setShowReclamationModal(true);
-  };
-
-  const handleWhatsApp = (colisItem: Colis) => {
-    if (colisItem.client?.telephone) {
-      const phoneNumber = colisItem.client.telephone.replace(/\D/g, '');
-      const message = `Bonjour, concernant votre colis ${colisItem.id}`;
-      window.open(`https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`, '_blank');
-    }
-  };
-
-  const handleSMS = (colisItem: Colis) => {
-    if (colisItem.client?.telephone) {
-      const phoneNumber = colisItem.client.telephone.replace(/\D/g, '');
-      const message = `Bonjour, concernant votre colis ${colisItem.id}`;
-      window.open(`sms:${phoneNumber}?body=${encodeURIComponent(message)}`, '_blank');
-    }
-  };
-
-  const handleCall = (colisItem: Colis) => {
-    if (colisItem.client?.telephone) {
-      window.open(`tel:${colisItem.client.telephone}`, '_blank');
-    }
-  };
-
-  const handleViewDetails = (colisItem: Colis) => {
-    setSelectedColis(colisItem);
-    setShowDetailsModal(true);
-  };
-
-  const submitReclamation = async () => {
-    if (!selectedColis || !reclamationText.trim() || !state.user) return;
-
-    try {
-      // Get admin and gestionnaire users to notify
-      const { data: adminUsers, error: adminError } = await api.getAdminAndGestionnaireUsers();
-
-      if (adminError) {
-        // Silently handle error
-      }
-
-      // Create notifications for each admin/gestionnaire
-      if (adminUsers && adminUsers.length > 0) {
-        const notificationPromises = adminUsers.map(admin =>
-          api.createNotification({
-            utilisateur_id: admin.id,
-            titre: 'Nouvelle réclamation',
-            message: `Le livreur ${state.user.prenom} ${state.user.nom} a envoyé une réclamation pour le colis ${selectedColis.id}: "${reclamationText.substring(0, 100)}${reclamationText.length > 100 ? '...' : ''}"`,
-            lu: false,
-            type: 'reclamation'
-          })
-        );
-
-        await Promise.all(notificationPromises);
-      }
-
-      toast({
-        title: 'Réclamation envoyée',
-        description: 'Votre réclamation a été envoyée avec succès',
-      });
-      setShowReclamationModal(false);
-      setReclamationText('');
-    } catch (error) {
-      console.error('Error submitting reclamation:', error);
-      toast({
-        title: 'Erreur',
-        description: 'Impossible d\'envoyer la réclamation',
-        variant: 'destructive',
-      });
-    }
-  };
 
   return (
     <div className="space-y-6">
@@ -436,6 +370,14 @@ export function MesColisAnnules() {
                         variant="ghost"
                         size="sm"
                         className="px-3 py-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/40 border border-blue-200 dark:border-blue-800"
+                        onClick={() => handleSuivi(colisItem)}
+                      >
+                        <History className="h-4 w-4 text-blue-600" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="px-3 py-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/40 border border-blue-200 dark:border-blue-800"
                         onClick={() => handleReclamation(colisItem)}
                       >
                         <Info className="h-4 w-4 text-blue-600" />
@@ -526,111 +468,25 @@ export function MesColisAnnules() {
         </div>
       )}
 
-      {/* Réclamation Modal */}
-      <Dialog open={showReclamationModal} onOpenChange={setShowReclamationModal}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Envoyer une réclamation</DialogTitle>
-            <DialogDescription>
-              Décrivez votre réclamation concernant ce colis.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="colis-id" className="text-sm font-medium">
-                Colis ID
-              </Label>
-              <div className="text-sm text-muted-foreground">
-                {selectedColis?.id}
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="client-name" className="text-sm font-medium">
-                Client
-              </Label>
-              <div className="text-sm text-muted-foreground">
-                {selectedColis?.client?.nom}
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="reclamation" className="text-sm font-medium">
-                Réclamation
-              </Label>
-              <Textarea
-                id="reclamation"
-                placeholder="Décrivez votre réclamation..."
-                value={reclamationText}
-                onChange={(e) => setReclamationText(e.target.value)}
-                className="min-h-[100px]"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowReclamationModal(false)}>
-              Annuler
-            </Button>
-            <Button onClick={submitReclamation} disabled={!reclamationText.trim()}>
-              Envoyer
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ColisReclamationModal
+        open={showReclamationModal}
+        onOpenChange={setShowReclamationModal}
+        colis={selectedColis}
+      />
 
-      {/* Details Modal */}
-      <Dialog open={showDetailsModal} onOpenChange={setShowDetailsModal}>
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
-            <DialogTitle>Détails du colis</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            {selectedColis && (
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">ID Colis</Label>
-                  <div className="text-sm">{selectedColis.id}</div>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Statut</Label>
-                  <div className="text-sm"><StatusBadge statut={selectedColis.statut} statuts={statuts} /></div>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Client</Label>
-                  <div className="text-sm">{selectedColis.client?.nom || 'N/A'}</div>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Téléphone</Label>
-                  <div className="text-sm">{selectedColis.client?.telephone || 'N/A'}</div>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Entreprise</Label>
-                  <div className="text-sm">{selectedColis.entreprise?.nom || 'N/A'}</div>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Prix</Label>
-                  <div className="text-sm">{selectedColis.prix ? `${selectedColis.prix} DH` : '0 DH'}</div>
-                </div>
-                <div className="space-y-2 col-span-2">
-                  <Label className="text-sm font-medium">Adresse de livraison</Label>
-                  <div className="text-sm">{selectedColis.adresse_livraison || 'N/A'}</div>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Date de création</Label>
-                  <div className="text-sm">{new Date(selectedColis.date_creation).toLocaleDateString('fr-FR')}</div>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Date de mise à jour</Label>
-                  <div className="text-sm">{selectedColis.date_mise_a_jour ? new Date(selectedColis.date_mise_a_jour).toLocaleDateString('fr-FR') : 'N/A'}</div>
-                </div>
-              </div>
-            )}
-          </div>
-          <DialogFooter>
-            <Button onClick={() => setShowDetailsModal(false)}>
-              Fermer
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ColisDetailsModal
+        open={showDetailsModal}
+        onOpenChange={setShowDetailsModal}
+        colis={selectedColis}
+        statuts={statuts}
+      />
+
+      <ColisSuiviModal
+        open={showSuiviModal}
+        onOpenChange={setShowSuiviModal}
+        colis={selectedColis}
+        statuts={statuts}
+      />
     </div>
   );
 }

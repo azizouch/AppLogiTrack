@@ -6,15 +6,14 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { useAuth } from '@/contexts/AuthContext';
-import { api, supabase } from '@/lib/supabase';
-
-import { Colis } from '@/types';
 import { useToast } from '@/hooks/use-toast';
+import { useColisModals } from '@/hooks/useColisModals';
+import { api, supabase } from '@/lib/supabase';
+import { Colis } from '@/types';
+
+import { ColisDetailsModal, ColisReclamationModal, ColisSuiviModal, handleWhatsApp, handleSMS, handleCall } from '@/components/colis';
 
 export function MesColisLivres() {
   const navigate = useNavigate();
@@ -34,10 +33,18 @@ export function MesColisLivres() {
   const [totalCount, setTotalCount] = useState(0);
 
   // Modal states
-  const [selectedColis, setSelectedColis] = useState<Colis | null>(null);
-  const [showReclamationModal, setShowReclamationModal] = useState(false);
-  const [showDetailsModal, setShowDetailsModal] = useState(false);
-  const [reclamationText, setReclamationText] = useState('');
+  const {
+    selectedColis,
+    showReclamationModal,
+    showDetailsModal,
+    showSuiviModal,
+    setShowReclamationModal,
+    setShowDetailsModal,
+    setShowSuiviModal,
+    handleSuivi,
+    handleReclamation,
+    handleViewDetails,
+  } = useColisModals();
   const [statuts, setStatuts] = useState<any[]>([]);
 
   const fetchColis = async (isRefresh = false) => {
@@ -195,79 +202,6 @@ export function MesColisLivres() {
   const totalPages = Math.ceil(totalCount / entriesPerPage);
 
   // Modal handlers
-  const handleReclamation = (colisItem: Colis) => {
-    setSelectedColis(colisItem);
-    setShowReclamationModal(true);
-  };
-
-  const handleWhatsApp = (colisItem: Colis) => {
-    if (colisItem.client?.telephone) {
-      const phoneNumber = colisItem.client.telephone.replace(/\D/g, '');
-      const message = `Bonjour, concernant votre colis ${colisItem.id}`;
-      window.open(`https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`, '_blank');
-    }
-  };
-
-  const handleSMS = (colisItem: Colis) => {
-    if (colisItem.client?.telephone) {
-      const phoneNumber = colisItem.client.telephone.replace(/\D/g, '');
-      const message = `Bonjour, concernant votre colis ${colisItem.id}`;
-      window.open(`sms:${phoneNumber}?body=${encodeURIComponent(message)}`, '_blank');
-    }
-  };
-
-  const handleCall = (colisItem: Colis) => {
-    if (colisItem.client?.telephone) {
-      window.open(`tel:${colisItem.client.telephone}`, '_blank');
-    }
-  };
-
-  const handleViewDetails = (colisItem: Colis) => {
-    setSelectedColis(colisItem);
-    setShowDetailsModal(true);
-  };
-
-  const submitReclamation = async () => {
-    if (!selectedColis || !reclamationText.trim() || !state.user) return;
-
-    try {
-      // Get admin and gestionnaire users to notify
-      const { data: adminUsers, error: adminError } = await api.getAdminAndGestionnaireUsers();
-
-      if (adminError) {
-        // Silently handle error
-      }
-
-      // Create notifications for each admin/gestionnaire
-      if (adminUsers && adminUsers.length > 0) {
-        const notificationPromises = adminUsers.map(admin =>
-          api.createNotification({
-            utilisateur_id: admin.id,
-            titre: 'Nouvelle réclamation',
-            message: `Le livreur ${state.user.prenom} ${state.user.nom} a envoyé une réclamation pour le colis ${selectedColis.id}: "${reclamationText.substring(0, 100)}${reclamationText.length > 100 ? '...' : ''}"`,
-            lu: false,
-            type: 'reclamation'
-          })
-        );
-
-        await Promise.all(notificationPromises);
-      }
-
-      toast({
-        title: 'Réclamation envoyée',
-        description: 'Votre réclamation a été envoyée avec succès',
-      });
-      setShowReclamationModal(false);
-      setReclamationText('');
-    } catch (error) {
-      console.error('Error submitting reclamation:', error);
-      toast({
-        title: 'Erreur',
-        description: 'Impossible d\'envoyer la réclamation',
-        variant: 'destructive',
-      });
-    }
-  };
 
   const getInitials = (text) => {
     return text
@@ -485,7 +419,7 @@ export function MesColisLivres() {
                         variant="ghost"
                         size="sm"
                         className="px-3 py-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/40 border border-blue-200 dark:border-blue-800"
-                        onClick={() => handleReclamation(colisItem)}
+                        onClick={() => handleSuivi(colisItem)}
                       >
                         <History className="h-4 w-4 text-blue-600" />
                       </Button>
@@ -583,250 +517,25 @@ export function MesColisLivres() {
         </div>
       )}
 
-      {/* Réclamation Modal */}
-      <Dialog open={showReclamationModal} onOpenChange={setShowReclamationModal}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Envoyer une réclamation</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <p className="text-sm text-muted-foreground">
-                Colis ID: <span className="font-medium text-foreground">{selectedColis?.id}</span>
-              </p>
-              <p className="text-sm text-muted-foreground">
-                Client: <span className="font-medium text-foreground">{selectedColis?.client?.nom}</span>
-              </p>
-            </div>
-            <Textarea
-              placeholder="Décrivez votre réclamation ici..."
-              value={reclamationText}
-              onChange={(e) => setReclamationText(e.target.value)}
-              rows={5}
-            />
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowReclamationModal(false)}>
-              Annuler
-            </Button>
-            <Button onClick={submitReclamation} disabled={!reclamationText.trim()}>
-              <Send className="mr-2 h-5 w-5" />
-              Envoyer
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ColisReclamationModal
+        open={showReclamationModal}
+        onOpenChange={setShowReclamationModal}
+        colis={selectedColis}
+      />
 
-      {/* Colis Details Modal */}
-      <Dialog open={showDetailsModal} onOpenChange={setShowDetailsModal}>
-        <DialogContent className="sm:max-w-2xl lg:max-w-4xl xl:max-w-5xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-xl flex items-center">
-              <Package className="mr-2 h-5 w-5" />
-              Détails du Colis
-            </DialogTitle>
-            <DialogDescription>
-              Informations complètes sur le colis et options de gestion
-            </DialogDescription>
-          </DialogHeader>
+      <ColisSuiviModal
+        open={showSuiviModal}
+        onOpenChange={setShowSuiviModal}
+        colis={selectedColis}
+        statuts={statuts}
+      />
 
-          {selectedColis && (
-            <div className="space-y-4 py-3">
-              {/* Colis Information */}
-              <div>
-                <h3 className="text-base font-semibold mb-2 border-b pb-1 flex items-center">
-                  <Package className="mr-2 h-4 w-4" />
-                  Informations du Colis
-                </h3>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
-                  <div>
-                    <h4 className="text-xs font-medium text-muted-foreground">ID Colis</h4>
-                    <p className="bg-muted p-1 rounded text-xs">{selectedColis.id}</p>
-                  </div>
-                  <div>
-                    <h4 className="text-xs font-medium text-muted-foreground">Date</h4>
-                    <p>{new Date(selectedColis.date_creation).toLocaleDateString('fr-FR')}</p>
-                  </div>
-                  <div>
-                    <h4 className="text-xs font-medium text-muted-foreground">Statut</h4>
-                    <StatusBadge statut={selectedColis.statut} statuts={statuts} />
-                  </div>
-                  <div>
-                    <h4 className="text-xs font-medium text-muted-foreground">Prix</h4>
-                    <p className="font-semibold">{selectedColis.prix || 0} DH</p>
-                  </div>
-                  <div>
-                    <h4 className="text-xs font-medium text-muted-foreground">Frais</h4>
-                    <p>{selectedColis.frais > 0 ? `${selectedColis.frais} DH` : 'Aucun'}</p>
-                  </div>
-                  <div>
-                    <h4 className="text-xs font-medium text-muted-foreground">Total</h4>
-                    <p className="font-bold">{(selectedColis.prix || 0) + (selectedColis.frais || 0)} DH</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Client Information */}
-                <div>
-                  <h3 className="text-base font-semibold mb-2 border-b pb-1 flex items-center">
-                    <Phone className="mr-2 h-4 w-4" />
-                    Client
-                  </h3>
-                  <div className="space-y-2 text-sm">
-                    <div>
-                      <h4 className="text-xs font-medium text-muted-foreground">Nom</h4>
-                      <p>{selectedColis.client?.nom || 'N/A'}</p>
-                    </div>
-                    <div>
-                      <h4 className="text-xs font-medium text-muted-foreground">Téléphone</h4>
-                      <p>{selectedColis.client?.telephone || 'Non disponible'}</p>
-                    </div>
-
-                    {selectedColis.adresse_livraison && selectedColis.adresse_livraison !== '' && (
-                      <div>
-                        <h4 className="text-xs font-medium text-muted-foreground">Adresse</h4>
-                        <p>{selectedColis.adresse_livraison}</p>
-                      </div>
-                    )}
-
-                    <div>
-                      <h4 className="text-xs font-medium text-muted-foreground">Ville</h4>
-                      <p>Casablanca</p>
-                    </div>
-
-                    {selectedColis.client?.telephone && (
-                      <div>
-                        <h4 className="text-xs font-medium text-muted-foreground">Contacts</h4>
-                        <div className="flex gap-2 mt-1">
-                          <Button variant="outline" size="icon" className="h-8 w-8 rounded-full" onClick={() => handleCall(selectedColis)} title="Appeler">
-                            <Phone className="h-4 w-4" />
-                          </Button>
-                          <Button variant="outline" size="icon" className="h-8 w-8 rounded-full" onClick={() => handleSMS(selectedColis)} title="SMS">
-                            <MessageSquare className="h-4 w-4" />
-                          </Button>
-                          <Button variant="outline" size="icon" className="h-8 w-8 rounded-full" onClick={() => handleWhatsApp(selectedColis)} title="WhatsApp">
-                            <MessageCircle className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Entreprise Information */}
-                <div>
-                  <h3 className="text-base font-semibold mb-2 border-b pb-1 flex items-center">
-                    <Building2 className="mr-2 h-4 w-4" />
-                    Entreprise
-                  </h3>
-                  <div className="space-y-2 text-sm">
-                    <div>
-                      <h4 className="text-xs font-medium text-muted-foreground">Nom</h4>
-                      <p>{selectedColis.entreprise?.nom !== 'N/A' ? selectedColis.entreprise?.nom : 'Aucune entreprise associée'}</p>
-                    </div>
-
-                    {selectedColis.entreprise?.nom !== 'N/A' && selectedColis.entreprise?.nom && (
-                      <>
-                        <div>
-                          <h4 className="text-xs font-medium text-muted-foreground">Email</h4>
-                          <p>{selectedColis.entreprise?.email || `contact@${selectedColis.entreprise?.nom.toLowerCase().replace(/\s+/g, '')}.com`}</p>
-                        </div>
-                        <div>
-                          <h4 className="text-xs font-medium text-muted-foreground">Téléphone</h4>
-                          <p>{selectedColis.entreprise?.telephone || '+212 5XX-XXXXXX'}</p>
-                        </div>
-                        <div>
-                          <h4 className="text-xs font-medium text-muted-foreground">Adresse</h4>
-                          <p>{selectedColis.entreprise?.adresse || 'Casablanca, Maroc'}</p>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Vendor Contacts */}
-              <div>
-                <h3 className="text-base font-semibold mb-2 border-b pb-1 flex items-center">
-                  <MessageCircle className="mr-2 h-4 w-4" />
-                  Contacts Vendeurs
-                </h3>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  {/* Vendeur B */}
-                  {selectedColis.entreprise?.telephone && (
-                    <div className="space-y-2">
-                      <h4 className="text-sm font-medium text-gray-900 dark:text-white">Vendeur B</h4>
-                      <p className="text-xs text-gray-600 dark:text-gray-400">{selectedColis.entreprise.telephone}</p>
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
-                          onClick={() => window.open(`tel:${selectedColis.entreprise?.telephone}`, '_self')}
-                        >
-                          <Phone className="mr-1 h-3 w-3" />
-                          Vendeur B
-                        </Button>
-                        <Button
-                          size="sm"
-                          className="flex-1 bg-green-600 hover:bg-green-700 text-white"
-                          onClick={() => window.open(`https://wa.me/${selectedColis.entreprise?.telephone?.replace(/\D/g, '')}`, '_blank')}
-                        >
-                          <MessageCircle className="mr-1 h-3 w-3" />
-                          Vendeur B
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Vendeur P */}
-                  {selectedColis.entreprise?.telephone_2 && (
-                    <div className="space-y-2">
-                      <h4 className="text-sm font-medium text-gray-900 dark:text-white">Vendeur P</h4>
-                      <p className="text-xs text-gray-600 dark:text-gray-400">{selectedColis.entreprise.telephone_2}</p>
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          className="flex-1 bg-purple-600 hover:bg-purple-700 text-white"
-                          onClick={() => window.open(`tel:${selectedColis.entreprise?.telephone_2}`, '_self')}
-                        >
-                          <Phone className="mr-1 h-3 w-3" />
-                          Vendeur P
-                        </Button>
-                        <Button
-                          size="sm"
-                          className="flex-1 bg-pink-600 hover:bg-pink-700 text-white"
-                          onClick={() => window.open(`https://wa.me/${selectedColis.entreprise?.telephone_2?.replace(/\D/g, '')}`, '_blank')}
-                        >
-                          <MessageCircle className="mr-1 h-3 w-3" />
-                          Vendeur P
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* No phone numbers available */}
-                  {!selectedColis.entreprise?.telephone && !selectedColis.entreprise?.telephone_2 && (
-                    <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
-                      Aucun numéro de téléphone disponible pour cette entreprise
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-
-          <DialogFooter className="flex justify-end gap-2 pt-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowDetailsModal(false)}
-            >
-              Fermer
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ColisDetailsModal
+        open={showDetailsModal}
+        onOpenChange={setShowDetailsModal}
+        colis={selectedColis}
+        statuts={statuts}
+      />
     </div>
   );
 }

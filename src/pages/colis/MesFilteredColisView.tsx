@@ -4,15 +4,16 @@ import { ArrowLeft, Package, RefreshCw, Search, Filter, X, Phone, House, MapPin,
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Colis, Statut } from '@/types';
 import { api } from '@/lib/supabase';
+import { isDateTodayLocal } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useToast } from '@/hooks/use-toast';
-import { isDateTodayLocal } from '@/lib/utils';
+import { useColisModals } from '@/hooks/useColisModals';
+import { ColisDetailsModal, ColisReclamationModal, ColisSuiviModal, handleWhatsApp, handleSMS, handleCall } from '@/components/colis';
 
 const STATUS_MAPPING: Record<string, string[]> = {
   a_livrer_aujourdhui: ['en_attente', 'pris_en_charge'],
@@ -51,9 +52,21 @@ export function MesFilteredColisView() {
   const [entrepriseFilter, setEntrepriseFilter] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(12);
-  const [selectedColis, setSelectedColis] = useState<Colis | null>(null);
-  const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [statuts, setStatuts] = useState<Statut[]>([]);
+
+  // Use shared modal hook
+  const {
+    selectedColis,
+    showReclamationModal,
+    showDetailsModal,
+    showSuiviModal,
+    setShowReclamationModal,
+    setShowDetailsModal,
+    setShowSuiviModal,
+    handleSuivi,
+    handleReclamation,
+    handleViewDetails,
+  } = useColisModals();
 
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
   const title = statusFilter !== 'all' ? STATUS_TITLES[statusFilter] ?? 'Colis filtrés' : 'Colis filtrés';
@@ -171,44 +184,6 @@ export function MesFilteredColisView() {
       .map(word => word[0] ?? '')
       .join('')
       .toUpperCase();
-
-  const handleSuivi = (colisItem: Colis) => {
-    setSelectedColis(colisItem);
-    setShowDetailsDialog(true);
-  };
-
-  const handleReclamation = (colisItem: Colis) => {
-    toast({
-      title: 'Information',
-      description: 'Fonctionnalité de réclamation non disponible pour le moment.',
-    });
-  };
-
-  const handleWhatsApp = (colisItem: Colis) => {
-    toast({
-      title: 'Information',
-      description: 'Fonctionnalité WhatsApp non disponible pour le moment.',
-    });
-  };
-
-  const handleSMS = (colisItem: Colis) => {
-    toast({
-      title: 'Information',
-      description: 'Fonctionnalité SMS non disponible pour le moment.',
-    });
-  };
-
-  const handleCall = (colisItem: Colis) => {
-    toast({
-      title: 'Information',
-      description: 'Fonctionnalité appel non disponible pour le moment.',
-    });
-  };
-
-  const handleViewDetails = (colisItem: Colis) => {
-    setSelectedColis(colisItem);
-    setShowDetailsDialog(true);
-  };
 
   const renderColisCard = (colisItem: Colis) => (
     <Card key={colisItem.id} className="rounded-lg bg-card text-card-foreground shadow-sm overflow-hidden border hover:shadow-md transition-all">
@@ -443,54 +418,25 @@ export function MesFilteredColisView() {
         </div>
       )}
 
-      <Dialog open={showDetailsDialog} onOpenChange={setShowDetailsDialog}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Détails du colis #{selectedColis?.numero_colis}</DialogTitle>
-            <DialogDescription>Informations complètes sur le colis</DialogDescription>
-          </DialogHeader>
-          {selectedColis && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <h4 className="font-semibold text-gray-900 dark:text-white mb-2">Client</h4>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">{selectedColis.client_nom} {selectedColis.client_prenom}</p>
-                  {selectedColis.client_telephone && <p className="text-sm text-gray-600 dark:text-gray-400">📞 {selectedColis.client_telephone}</p>}
-                  {selectedColis.client_email && <p className="text-sm text-gray-600 dark:text-gray-400">✉️ {selectedColis.client_email}</p>}
-                </div>
-                <div>
-                  <h4 className="font-semibold text-gray-900 dark:text-white mb-2">Adresse</h4>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">{selectedColis.adresse_livraison}</p>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <h4 className="font-semibold text-gray-900 dark:text-white mb-2">Détails</h4>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Poids: {selectedColis.poids || 'N/A'} kg</p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Nombre: {selectedColis.nombre_colis || 1}</p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Valeur: {selectedColis.valeur_colis ? selectedColis.valeur_colis + '€' : 'N/A'}</p>
-                </div>
-                <div>
-                  <h4 className="font-semibold text-gray-900 dark:text-white mb-2">Statut</h4>
-                  <StatusBadge statut={selectedColis.statut} />
-                  {selectedColis.date_livraison_prevue && (
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">📅 Livraison prévue: {new Date(selectedColis.date_livraison_prevue).toLocaleDateString('fr-FR')}</p>
-                  )}
-                </div>
-              </div>
-              {selectedColis.commentaires && (
-                <div>
-                  <h4 className="font-semibold text-gray-900 dark:text-white mb-2">Commentaires</h4>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">{selectedColis.commentaires}</p>
-                </div>
-              )}
-            </div>
-          )}
-          <DialogFooter>
-            <Button onClick={() => setShowDetailsDialog(false)}>Fermer</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ColisDetailsModal
+        open={showDetailsModal}
+        onOpenChange={setShowDetailsModal}
+        colis={selectedColis}
+        statuts={statuts}
+      />
+
+      <ColisSuiviModal
+        open={showSuiviModal}
+        onOpenChange={setShowSuiviModal}
+        colis={selectedColis}
+        statuts={statuts}
+      />
+
+      <ColisReclamationModal
+        open={showReclamationModal}
+        onOpenChange={setShowReclamationModal}
+        colis={selectedColis}
+      />
     </div>
   );
 }
