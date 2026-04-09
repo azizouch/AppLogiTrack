@@ -31,9 +31,18 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { TablePagination } from '@/components/ui/table-pagination';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet';
 import { User as UserType, Colis } from '@/types';
 import { api } from '@/lib/supabase';
 import { useDebounce } from '@/hooks/useDebounce';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { AddColisModal } from '@/components/modals/AddColisModal';
@@ -42,6 +51,7 @@ import { AssignColisModal } from '@/components/modals/AssignColisModal';
 export function Livreurs() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
 
   // Data state
   const [livreurs, setLivreurs] = useState<UserType[]>([]);
@@ -55,6 +65,9 @@ export function Livreurs() {
   const [vehiculeFilter, setVehiculeFilter] = useState('all');
   const [nombreFilter, setNombreFilter] = useState('all');
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
+
+  // Mobile state
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
 
   // Available filter options
   const [zones, setZones] = useState<string[]>([]);
@@ -258,6 +271,13 @@ export function Livreurs() {
     fetchLivreurs();
   }, [fetchLivreurs]);
 
+  // Auto-close filter sidebar on mobile when filters change
+  useEffect(() => {
+    if (isMobile && isFilterOpen) {
+      setIsFilterOpen(false);
+    }
+  }, [searchTerm, zoneFilter, vehiculeFilter, nombreFilter, isMobile]);
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -289,82 +309,180 @@ export function Livreurs() {
       </div>
 
       {/* Filters */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <svg className="h-4 w-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.707A1 1 0 013 7V4z" />
-            </svg>
-            <span className="font-medium text-gray-700 dark:text-gray-300">Filtres</span>
+      {isMobile ? (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <svg className="h-4 w-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.707A1 1 0 013 7V4z" />
+              </svg>
+              <span className="font-medium text-gray-700 dark:text-gray-300">Filtres</span>
+            </div>
+            <div className="flex items-center gap-2">
+              {(searchTerm || zoneFilter !== 'all' || vehiculeFilter !== 'all' || nombreFilter !== 'all') && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setSearchTerm('');
+                    setZoneFilter('all');
+                    setVehiculeFilter('all');
+                    setNombreFilter('all');
+                  }}
+                  className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                >
+                  <X className="mr-2 h-4 w-4" />
+                  Réinitialiser
+                </Button>
+              )}
+              <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+                <SheetTrigger asChild>
+                  <Button variant="outline" size="sm" className="text-sm">
+                    <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.707A1 1 0 013 7V4z" />
+                    </svg>
+                    Filtres
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="left" className="w-[300px] sm:w-[400px]">
+                  <SheetHeader>
+                    <SheetTitle>Filtres des Livreurs</SheetTitle>
+                    <SheetDescription>
+                      Filtrez les livreurs par recherche, zone, véhicule et nombre de colis
+                    </SheetDescription>
+                  </SheetHeader>
+                  <div className="space-y-4 mt-6">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                      <Input
+                        name="search"
+                        placeholder="Rechercher..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pl-10 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600"
+                      />
+                    </div>
+                    <Select value={zoneFilter} onValueChange={setZoneFilter}>
+                      <SelectTrigger className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
+                        <SelectValue placeholder="Toutes les zones" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Toutes les zones</SelectItem>
+                        {zones.map((zone) => (
+                          <SelectItem key={zone} value={zone}>
+                            {zone}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Select value={vehiculeFilter} onValueChange={setVehiculeFilter}>
+                      <SelectTrigger className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
+                        <SelectValue placeholder="Tous les véhicules" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Tous les véhicules</SelectItem>
+                        {vehicules.map((vehicule) => (
+                          <SelectItem key={vehicule} value={vehicule}>
+                            {vehicule}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Select value={nombreFilter} onValueChange={setNombreFilter}>
+                      <SelectTrigger className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
+                        <SelectValue placeholder="Tous les nombres" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Tous les nombres</SelectItem>
+                        <SelectItem value="plus">Plus de colis</SelectItem>
+                        <SelectItem value="moins">Moins de colis</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </SheetContent>
+              </Sheet>
+            </div>
           </div>
-          {(searchTerm || zoneFilter !== 'all' || vehiculeFilter !== 'all' || nombreFilter !== 'all') && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setSearchTerm('');
-                setZoneFilter('all');
-                setVehiculeFilter('all');
-                setNombreFilter('all');
-              }}
-              className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-            >
-              <X className="mr-2 h-4 w-4" />
-              Réinitialiser
-            </Button>
-          )}
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-            <Input
-              placeholder="Rechercher..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600"
-            />
+      ) : (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <svg className="h-4 w-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.707A1 1 0 013 7V4z" />
+              </svg>
+              <span className="font-medium text-gray-700 dark:text-gray-300">Filtres</span>
+            </div>
+            {(searchTerm || zoneFilter !== 'all' || vehiculeFilter !== 'all' || nombreFilter !== 'all') && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setSearchTerm('');
+                  setZoneFilter('all');
+                  setVehiculeFilter('all');
+                  setNombreFilter('all');
+                }}
+                className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+              >
+                <X className="mr-2 h-4 w-4" />
+                Réinitialiser
+              </Button>
+            )}
           </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input
+                name="search"
+                placeholder="Rechercher..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600"
+              />
+            </div>
 
-          <Select value={zoneFilter} onValueChange={setZoneFilter}>
-            <SelectTrigger className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
-              <SelectValue placeholder="Toutes les zones" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Toutes les zones</SelectItem>
-              {zones.map((zone) => (
-                <SelectItem key={zone} value={zone}>
-                  {zone}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            <Select value={zoneFilter} onValueChange={setZoneFilter}>
+              <SelectTrigger className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
+                <SelectValue placeholder="Toutes les zones" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Toutes les zones</SelectItem>
+                {zones.map((zone) => (
+                  <SelectItem key={zone} value={zone}>
+                    {zone}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-          <Select value={vehiculeFilter} onValueChange={setVehiculeFilter}>
-            <SelectTrigger className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
-              <SelectValue placeholder="Tous les véhicules" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Tous les véhicules</SelectItem>
-              {vehicules.map((vehicule) => (
-                <SelectItem key={vehicule} value={vehicule}>
-                  {vehicule}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            <Select value={vehiculeFilter} onValueChange={setVehiculeFilter}>
+              <SelectTrigger className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
+                <SelectValue placeholder="Tous les véhicules" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tous les véhicules</SelectItem>
+                {vehicules.map((vehicule) => (
+                  <SelectItem key={vehicule} value={vehicule}>
+                    {vehicule}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-          <Select value={nombreFilter} onValueChange={setNombreFilter}>
-            <SelectTrigger className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
-              <SelectValue placeholder="Tous les nombres" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Tous les nombres</SelectItem>
-              <SelectItem value="plus">Plus de colis</SelectItem>
-              <SelectItem value="moins">Moins de colis</SelectItem>
-            </SelectContent>
-          </Select>
+            <Select value={nombreFilter} onValueChange={setNombreFilter}>
+              <SelectTrigger className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
+                <SelectValue placeholder="Tous les nombres" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tous les nombres</SelectItem>
+                <SelectItem value="plus">Plus de colis</SelectItem>
+                <SelectItem value="moins">Moins de colis</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Table */}
       <div className="space-y-4">

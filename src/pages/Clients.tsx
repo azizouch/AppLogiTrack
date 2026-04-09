@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Plus, Search, RefreshCw, Eye, Edit, Trash2, Users, X } from 'lucide-react';
+import { Plus, Search, RefreshCw, Eye, Edit, Trash2, Users, X, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -20,15 +20,25 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet';
 import { Client } from '@/types';
 import { api } from '@/lib/supabase';
 import { useDebounce } from '@/hooks/useDebounce';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 
 export function Clients() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
 
   // Data state
   const [clients, setClients] = useState<Client[]>([]);
@@ -45,6 +55,9 @@ export function Clients() {
   const [cityFilter, setCityFilter] = useState('all');
   const [entrepriseFilter, setEntrepriseFilter] = useState('all');
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
+
+  // Mobile state
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -238,6 +251,13 @@ export function Clients() {
     setCurrentPage(1);
   }, [debouncedSearchTerm, cityFilter, entrepriseFilter]);
 
+  // Auto-close filter sidebar on mobile when filters change
+  useEffect(() => {
+    if (isMobile && isFilterOpen) {
+      setIsFilterOpen(false);
+    }
+  }, [searchTerm, cityFilter, entrepriseFilter, isMobile]);
+
   // Initial data fetch and when dependencies change
   useEffect(() => {
     fetchClients();
@@ -274,74 +294,161 @@ export function Clients() {
       </div>
 
       {/* Filters */}
-      <div className="space-y-3 sm:space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <svg className="h-4 w-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.707A1 1 0 013 7V4z" />
-            </svg>
-            <span className="font-medium text-gray-700 dark:text-gray-300">Filtres</span>
-          </div>
-          {hasActiveFilters && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={resetFilters}
-              className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-            >
-              <X className="mr-2 h-4 w-4" />
-              Réinitialiser
-            </Button>
-          )}
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-            <Input
-              placeholder="Rechercher..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400"
-            />
-          </div>
-          <Select value={cityFilter} onValueChange={setCityFilter}>
-            <SelectTrigger className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white">
-              <SelectValue placeholder="Toutes les villes" />
-            </SelectTrigger>
-            <SelectContent className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600">
-              <SelectItem value="all" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600">Toutes les villes</SelectItem>
-              {hasClientsWithoutVille && (
-                <SelectItem value="sans_ville" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600">
-                  <span className="text-orange-600 dark:text-orange-400">Sans ville</span>
-                </SelectItem>
+      {isMobile ? (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+              <span className="font-medium text-gray-700 dark:text-gray-300">Filtres</span>
+            </div>
+            <div className="flex items-center gap-2">
+              {hasActiveFilters && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={resetFilters}
+                  className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                >
+                  <X className="mr-2 h-4 w-4" />
+                  Réinitialiser
+                </Button>
               )}
-              {uniqueCities.map((city) => (
-                <SelectItem key={city} value={city} className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600">
-                  {city}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={entrepriseFilter} onValueChange={setEntrepriseFilter}>
-            <SelectTrigger className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white">
-              <SelectValue placeholder="Toutes les entreprises" />
-            </SelectTrigger>
-            <SelectContent className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600">
-              <SelectItem value="all" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600">Toutes les entreprises</SelectItem>
-              {hasClientsWithoutEntreprise && (
-                <SelectItem value="sans_entreprise" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600">
-                  <span className="text-orange-600 dark:text-orange-400">Sans entreprise</span>
-                </SelectItem>
-              )}
-              {allEntrepriseNames.map((entreprise) => (
-                <SelectItem key={entreprise} value={entreprise} className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600">
-                  {entreprise}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+              <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+                <SheetTrigger asChild>
+                  <Button variant="outline" size="sm" className="text-sm">
+                    <Filter className="mr-2 h-4 w-4" />
+                    Filtres
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="left" className="w-[300px] sm:w-[400px]">
+                  <SheetHeader>
+                    <SheetTitle>Filtres des Clients</SheetTitle>
+                    <SheetDescription>
+                      Filtrez les clients par recherche, ville et entreprise
+                    </SheetDescription>
+                  </SheetHeader>
+                  <div className="space-y-4 mt-6">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                      <Input
+                        placeholder="Rechercher..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pl-10 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400"
+                      />
+                    </div>
+                    <Select value={cityFilter} onValueChange={setCityFilter}>
+                      <SelectTrigger className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white">
+                        <SelectValue placeholder="Toutes les villes" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600">
+                        <SelectItem value="all" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600">Toutes les villes</SelectItem>
+                        {hasClientsWithoutVille && (
+                          <SelectItem value="sans_ville" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600">
+                            <span className="text-orange-600 dark:text-orange-400">Sans ville</span>
+                          </SelectItem>
+                        )}
+                        {uniqueCities.map((city) => (
+                          <SelectItem key={city} value={city} className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600">
+                            {city}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Select value={entrepriseFilter} onValueChange={setEntrepriseFilter}>
+                      <SelectTrigger className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white">
+                        <SelectValue placeholder="Toutes les entreprises" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600">
+                        <SelectItem value="all" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600">Toutes les entreprises</SelectItem>
+                        {hasClientsWithoutEntreprise && (
+                          <SelectItem value="sans_entreprise" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600">
+                            <span className="text-orange-600 dark:text-orange-400">Sans entreprise</span>
+                          </SelectItem>
+                        )}
+                        {allEntrepriseNames.map((entreprise) => (
+                          <SelectItem key={entreprise} value={entreprise} className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600">
+                            {entreprise}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </SheetContent>
+              </Sheet>
+            </div>
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="space-y-3 sm:space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <svg className="h-4 w-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.707A1 1 0 013 7V4z" />
+              </svg>
+              <span className="font-medium text-gray-700 dark:text-gray-300">Filtres</span>
+            </div>
+            {hasActiveFilters && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={resetFilters}
+                className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+              >
+                <X className="mr-2 h-4 w-4" />
+                Réinitialiser
+              </Button>
+            )}
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input
+                placeholder="Rechercher..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400"
+              />
+            </div>
+            <Select value={cityFilter} onValueChange={setCityFilter}>
+              <SelectTrigger className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white">
+                <SelectValue placeholder="Toutes les villes" />
+              </SelectTrigger>
+              <SelectContent className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600">
+                <SelectItem value="all" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600">Toutes les villes</SelectItem>
+                {hasClientsWithoutVille && (
+                  <SelectItem value="sans_ville" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600">
+                    <span className="text-orange-600 dark:text-orange-400">Sans ville</span>
+                  </SelectItem>
+                )}
+                {uniqueCities.map((city) => (
+                  <SelectItem key={city} value={city} className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600">
+                    {city}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={entrepriseFilter} onValueChange={setEntrepriseFilter}>
+              <SelectTrigger className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white">
+                <SelectValue placeholder="Toutes les entreprises" />
+              </SelectTrigger>
+              <SelectContent className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600">
+                <SelectItem value="all" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600">Toutes les entreprises</SelectItem>
+                {hasClientsWithoutEntreprise && (
+                  <SelectItem value="sans_entreprise" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600">
+                    <span className="text-orange-600 dark:text-orange-400">Sans entreprise</span>
+                  </SelectItem>
+                )}
+                {allEntrepriseNames.map((entreprise) => (
+                  <SelectItem key={entreprise} value={entreprise} className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600">
+                    {entreprise}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      )}
 
       {/* Liste des Clients */}
       <div className="space-y-4">

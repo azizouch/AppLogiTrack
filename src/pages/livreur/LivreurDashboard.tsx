@@ -349,22 +349,21 @@ export function LivreurDashboard() {
 
       {/* Quick links to livreur bons pages */}
       <div className="mt-4">
-        <Card>
-          <CardHeader className="pb-2">
+          <CardHeader className="p-0 pb-2 pt-3">
             <CardTitle className="text-lg">Mes bons</CardTitle>
           </CardHeader>
 
-          <CardContent>
+          <CardContent className='p-0'>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               {/* BLUE */}
               <button
                 className="flex justify-between items-center w-full sm:w-auto 
                           bg-gradient-to-r from-blue-400 via-blue-500 to-blue-700 
-                          text-white px-3 py-2 rounded-lg border-l-4 border-blue-700"
+                          text-white px-3 py-2 pt-4 pb-4 rounded-lg border-l-4 border-blue-700"
                 onClick={() => navigate('/bons/mes-distribution')}
               >
                 <span>Bons Distribution</span>
-                <Badge className="ml-2 bg-white text-black dark:bg-gray-700">
+                <Badge className="ml-2 bg-white text-black dark:bg-black dark:text-white">
                   {bonStats.distribution?.total ?? 0}
                 </Badge>
               </button>
@@ -372,11 +371,11 @@ export function LivreurDashboard() {
               <button
                 className="flex justify-between items-center w-full sm:w-auto 
                           bg-gradient-to-r from-green-400 via-green-500 to-green-700 
-                          text-white px-3 py-2 rounded-lg border-l-4 border-green-700"
+                          text-white px-3 py-2 pt-4 pb-4 rounded-lg border-l-4 border-green-700"
                 onClick={() => navigate('/bons/mes-paiement')}
               >
                 <span>Bons Paiement</span>
-                <Badge className="ml-2 bg-white text-black dark:bg-gray-700">
+                <Badge className="ml-2 bg-white text-black dark:bg-black dark:text-white">
                   {bonStats.paiement?.total ?? 0}
                 </Badge>
               </button>
@@ -384,17 +383,16 @@ export function LivreurDashboard() {
               <button
                 className="flex justify-between items-center w-full sm:w-auto 
                           bg-gradient-to-r from-red-400 via-red-500 to-red-700 
-                          text-white px-3 py-2 rounded-lg border-l-4 border-red-700"
+                          text-white px-3 py-2 pt-4 pb-4 rounded-lg border-l-4 border-red-700"
                 onClick={() => navigate('/bons/mes-retour')}
               >
                 <span>Bons Retour</span>
-                <Badge className="ml-2 bg-white text-black dark:bg-gray-700">
+                <Badge className="ml-2 bg-white text-black dark:bg-black dark:text-white">
                   {bonStats.retour?.total ?? 0}
                 </Badge>
               </button>
             </div>
           </CardContent>
-        </Card>
       </div>
 
       {/* Three Column Layout */}

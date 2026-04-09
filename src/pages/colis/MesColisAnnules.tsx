@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Package, Search, Filter, RefreshCw, Phone, MessageCircle, MapPin, Building, Ban, Info, Eye, Mail, House, Building2, Calendar, X, Clock, History } from 'lucide-react';
+import { Package, Search, Filter, RefreshCw, Phone, MessageCircle, MapPin, Building, Ban, Info, Eye, Mail, House, Building2, Calendar, X, Clock, History, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useColisModals } from '@/hooks/useColisModals';
@@ -31,6 +32,9 @@ export function MesColisAnnules() {
   const [currentPage, setCurrentPage] = useState(1);
   const [entriesPerPage, setEntriesPerPage] = useState(10);
   const [totalCount, setTotalCount] = useState(0);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+
+  const isMobile = useIsMobile();
 
   // Modal states
   const {
@@ -133,6 +137,13 @@ export function MesColisAnnules() {
     }
   }, [state.user?.id, debouncedSearchTerm, sortBy, dateFilter, currentPage, entriesPerPage, location.pathname]);
 
+  // Close filters sidebar when filters change
+  useEffect(() => {
+    if (isMobile && filtersOpen) {
+      setFiltersOpen(false);
+    }
+  }, [debouncedSearchTerm, sortBy, dateFilter]);
+
   const fetchStatuts = async () => {
     try {
       const { data, error } = await supabase
@@ -179,12 +190,126 @@ export function MesColisAnnules() {
       </div>
 
       {/* Filters */}
-      <div className="space-y-4">
+      <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold flex items-center gap-2">
-            <Filter className="h-5 w-5" />
-            Filtres
-          </h2>
+          {isMobile ? (
+            <Sheet open={filtersOpen} onOpenChange={setFiltersOpen}>
+              <SheetTrigger asChild>
+                <Button
+                  variant="ghost"
+                  className="p-0 h-auto font-semibold text-lg flex items-center gap-2 hover:bg-transparent"
+                >
+                  <Filter className="h-5 w-5" />
+                  Filtres
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-[300px] sm:w-[400px]">
+                <SheetHeader>
+                  <SheetTitle className="flex items-center gap-2">
+                    <Filter className="h-5 w-5" />
+                    Filtres
+                  </SheetTitle>
+                </SheetHeader>
+                <div className="mt-6 space-y-4">
+                  <div className="space-y-2">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                      <Input
+                        placeholder="Rechercher..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pl-10"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Select
+                      value={sortBy}
+                      onValueChange={(value) => {
+                        setSortBy(value);
+                        setFiltersOpen(false);
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Plus récent" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="recent">Plus récent</SelectItem>
+                        <SelectItem value="oldest">Plus ancien</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Select
+                      value={dateFilter}
+                      onValueChange={(value) => {
+                        setDateFilter(value);
+                        setFiltersOpen(false);
+                      }}
+                    >
+                      <SelectTrigger>
+                        <Calendar className="h-4 w-4 mr-2" />
+                        <SelectValue placeholder="Toutes les dates" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="toutes">Toutes les dates</SelectItem>
+                        <SelectItem value="aujourd_hui">Aujourd'hui</SelectItem>
+                        <SelectItem value="hier">Hier</SelectItem>
+                        <SelectItem value="7_derniers_jours">7 derniers jours</SelectItem>
+                        <SelectItem value="30_derniers_jours">30 derniers jours</SelectItem>
+                        <SelectItem value="ce_mois">Ce mois</SelectItem>
+                        <SelectItem value="le_mois_dernier">Le mois dernier</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Select
+                      value={entriesPerPage.toString()}
+                      onValueChange={(value) => {
+                        setEntriesPerPage(Number(value));
+                        setCurrentPage(1);
+                        setFiltersOpen(false);
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Entrées par page" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="5">5 par page</SelectItem>
+                        <SelectItem value="10">10 par page</SelectItem>
+                        <SelectItem value="25">25 par page</SelectItem>
+                        <SelectItem value="50">50 par page</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {hasActiveFilters && (
+                    <Button
+                      onClick={() => {
+                        resetFilters();
+                        setFiltersOpen(false);
+                      }}
+                      variant="outline"
+                      size="sm"
+                      className="w-full text-sm"
+                    >
+                      <X className="mr-2 h-4 w-4" />
+                      Réinitialiser
+                    </Button>
+                  )}
+                </div>
+              </SheetContent>
+            </Sheet>
+          ) : (
+            <h2 className="text-lg font-semibold flex items-center gap-2">
+              <Filter className="h-5 w-5" />
+              Filtres
+            </h2>
+          )}
           <div className="flex items-center gap-2">
             <Button
               onClick={() => fetchColis(true)}
@@ -200,7 +325,8 @@ export function MesColisAnnules() {
               )}
               Actualiser
             </Button>
-            {hasActiveFilters && (
+
+            {!isMobile && hasActiveFilters && (
               <Button
                 onClick={resetFilters}
                 variant="outline"
@@ -214,66 +340,68 @@ export function MesColisAnnules() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="space-y-2">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                placeholder="Rechercher..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
+        {!isMobile && (
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 w-full">
+            <div className="space-y-2">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input
+                  placeholder="Rechercher..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Plus récent" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="recent">Plus récent</SelectItem>
+                  <SelectItem value="oldest">Plus ancien</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Select value={dateFilter} onValueChange={setDateFilter}>
+                <SelectTrigger>
+                  <Calendar className="h-4 w-4 mr-2" />
+                  <SelectValue placeholder="Toutes les dates" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="toutes">Toutes les dates</SelectItem>
+                  <SelectItem value="aujourd_hui">Aujourd'hui</SelectItem>
+                  <SelectItem value="hier">Hier</SelectItem>
+                  <SelectItem value="7_derniers_jours">7 derniers jours</SelectItem>
+                  <SelectItem value="30_derniers_jours">30 derniers jours</SelectItem>
+                  <SelectItem value="ce_mois">Ce mois</SelectItem>
+                  <SelectItem value="le_mois_dernier">Le mois dernier</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Select value={entriesPerPage.toString()} onValueChange={(value) => {
+                setEntriesPerPage(Number(value));
+                setCurrentPage(1);
+              }}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Entrées par page" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="5">5 par page</SelectItem>
+                  <SelectItem value="10">10 par page</SelectItem>
+                  <SelectItem value="25">25 par page</SelectItem>
+                  <SelectItem value="50">50 par page</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
-
-          <div className="space-y-2">
-            <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger>
-                <SelectValue placeholder="Plus récent" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="recent">Plus récent</SelectItem>
-                <SelectItem value="oldest">Plus ancien</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Select value={dateFilter} onValueChange={setDateFilter}>
-              <SelectTrigger>
-                <Calendar className="h-4 w-4 mr-2" />
-                <SelectValue placeholder="Toutes les dates" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="toutes">Toutes les dates</SelectItem>
-                <SelectItem value="aujourd_hui">Aujourd'hui</SelectItem>
-                <SelectItem value="hier">Hier</SelectItem>
-                <SelectItem value="7_derniers_jours">7 derniers jours</SelectItem>
-                <SelectItem value="30_derniers_jours">30 derniers jours</SelectItem>
-                <SelectItem value="ce_mois">Ce mois</SelectItem>
-                <SelectItem value="le_mois_dernier">Le mois dernier</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Select value={entriesPerPage.toString()} onValueChange={(value) => {
-              setEntriesPerPage(Number(value));
-              setCurrentPage(1);
-            }}>
-              <SelectTrigger>
-                <SelectValue placeholder="Entrées par page" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="5">5 par page</SelectItem>
-                <SelectItem value="10">10 par page</SelectItem>
-                <SelectItem value="25">25 par page</SelectItem>
-                <SelectItem value="50">50 par page</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
+        )}
       </div>
 
       {/* Colis Cards */}

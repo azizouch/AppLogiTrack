@@ -20,15 +20,25 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet';
 import { Entreprise, Colis } from '@/types';
 import { api } from '@/lib/supabase';
 import { useDebounce } from '@/hooks/useDebounce';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 
 export function Entreprises() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
 
   // Data state
   const [entreprises, setEntreprises] = useState<Entreprise[]>([]);
@@ -45,6 +55,9 @@ export function Entreprises() {
   const [cityFilter, setCityFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
+
+  // Mobile state
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -223,6 +236,13 @@ export function Entreprises() {
     setCurrentPage(1);
   }, [debouncedSearchTerm, cityFilter, statusFilter]);
 
+  // Auto-close filter sidebar on mobile when filters change
+  useEffect(() => {
+    if (isMobile && isFilterOpen) {
+      setIsFilterOpen(false);
+    }
+  }, [searchTerm, cityFilter, statusFilter, isMobile]);
+
   // Initial data fetch and when dependencies change
   useEffect(() => {
     fetchEntreprises();
@@ -259,61 +279,137 @@ export function Entreprises() {
       </div>
 
       {/* Filters */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Filter className="h-4 w-4 text-gray-500 dark:text-gray-400" />
-            <span className="font-medium text-gray-700 dark:text-gray-300">Filtres</span>
+      {isMobile ? (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+              <span className="font-medium text-gray-700 dark:text-gray-300">Filtres</span>
+            </div>
+            <div className="flex items-center gap-2">
+              {hasActiveFilters && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={resetFilters}
+                  className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                >
+                  <X className="mr-2 h-4 w-4" />
+                  Réinitialiser
+                </Button>
+              )}
+              <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+                <SheetTrigger asChild>
+                  <Button variant="outline" size="sm" className="text-sm">
+                    <Filter className="mr-2 h-4 w-4" />
+                    Filtres
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="left" className="w-[300px] sm:w-[400px]">
+                  <SheetHeader>
+                    <SheetTitle>Filtres des Entreprises</SheetTitle>
+                    <SheetDescription>
+                      Filtrez les entreprises par recherche, ville et statut
+                    </SheetDescription>
+                  </SheetHeader>
+                  <div className="space-y-4 mt-6">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                      <Input
+                        placeholder="Rechercher..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pl-10 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600"
+                      />
+                    </div>
+                    <Select value={cityFilter} onValueChange={setCityFilter}>
+                      <SelectTrigger className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
+                        <SelectValue placeholder="Toutes les villes" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
+                        <SelectItem value="all" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">Toutes les villes</SelectItem>
+                        {uniqueCities.map((city) => (
+                          <SelectItem key={city} value={city} className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">
+                            {city}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Select value={statusFilter} onValueChange={setStatusFilter}>
+                      <SelectTrigger className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
+                        <SelectValue placeholder="Tous les statuts" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
+                        <SelectItem value="all" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">Tous les statuts</SelectItem>
+                        <SelectItem value="complete" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">Informations complètes</SelectItem>
+                        <SelectItem value="incomplete" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">Informations incomplètes</SelectItem>
+                        <SelectItem value="no_contact" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">Sans contact</SelectItem>
+                        <SelectItem value="no_phone" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">Sans téléphone</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </SheetContent>
+              </Sheet>
+            </div>
           </div>
-          {hasActiveFilters && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={resetFilters}
-              className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-            >
-              <X className="mr-2 h-4 w-4" />
-              Réinitialiser
-            </Button>
-          )}
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-            <Input
-              placeholder="Rechercher..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600"
-            />
+      ) : (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+              <span className="font-medium text-gray-700 dark:text-gray-300">Filtres</span>
+            </div>
+            {hasActiveFilters && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={resetFilters}
+                className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+              >
+                <X className="mr-2 h-4 w-4" />
+                Réinitialiser
+              </Button>
+            )}
           </div>
-          <Select value={cityFilter} onValueChange={setCityFilter}>
-            <SelectTrigger className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
-              <SelectValue placeholder="Toutes les villes" />
-            </SelectTrigger>
-            <SelectContent className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
-              <SelectItem value="all" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">Toutes les villes</SelectItem>
-              {uniqueCities.map((city) => (
-                <SelectItem key={city} value={city} className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">
-                  {city}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
-              <SelectValue placeholder="Tous les statuts" />
-            </SelectTrigger>
-            <SelectContent className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
-              <SelectItem value="all" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">Tous les statuts</SelectItem>
-              <SelectItem value="complete" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">Informations complètes</SelectItem>
-              <SelectItem value="incomplete" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">Informations incomplètes</SelectItem>
-              <SelectItem value="no_contact" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">Sans contact</SelectItem>
-              <SelectItem value="no_phone" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">Sans téléphone</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input
+                placeholder="Rechercher..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600"
+              />
+            </div>
+            <Select value={cityFilter} onValueChange={setCityFilter}>
+              <SelectTrigger className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
+                <SelectValue placeholder="Toutes les villes" />
+              </SelectTrigger>
+              <SelectContent className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
+                <SelectItem value="all" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">Toutes les villes</SelectItem>
+                {uniqueCities.map((city) => (
+                  <SelectItem key={city} value={city} className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">
+                    {city}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
+                <SelectValue placeholder="Tous les statuts" />
+              </SelectTrigger>
+              <SelectContent className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
+                <SelectItem value="all" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">Tous les statuts</SelectItem>
+                <SelectItem value="complete" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">Informations complètes</SelectItem>
+                <SelectItem value="incomplete" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">Informations incomplètes</SelectItem>
+                <SelectItem value="no_contact" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">Sans contact</SelectItem>
+                <SelectItem value="no_phone" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">Sans téléphone</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Table */}
       <div className="space-y-4">

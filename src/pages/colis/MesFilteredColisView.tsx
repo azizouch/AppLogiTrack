@@ -317,29 +317,25 @@ export function MesFilteredColisView() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => navigate('/')}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 bg-gray-50 dark:bg-gray-900 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-800"
           >
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{title}</h1>
-            <p className="text-sm text-gray-600 dark:text-gray-400">{filteredColis.length} colis trouvés</p>
-          </div>
+          <h1 className="text-lg font-bold text-gray-900 dark:text-white sm:text-xl">{title}</h1>
         </div>
-        <Button onClick={fetchColis} variant="outline" size="sm" className="flex items-center gap-2">
-          <RefreshCw className="h-4 w-4" />
-          Actualiser
-        </Button>
+        <div>
+            <p className="text-sm text-gray-600 dark:text-gray-400">{filteredColis.length} colis trouvés</p>
+        </div>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-2">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold flex items-center gap-2">
             <Filter className="h-5 w-5" />

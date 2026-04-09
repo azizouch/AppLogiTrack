@@ -29,14 +29,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription as SheetDesc,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet';
 import { Notification } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { api } from '@/lib/supabase';
 
 export function Notifications() {
   const { toast } = useToast();
   const { state } = useAuth();
+  const isMobile = useIsMobile();
 
   // Data state
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -48,6 +58,13 @@ export function Notifications() {
   const [typeFilter, setTypeFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [dateFilter, setDateFilter] = useState('all');
+
+  // Mobile state
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [entriesPerPage, setEntriesPerPage] = useState(10);
   const mockNotifications: Notification[] = [
     {
       id: '1',
@@ -262,8 +279,15 @@ export function Notifications() {
     }
   }, [fetchNotifications, state.user?.id]);
 
+  // Auto-close filter sidebar on mobile when filters change
+  useEffect(() => {
+    if (isMobile && isFilterOpen) {
+      setIsFilterOpen(false);
+    }
+  }, [searchTerm, typeFilter, statusFilter, dateFilter, isMobile]);
+
   // Filter notifications
-  const filteredNotifications = notifications.filter(notification => {
+  const allFilteredNotifications = notifications.filter(notification => {
     // Search filter
     if (searchTerm) {
       const searchLower = searchTerm.toLowerCase();
@@ -309,6 +333,13 @@ export function Notifications() {
     return true;
   });
 
+  // Apply pagination
+  const totalCount = allFilteredNotifications.length;
+  const from = (currentPage - 1) * entriesPerPage;
+  const to = from + entriesPerPage;
+  const filteredNotifications = allFilteredNotifications.slice(from, to);
+  const totalPages = Math.ceil(totalCount / entriesPerPage);
+
   const unreadCount = notifications.filter(n => !n.lu).length;
 
   // Reset filters
@@ -317,6 +348,7 @@ export function Notifications() {
     setTypeFilter('all');
     setStatusFilter('all');
     setDateFilter('all');
+    setCurrentPage(1);
   };
 
   const hasActiveFilters = searchTerm || typeFilter !== 'all' || statusFilter !== 'all' || dateFilter !== 'all';
@@ -377,94 +409,201 @@ export function Notifications() {
       </div>
 
       {/* Filters Section - Without rounded container */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Filter className="h-4 w-4 text-gray-600 dark:text-gray-400" />
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Filtres</span>
+      {isMobile ? (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Filtres</span>
+            </div>
+            <div className="flex items-center gap-2">
+              {hasActiveFilters && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={resetFilters}
+                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                >
+                  <X className="h-4 w-4 mr-1" />
+                  Réinitialiser
+                </Button>
+              )}
+              <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+                <SheetTrigger asChild>
+                  <Button variant="outline" size="sm" className="text-sm">
+                    <Filter className="mr-2 h-4 w-4" />
+                    Filtres
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="left" className="w-[300px] sm:w-[400px]">
+                  <SheetHeader>
+                    <SheetTitle>Filtres des Notifications</SheetTitle>
+                    <SheetDesc>
+                      Filtrez les notifications par recherche, type, statut et date
+                    </SheetDesc>
+                  </SheetHeader>
+                  <div className="space-y-4 mt-6">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                      <Input
+                        name="search"
+                        placeholder="Rechercher..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pl-10"
+                      />
+                    </div>
+                    <Select value={typeFilter} onValueChange={setTypeFilter}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Tous les types" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Tous les types</SelectItem>
+                        <SelectItem value="reclamation">Réclamation</SelectItem>
+                        <SelectItem value="assignment">Assignation</SelectItem>
+                        <SelectItem value="status">Statut</SelectItem>
+                        <SelectItem value="system">Système</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Select value={statusFilter} onValueChange={setStatusFilter}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Tous" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">
+                          <div className="flex items-center">
+                            <Check className="h-4 w-4 mr-2 text-green-600" />
+                            Tous
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="lues">Lues</SelectItem>
+                        <SelectItem value="non-lues">Non lues</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Select value={dateFilter} onValueChange={setDateFilter}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Plus récentes" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Plus récentes</SelectItem>
+                        <SelectItem value="today">Aujourd'hui</SelectItem>
+                        <SelectItem value="week">Cette semaine</SelectItem>
+                        <SelectItem value="month">Ce mois</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </SheetContent>
+              </Sheet>
+            </div>
           </div>
-          {hasActiveFilters && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={resetFilters}
-              className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-            >
-              <X className="h-4 w-4 mr-1" />
-              Réinitialiser
-            </Button>
-          )}
         </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          {/* Search */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-            <Input
-              placeholder="Rechercher..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
+      ) : (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Filtres</span>
+            </div>
+            {hasActiveFilters && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={resetFilters}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              >
+                <X className="h-4 w-4 mr-1" />
+                Réinitialiser
+              </Button>
+            )}
           </div>
 
-          {/* Type Filter */}
-          <Select value={typeFilter} onValueChange={setTypeFilter}>
-            <SelectTrigger>
-              <SelectValue placeholder="Tous les types" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Tous les types</SelectItem>
-              <SelectItem value="reclamation">Réclamation</SelectItem>
-              <SelectItem value="assignment">Assignation</SelectItem>
-              <SelectItem value="status">Statut</SelectItem>
-              <SelectItem value="system">Système</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {/* Search */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input
+                name="search"
+                placeholder="Rechercher..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
 
-          {/* Status Filter */}
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger>
-              <SelectValue placeholder="Tous" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">
-                <div className="flex items-center">
-                  <Check className="h-4 w-4 mr-2 text-green-600" />
-                  Tous
-                </div>
-              </SelectItem>
-              <SelectItem value="lues">Lues</SelectItem>
-              <SelectItem value="non-lues">Non lues</SelectItem>
-            </SelectContent>
-          </Select>
+            {/* Type Filter */}
+            <Select value={typeFilter} onValueChange={setTypeFilter}>
+              <SelectTrigger>
+                <SelectValue placeholder="Tous les types" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tous les types</SelectItem>
+                <SelectItem value="reclamation">Réclamation</SelectItem>
+                <SelectItem value="assignment">Assignation</SelectItem>
+                <SelectItem value="status">Statut</SelectItem>
+                <SelectItem value="system">Système</SelectItem>
+              </SelectContent>
+            </Select>
 
-          {/* Date Filter */}
-          <Select value={dateFilter} onValueChange={setDateFilter}>
-            <SelectTrigger>
-              <SelectValue placeholder="Plus récentes" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Plus récentes</SelectItem>
-              <SelectItem value="today">Aujourd'hui</SelectItem>
-              <SelectItem value="week">Cette semaine</SelectItem>
-              <SelectItem value="month">Ce mois</SelectItem>
-            </SelectContent>
-          </Select>
+            {/* Status Filter */}
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger>
+                <SelectValue placeholder="Tous" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">
+                  <div className="flex items-center">
+                    <Check className="h-4 w-4 mr-2 text-green-600" />
+                    Tous
+                  </div>
+                </SelectItem>
+                <SelectItem value="lues">Lues</SelectItem>
+                <SelectItem value="non-lues">Non lues</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {/* Date Filter */}
+            <Select value={dateFilter} onValueChange={setDateFilter}>
+              <SelectTrigger>
+                <SelectValue placeholder="Plus récentes" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Plus récentes</SelectItem>
+                <SelectItem value="today">Aujourd'hui</SelectItem>
+                <SelectItem value="week">Cette semaine</SelectItem>
+                <SelectItem value="month">Ce mois</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Notifications Container with rounded border (Desktop Only) */}
       <div className="hidden lg:block border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800">
         {/* Notifications List Title */}
-        <div className="flex items-center gap-2 p-4 border-b border-gray-200 dark:border-gray-700">
-          <Bell className="h-5 w-5 text-gray-600 dark:text-gray-400" />
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-            Toutes les notifications
-          </h2>
-          <Badge className="ml-2 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-            {filteredNotifications.length}
-          </Badge>
+        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex items-center gap-2">
+            <Bell className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+              Toutes les notifications
+            </h2>
+            <Badge className="ml-2 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+              {totalCount}
+            </Badge>
+          </div>
+          <Select value={entriesPerPage.toString()} onValueChange={(value) => {
+            setEntriesPerPage(Number(value));
+            setCurrentPage(1);
+          }}>
+            <SelectTrigger className="w-[140px]">
+              <SelectValue placeholder="Entrées par page" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="5">5 par page</SelectItem>
+              <SelectItem value="10">10 par page</SelectItem>
+              <SelectItem value="25">25 par page</SelectItem>
+              <SelectItem value="50">50 par page</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Notifications Content */}
@@ -589,6 +728,51 @@ export function Notifications() {
         </div>
       </div>
 
+      {/* Pagination */}
+      {totalCount > entriesPerPage && (
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <p className="text-sm text-muted-foreground">
+              Affichage de {((currentPage - 1) * entriesPerPage) + 1} à {Math.min(currentPage * entriesPerPage, totalCount)} sur {totalCount} résultats
+            </p>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+              disabled={currentPage === 1}
+            >
+              Précédent
+            </Button>
+            <div className="flex items-center space-x-1">
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                const pageNum = i + 1;
+                return (
+                  <Button
+                    key={pageNum}
+                    variant={currentPage === pageNum ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setCurrentPage(pageNum)}
+                    className="w-8 h-8 p-0"
+                  >
+                    {pageNum}
+                  </Button>
+                );
+              })}
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+              disabled={currentPage === totalPages}
+            >
+              Suivant
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Mobile version - with same container structure */}
       <div className="lg:hidden border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800">
         {/* Mobile Notifications Title */}
@@ -598,7 +782,7 @@ export function Notifications() {
             Toutes les notifications
           </h2>
           <Badge className="ml-2 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-            {filteredNotifications.length}
+            {totalCount}
           </Badge>
         </div>
 

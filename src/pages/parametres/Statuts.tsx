@@ -21,8 +21,17 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { TablePagination } from '@/components/ui/table-pagination';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet';
 import { api } from '@/lib/supabase';
 import { Statut } from '@/types';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { useToast } from '@/hooks/use-toast';
 
 const COLORS = [
@@ -64,6 +73,8 @@ export function Statuts() {
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
+  const isMobile = useIsMobile();
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
@@ -150,6 +161,13 @@ export function Statuts() {
     const endIndex = startIndex + itemsPerPage;
     setPaginatedStatuts(filteredStatuts.slice(startIndex, endIndex));
   }, [filteredStatuts, currentPage, itemsPerPage]);
+
+  // Auto-close filter sidebar on mobile when filters change
+  useEffect(() => {
+    if (isMobile && isFilterOpen) {
+      setIsFilterOpen(false);
+    }
+  }, [searchTerm, typeFilter, statusFilter, isMobile]);
 
   // Check if filters are active
   const hasActiveFilters = searchTerm !== '' || typeFilter !== 'all' || statusFilter !== 'all';
@@ -363,65 +381,139 @@ export function Statuts() {
       </div>
 
       {/* Filters */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Filter className="h-4 w-4 text-gray-500 dark:text-gray-400" />
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Filtres</span>
+      {isMobile ? (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Filtres</span>
+            </div>
+            <div className="flex items-center gap-2">
+              {hasActiveFilters && (
+                <Button
+                  onClick={resetFilters}
+                  variant="outline"
+                  size="sm"
+                  className="text-gray-600 dark:text-gray-400 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  Réinitialiser
+                </Button>
+              )}
+              <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+                <SheetTrigger asChild>
+                  <Button variant="outline" size="sm" className="text-sm">
+                    <Filter className="mr-2 h-4 w-4" />
+                    Filtres
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="left" className="w-[300px] sm:w-[400px]">
+                  <SheetHeader>
+                    <SheetTitle>Filtres des Statuts</SheetTitle>
+                    <SheetDescription>Filtrez les statuts par recherche, type et état</SheetDescription>
+                  </SheetHeader>
+                  <div className="space-y-4 mt-6">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                      <Input
+                        placeholder="Rechercher un statut..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pl-10 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400"
+                      />
+                    </div>
+
+                    <Select value={typeFilter} onValueChange={setTypeFilter}>
+                      <SelectTrigger className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white">
+                        <SelectValue placeholder="Tous les types" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600">
+                        <SelectItem value="all" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600">Tous les types</SelectItem>
+                        {STATUS_TYPES.map((type) => (
+                          <SelectItem key={type.value} value={type.value} className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600">
+                            {type.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+
+                    <Select value={statusFilter} onValueChange={setStatusFilter}>
+                      <SelectTrigger className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white">
+                        <SelectValue placeholder="Tous les statuts" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600">
+                        <SelectItem value="all" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600">Tous les statuts</SelectItem>
+                        <SelectItem value="actif" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600">Actif</SelectItem>
+                        <SelectItem value="inactif" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600">Inactif</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </SheetContent>
+              </Sheet>
+            </div>
           </div>
-          {hasActiveFilters && (
-            <Button
-              onClick={resetFilters}
-              variant="outline"
-              size="sm"
-              className="text-gray-600 dark:text-gray-400 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
-            >
-              <X className="h-4 w-4 mr-2" />
-              Réinitialiser
-            </Button>
-          )}
         </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Search */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <Input
-              placeholder="Rechercher un statut..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400"
-            />
+      ) : (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Filtres</span>
+            </div>
+            {hasActiveFilters && (
+              <Button
+                onClick={resetFilters}
+                variant="outline"
+                size="sm"
+                className="text-gray-600 dark:text-gray-400 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
+              >
+                <X className="h-4 w-4 mr-2" />
+                Réinitialiser
+              </Button>
+            )}
           </div>
 
-          {/* Type filter */}
-          <Select value={typeFilter} onValueChange={setTypeFilter}>
-            <SelectTrigger className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white">
-              <SelectValue placeholder="Tous les types" />
-            </SelectTrigger>
-            <SelectContent className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600">
-              <SelectItem value="all" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600">Tous les types</SelectItem>
-              {STATUS_TYPES.map((type) => (
-                <SelectItem key={type.value} value={type.value} className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600">
-                  {type.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Search */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                placeholder="Rechercher un statut..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400"
+              />
+            </div>
 
-          {/* Status filter */}
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white">
-              <SelectValue placeholder="Tous les statuts" />
-            </SelectTrigger>
-            <SelectContent className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600">
-              <SelectItem value="all" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600">Tous les statuts</SelectItem>
-              <SelectItem value="actif" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600">Actif</SelectItem>
-              <SelectItem value="inactif" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600">Inactif</SelectItem>
-            </SelectContent>
-          </Select>
+            {/* Type filter */}
+            <Select value={typeFilter} onValueChange={setTypeFilter}>
+              <SelectTrigger className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white">
+                <SelectValue placeholder="Tous les types" />
+              </SelectTrigger>
+              <SelectContent className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600">
+                <SelectItem value="all" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600">Tous les types</SelectItem>
+                {STATUS_TYPES.map((type) => (
+                  <SelectItem key={type.value} value={type.value} className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600">
+                    {type.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* Status filter */}
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white">
+                <SelectValue placeholder="Tous les statuts" />
+              </SelectTrigger>
+              <SelectContent className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600">
+                <SelectItem value="all" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600">Tous les statuts</SelectItem>
+                <SelectItem value="actif" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600">Actif</SelectItem>
+                <SelectItem value="inactif" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600">Inactif</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Status List */}
       <div className="space-y-4">

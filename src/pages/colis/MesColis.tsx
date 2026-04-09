@@ -1,12 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Package, Search, Filter, RefreshCw, Phone, MessageCircle, MapPin, Building, Calendar, Eye, Info, CheckCircle, AlertCircle, Clock, House, Building2, Save, MessageSquare, CircleAlert, X, Send, Mail, RotateCcw, History } from 'lucide-react';
+import { Package, Search, Filter, RefreshCw, Phone, MessageCircle, MapPin, Building, Calendar, Eye, Info, CheckCircle, AlertCircle, Clock, House, Building2, Save, MessageSquare, CircleAlert, X, Send, Mail, RotateCcw, History, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/contexts/AuthContext';
 import { api, supabase } from '@/lib/supabase';
 
@@ -61,6 +63,9 @@ export function MesColis({
   const [currentPage, setCurrentPage] = useState(1);
   const [entriesPerPage, setEntriesPerPage] = useState(10);
   const [totalCount, setTotalCount] = useState(0);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+
+  const isMobile = useIsMobile();
 
   const hasActiveFilters =
     searchTerm.trim() !== '' ||
@@ -345,20 +350,167 @@ export function MesColis({
     }
   }, [debouncedSearchTerm, statusFilter, sortBy, dateFilter, currentPage, entriesPerPage, isInitialized]);
 
+  // Close filters sidebar when filters change
+  useEffect(() => {
+    if (isMobile && filtersOpen) {
+      setFiltersOpen(false);
+    }
+  }, [debouncedSearchTerm, statusFilter, sortBy, dateFilter]);
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Page Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{pageTitle}</h1>
+        <h1 className="text-xl font-bold text-gray-900 dark:text-white">{pageTitle}</h1>
         <p className="text-gray-600 dark:text-gray-400">{pageDescription}</p>
       </div>
       {/* Filters */}
-      <div className="space-y-4">
+      <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold flex items-center gap-2">
-            <Filter className="h-5 w-5" />
-            Filtres
-          </h2>
+          {isMobile ? (
+            <Sheet open={filtersOpen} onOpenChange={setFiltersOpen}>
+              <SheetTrigger asChild>
+                <Button
+                  variant="ghost"
+                  className="p-0 h-auto font-semibold text-lg flex items-center gap-2 hover:bg-transparent"
+                >
+                  <Filter className="h-5 w-5" />
+                  Filtres
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-[300px] sm:w-[400px]">
+                <SheetHeader>
+                  <SheetTitle className="flex items-center gap-2">
+                    <Filter className="h-5 w-5" />
+                    Filtres
+                  </SheetTitle>
+                </SheetHeader>
+                <div className="mt-6 space-y-4">
+                  <div className="space-y-2">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                      <Input
+                        placeholder="Rechercher..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pl-10"
+                      />
+                    </div>
+                  </div>
+
+                  {initialStatus === 'tous' && (
+                    <div className="space-y-2">
+                      <Select 
+                        value={statusFilter} 
+                        onValueChange={(value) => {
+                          setStatusFilter(value);
+                          setFiltersOpen(false);
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Tous les statuts" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="tous">Tous les statuts</SelectItem>
+                          {statuts.map((statut) => (
+                            <SelectItem key={statut.id} value={statut.nom}>
+                              {statut.nom}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  <div className="space-y-2">
+                    <Select 
+                      value={sortBy} 
+                      onValueChange={(value) => {
+                        setSortBy(value);
+                        setFiltersOpen(false);
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Plus récent" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="recent">Plus récent</SelectItem>
+                        <SelectItem value="oldest">Plus ancien</SelectItem>
+                        <SelectItem value="status">Par statut</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Select 
+                      value={dateFilter} 
+                      onValueChange={(value) => {
+                        setDateFilter(value);
+                        setFiltersOpen(false);
+                      }}
+                    >
+                      <SelectTrigger>
+                        <Calendar className="h-4 w-4 mr-2" />
+                        <SelectValue placeholder="Toutes les dates" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="toutes">Toutes les dates</SelectItem>
+                        <SelectItem value="aujourd_hui">Aujourd'hui</SelectItem>
+                        <SelectItem value="hier">Hier</SelectItem>
+                        <SelectItem value="7_derniers_jours">7 derniers jours</SelectItem>
+                        <SelectItem value="30_derniers_jours">30 derniers jours</SelectItem>
+                        <SelectItem value="ce_mois">Ce mois</SelectItem>
+                        <SelectItem value="le_mois_dernier">Le mois dernier</SelectItem>
+                        <SelectItem value="periode_personnalisee">Période personnalisée</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Select 
+                      value={entriesPerPage.toString()} 
+                      onValueChange={(value) => {
+                        setEntriesPerPage(Number(value));
+                        setCurrentPage(1);
+                        setFiltersOpen(false);
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Entrées par page" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="5">5 par page</SelectItem>
+                        <SelectItem value="10">10 par page</SelectItem>
+                        <SelectItem value="25">25 par page</SelectItem>
+                        <SelectItem value="50">50 par page</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {hasActiveFilters && (
+                    <Button
+                      onClick={() => {
+                        resetFilters();
+                        setFiltersOpen(false);
+                      }}
+                      variant="outline"
+                      size="sm"
+                      className="w-full text-sm"
+                    >
+                      <X className="mr-2 h-4 w-4" />
+                      Réinitialiser
+                    </Button>
+                  )}
+                </div>
+              </SheetContent>
+            </Sheet>
+          ) : (
+            <h2 className="text-lg font-semibold flex items-center gap-2">
+              <Filter className="h-5 w-5" />
+              Filtres
+            </h2>
+          )}
           <div className="flex items-center gap-2">
             <Button
               onClick={() => fetchColis(true)}
@@ -375,7 +527,7 @@ export function MesColis({
               Actualiser
             </Button>
 
-            {hasActiveFilters && (
+            {!isMobile && hasActiveFilters && (
               <Button
                 onClick={resetFilters}
                 variant="outline"
@@ -389,69 +541,88 @@ export function MesColis({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 w-full">
-          <div className="space-y-2">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                placeholder="Rechercher..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-          </div>
-
-          {initialStatus === 'tous' && (
+        {!isMobile && (
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 w-full">
             <div className="space-y-2">
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input
+                  placeholder="Rechercher..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+
+            {initialStatus === 'tous' && (
+              <div className="space-y-2">
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Tous les statuts" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="tous">Tous les statuts</SelectItem>
+                    {statuts.map((statut) => (
+                      <SelectItem key={statut.id} value={statut.nom}>
+                        {statut.nom}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <Select value={sortBy} onValueChange={setSortBy}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Tous les statuts" />
+                  <SelectValue placeholder="Plus récent" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="tous">Tous les statuts</SelectItem>
-                  {statuts.map((statut) => (
-                    <SelectItem key={statut.id} value={statut.nom}>
-                      {statut.nom}
-                    </SelectItem>
-                  ))}
+                  <SelectItem value="recent">Plus récent</SelectItem>
+                  <SelectItem value="oldest">Plus ancien</SelectItem>
+                  <SelectItem value="status">Par statut</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-          )}
 
-          <div className="space-y-2">
-            <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger>
-                <SelectValue placeholder="Plus récent" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="recent">Plus récent</SelectItem>
-                <SelectItem value="oldest">Plus ancien</SelectItem>
-                <SelectItem value="status">Par statut</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+            <div className="space-y-2">
+              <Select value={dateFilter} onValueChange={setDateFilter}>
+                <SelectTrigger>
+                  <Calendar className="h-4 w-4 mr-2" />
+                  <SelectValue placeholder="Toutes les dates" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="toutes">Toutes les dates</SelectItem>
+                  <SelectItem value="aujourd_hui">Aujourd'hui</SelectItem>
+                  <SelectItem value="hier">Hier</SelectItem>
+                  <SelectItem value="7_derniers_jours">7 derniers jours</SelectItem>
+                  <SelectItem value="30_derniers_jours">30 derniers jours</SelectItem>
+                  <SelectItem value="ce_mois">Ce mois</SelectItem>
+                  <SelectItem value="le_mois_dernier">Le mois dernier</SelectItem>
+                  <SelectItem value="periode_personnalisee">Période personnalisée</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-          <div className="space-y-2">
-            <Select value={dateFilter} onValueChange={setDateFilter}>
-              <SelectTrigger>
-                <Calendar className="h-4 w-4 mr-2" />
-                <SelectValue placeholder="Toutes les dates" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="toutes">Toutes les dates</SelectItem>
-                <SelectItem value="aujourd_hui">Aujourd'hui</SelectItem>
-                <SelectItem value="hier">Hier</SelectItem>
-                <SelectItem value="7_derniers_jours">7 derniers jours</SelectItem>
-                <SelectItem value="30_derniers_jours">30 derniers jours</SelectItem>
-                <SelectItem value="ce_mois">Ce mois</SelectItem>
-                <SelectItem value="le_mois_dernier">Le mois dernier</SelectItem>
-                <SelectItem value="periode_personnalisee">Période personnalisée</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="space-y-2">
+              <Select value={entriesPerPage.toString()} onValueChange={(value) => {
+                setEntriesPerPage(Number(value));
+                setCurrentPage(1);
+              }}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Entrées par page" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="5">5 par page</SelectItem>
+                  <SelectItem value="10">10 par page</SelectItem>
+                  <SelectItem value="25">25 par page</SelectItem>
+                  <SelectItem value="50">50 par page</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Colis Cards */}
@@ -619,49 +790,52 @@ export function MesColis({
       </div>
 
       {/* Pagination */}
-      {!loading && colis.length > 0 && totalCount > entriesPerPage && (
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <p className="text-sm text-muted-foreground">
-              Affichage de {((currentPage - 1) * entriesPerPage) + 1} à {Math.min(currentPage * entriesPerPage, totalCount)} sur {totalCount} résultats
-            </p>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-              disabled={currentPage === 1}
-            >
-              Précédent
-            </Button>
-            <div className="flex items-center space-x-1">
-              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                const pageNum = i + 1;
-                return (
-                  <Button
-                    key={pageNum}
-                    variant={currentPage === pageNum ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setCurrentPage(pageNum)}
-                    className="w-8 h-8 p-0"
-                  >
-                    {pageNum}
-                  </Button>
-                );
-              })}
+      {!loading && colis.length > 0 && totalCount > entriesPerPage && (() => {
+        const totalPages = Math.ceil(totalCount / entriesPerPage);
+        return (
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <p className="text-sm text-muted-foreground">
+                Affichage de {((currentPage - 1) * entriesPerPage) + 1} à {Math.min(currentPage * entriesPerPage, totalCount)} sur {totalCount} résultats
+              </p>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-              disabled={currentPage === totalPages}
-            >
-              Suivant
-            </Button>
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+              >
+                Précédent
+              </Button>
+              <div className="flex items-center space-x-1">
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  const pageNum = i + 1;
+                  return (
+                    <Button
+                      key={pageNum}
+                      variant={currentPage === pageNum ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setCurrentPage(pageNum)}
+                      className="w-8 h-8 p-0"
+                    >
+                      {pageNum}
+                    </Button>
+                  );
+                })}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+              >
+                Suivant
+              </Button>
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Shared Modals */}
       <ColisReclamationModal

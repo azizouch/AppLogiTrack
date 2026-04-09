@@ -27,8 +27,17 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { TablePagination } from '@/components/ui/table-pagination';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription as SheetDesc,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet';
 import { Filter, Search, UserPlus, ShieldCheck, Edit, Trash2, X, UserCog, Eye, EyeOff, RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { api, auth } from '@/lib/supabase';
 
 interface User {
@@ -49,6 +58,7 @@ interface User {
 
 export function Gestion() {
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   const [users, setUsers] = useState<User[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
   const [paginatedUsers, setPaginatedUsers] = useState<User[]>([]);
@@ -64,6 +74,9 @@ export function Gestion() {
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  // Mobile state
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -145,6 +158,13 @@ export function Gestion() {
     // Reset to first page when filters change
     setCurrentPage(1);
   }, [users, searchTerm, roleFilter, statusFilter]);
+
+  // Auto-close filter sidebar on mobile when filters change
+  useEffect(() => {
+    if (isMobile && isFilterOpen) {
+      setIsFilterOpen(false);
+    }
+  }, [searchTerm, roleFilter, statusFilter, isMobile]);
 
   // Apply pagination to filtered users
   useEffect(() => {
@@ -583,65 +603,139 @@ export function Gestion() {
       </div>
 
       {/* Filters */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <Filter className="h-4 w-4 text-gray-600 dark:text-gray-400" />
-            <span className="text-sm font-medium text-gray-900 dark:text-white">Filtres</span>
-          </div>
-          {hasActiveFilters && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={resetFilters}
-              className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-            >
-              <X className="mr-2 h-4 w-4" />
-              Réinitialiser
-            </Button>
-          )}
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Search */}
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search className="h-4 w-4 text-gray-400" />
+      {isMobile ? (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <Filter className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+              <span className="text-sm font-medium text-gray-900 dark:text-white">Filtres</span>
             </div>
-            <Input
-              placeholder="Rechercher..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
-            />
+            <div className="flex items-center gap-2">
+              {hasActiveFilters && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={resetFilters}
+                  className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                >
+                  <X className="mr-2 h-4 w-4" />
+                  Réinitialiser
+                </Button>
+              )}
+              <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+                <SheetTrigger asChild>
+                  <Button variant="outline" size="sm" className="text-sm">
+                    <Filter className="mr-2 h-4 w-4" />
+                    Filtres
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="left" className="w-[300px] sm:w-[400px]">
+                  <SheetHeader>
+                    <SheetTitle>Filtres des Utilisateurs</SheetTitle>
+                    <SheetDesc>
+                      Filtrez les utilisateurs par recherche, rôle et statut
+                    </SheetDesc>
+                  </SheetHeader>
+                  <div className="space-y-4 mt-6">
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Search className="h-4 w-4 text-gray-400" />
+                      </div>
+                      <Input
+                        placeholder="Rechercher..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pl-10 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
+                      />
+                    </div>
+                    <Select value={roleFilter} onValueChange={setRoleFilter}>
+                      <SelectTrigger className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white">
+                        <SelectValue placeholder="Tous les rôles" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Tous les rôles</SelectItem>
+                        <SelectItem value="Admin">Admin</SelectItem>
+                        <SelectItem value="Gestionnaire">Gestionnaire</SelectItem>
+                        <SelectItem value="Livreur">Livreur</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Select value={statusFilter} onValueChange={setStatusFilter}>
+                      <SelectTrigger className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white">
+                        <SelectValue placeholder="Tous les statuts" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Tous les statuts</SelectItem>
+                        <SelectItem value="Actif">Actif</SelectItem>
+                        <SelectItem value="Inactif">Inactif</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </SheetContent>
+              </Sheet>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <Filter className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+              <span className="text-sm font-medium text-gray-900 dark:text-white">Filtres</span>
+            </div>
+            {hasActiveFilters && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={resetFilters}
+                className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+              >
+                <X className="mr-2 h-4 w-4" />
+                Réinitialiser
+              </Button>
+            )}
           </div>
 
-          {/* Role Filter */}
-          <Select value={roleFilter} onValueChange={setRoleFilter}>
-            <SelectTrigger className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white">
-              <SelectValue placeholder="Tous les rôles" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Tous les rôles</SelectItem>
-              <SelectItem value="Admin">Admin</SelectItem>
-              <SelectItem value="Gestionnaire">Gestionnaire</SelectItem>
-              <SelectItem value="Livreur">Livreur</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Search */}
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Search className="h-4 w-4 text-gray-400" />
+              </div>
+              <Input
+                placeholder="Rechercher..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
+              />
+            </div>
 
-          {/* Status Filter */}
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white">
-              <SelectValue placeholder="Tous les statuts" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Tous les statuts</SelectItem>
-              <SelectItem value="Actif">Actif</SelectItem>
-              <SelectItem value="Inactif">Inactif</SelectItem>
-            </SelectContent>
-          </Select>
+            {/* Role Filter */}
+            <Select value={roleFilter} onValueChange={setRoleFilter}>
+              <SelectTrigger className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white">
+                <SelectValue placeholder="Tous les rôles" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tous les rôles</SelectItem>
+                <SelectItem value="Admin">Admin</SelectItem>
+                <SelectItem value="Gestionnaire">Gestionnaire</SelectItem>
+                <SelectItem value="Livreur">Livreur</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {/* Status Filter */}
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white">
+                <SelectValue placeholder="Tous les statuts" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tous les statuts</SelectItem>
+                <SelectItem value="Actif">Actif</SelectItem>
+                <SelectItem value="Inactif">Inactif</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Users Table */}
       <div className="space-y-4">
