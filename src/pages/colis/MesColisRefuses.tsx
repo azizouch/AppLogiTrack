@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Package, Search, Filter, RefreshCw, Phone, MessageCircle, MapPin, Building, XCircle, Info, Eye, Mail, House, Building2, Save, Calendar, X, Clock, History, ChevronDown } from 'lucide-react';
+import { Package, Search, Filter, RefreshCw, Phone, MessageCircle, MapPin, Building, XCircle, Info, Eye, Mail, House, Building2, Save, Calendar, X, Clock, History, ChevronDown, PanelLeftOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -201,7 +201,7 @@ export function MesColisRefuses() {
                 <Sheet open={filtersOpen} onOpenChange={setFiltersOpen}>
                   <SheetTrigger asChild>
                     <button className="flex items-center gap-2 cursor-pointer hover:opacity-70 transition-opacity flex-1">
-                      <Filter className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                      <PanelLeftOpen className="h-4 w-4 text-gray-700 dark:text-gray-300" />
                       <span className="font-medium text-gray-700 dark:text-gray-300">Filtres</span>
                     </button>
                   </SheetTrigger>
@@ -316,8 +316,8 @@ export function MesColisRefuses() {
               </div>
             </div>
           ) : (
-            <h2 className="text-lg font-semibold flex items-center gap-2">
-              <Filter className="h-5 w-5" />
+            <h2 className="font-medium flex items-center gap-2 text-gray-700 dark:text-gray-300">
+              <Filter className="h-4 w-4 text-gray-700 dark:text-gray-300" />
               Filtres
             </h2>
           )}

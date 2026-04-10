@@ -24,7 +24,9 @@ import {
   UserCheck,
   UserPlus,
   UserX,
-  User
+  User,
+  PanelLeftOpen,
+  PanelLeftClose
 } from 'lucide-react';
 import {
   Sidebar,
@@ -485,7 +487,7 @@ export function AppSidebar() {
             className="flex items-center justify-center w-10 h-10 rounded-lg transition-colors cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
             onClick={toggleCollapse}
           >
-            <ChevronLeft className={`h-4 w-4 transition-transform duration-300 text-sidebar-foreground ${isCollapsed ? 'rotate-180' : ''}`} />
+            <PanelLeftClose className={`h-4 w-4 transition-transform duration-300 text-sidebar-foreground ${isCollapsed ? 'rotate-180' : ''}`} />
           </div>
         </div>
       </SidebarHeader>

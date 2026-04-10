@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Search, Filter, RefreshCw, XCircle, X } from 'lucide-react';
+import { Search, Filter, RefreshCw, XCircle, X, PanelLeftOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -182,51 +182,25 @@ export function ColisRefuses() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
-            <XCircle className="h-7 w-7 text-red-600 dark:text-red-400" />
+          <h1 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
+            <XCircle className="h-5 w-5 sm:h-6 sm:w-6 text-red-600 dark:text-red-400" />
             {isLivreur ? 'Mes Colis Refusés' : 'Colis Refusés'}
           </h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            {isLivreur
-              ? `Total: ${totalCount} colis refusés`
-              : 'Liste des colis qui ont été refusés par les destinataires'
-            }
-          </p>
-        </div>
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <Button
-            variant="outline"
-            onClick={handleRefresh}
-            disabled={refreshing}
-            className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700"
-          >
-            <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-            Actualiser
-          </Button>
         </div>
       </div>
 
       {/* Filters */}
       {isMobile ? (
-        <div className="space-y-3">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 z-10" />
-            <Input
-              name="search"
-              placeholder="Rechercher..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600"
-            />
-          </div>
-          <div className="flex items-center justify-between">
+        <div className="space-y-3 w-full">
+          {/* Row 1: Filtres button + Actualiser button */}
+          <div className="flex items-center justify-between w-full gap-2">
             <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
               <SheetTrigger asChild>
                 <button className="flex items-center gap-2 cursor-pointer hover:opacity-70 transition-opacity">
-                  <Filter className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                  <PanelLeftOpen className="h-4 w-4 text-gray-700 dark:text-gray-300" />
                   <span className="font-medium text-gray-700 dark:text-gray-300">Filtres</span>
                 </button>
               </SheetTrigger>
@@ -268,10 +242,72 @@ export function ColisRefuses() {
                         <SelectItem value="oldest">Plus ancien</SelectItem>
                       </SelectContent>
                     </Select>
+                    {(searchTerm || delivererFilter !== 'all' || sortBy !== 'recent') && (
+                      <Button
+                        onClick={() => {
+                          setSearchTerm('');
+                          setDelivererFilter('all');
+                          setSortBy('recent');
+                          setIsFilterOpen(false);
+                        }}
+                        variant="outline"
+                        size="sm"
+                        className="w-full text-sm"
+                      >
+                        <X className="mr-2 h-4 w-4" />
+                        Réinitialiser
+                      </Button>
+                    )}
                   </div>
                 </SheetContent>
               </Sheet>
+            <Button
+              variant="outline"
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="text-sm"
+            >
+              {refreshing ? (
+                <RefreshCw className="h-4 w-4 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4" />
+              )}
+              Actualiser
+            </Button>
+          </div>
+          {/* Row 2: Search input only */}
+          <div className="relative w-full">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <Input
+              name="search"
+              placeholder="Rechercher..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 w-full"
+            />
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <Filter className="h-4 w-4 text-gray-700 dark:text-gray-300" />
+              <span className="font-medium text-gray-700 dark:text-gray-300">Filtres</span>
+            </div>
             <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                onClick={handleRefresh}
+                disabled={refreshing}
+                className="text-sm"
+              >
+                {refreshing ? (
+                  <RefreshCw className="h-4 w-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-4 w-4" />
+                )}
+                Actualiser
+              </Button>
               {(searchTerm || delivererFilter !== 'all' || sortBy !== 'recent') && (
                 <Button
                   variant="outline"
@@ -281,37 +317,13 @@ export function ColisRefuses() {
                     setDelivererFilter('all');
                     setSortBy('recent');
                   }}
-                  className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                  className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800"
                 >
                   <X className="mr-2 h-4 w-4" />
                   Réinitialiser
                 </Button>
               )}
             </div>
-          </div>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Filter className="h-4 w-4 text-gray-500 dark:text-gray-400" />
-              <span className="font-medium text-gray-700 dark:text-gray-300">Filtres</span>
-            </div>
-            {(searchTerm || delivererFilter !== 'all' || sortBy !== 'recent') && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setSearchTerm('');
-                  setDelivererFilter('all');
-                  setSortBy('recent');
-                }}
-                className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800"
-              >
-                <X className="mr-2 h-4 w-4" />
-                Réinitialiser
-              </Button>
-            )}
           </div>
 
           <div className={`grid gap-4 ${isLivreur ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'}`}>
@@ -366,7 +378,7 @@ export function ColisRefuses() {
         <div className="space-y-3 sm:space-y-0">
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-              <span>Colis Refusés</span>
+              <span>Liste Colis Refusés</span>
             </h2>
             <div className="flex justify-between items-center sm:gap-4">
             <div className="flex items-center gap-2">

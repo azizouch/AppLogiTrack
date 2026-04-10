@@ -246,7 +246,7 @@ export function LivreurDetails() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="mb-2">
@@ -259,24 +259,13 @@ export function LivreurDetails() {
             Retour à la liste
           </Button>
         </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            onClick={handleRefresh}
-            disabled={refreshing}
-            className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
-          >
-            <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-            Actualiser
-          </Button>
-        </div>
       </div>
 
       {/* Livreur Info Header */}
       <div className="flex flex-col sm:flex-row sm:justify-between mb-8">
         {/* Title Row */}
         <div className="flex items-center gap-4 mb-4">
-          <Avatar className="w-12 h-12">
+          <Avatar className="w-10 h-10 sm:w-12 sm:h-12">
             <AvatarImage
               src={livreur.image_url}
               alt={`${livreur.prenom || ''} ${livreur.nom}`.trim()}
@@ -286,7 +275,7 @@ export function LivreurDetails() {
             </AvatarFallback>
           </Avatar>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+            <h1 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
               {livreur.nom} {livreur.prenom} (LIV-{livreur.id.slice(-3).toUpperCase()})
             </h1>
             <Badge className={getStatusColor(livreur.statut)}>

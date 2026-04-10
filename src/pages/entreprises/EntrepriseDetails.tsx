@@ -209,85 +209,38 @@ export function EntrepriseDetails() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {/* Header Navigation */}
-      <div className="mb-2">
-        <Button
-          variant="ghost"
-          onClick={() => navigate('/entreprises')}
-          className="inline-flex h-9 items-center justify-center gap-2 whitespace-nowrap rounded-md px-3 text-sm font-medium transition-colors ring-offset-background hover:bg-gray-100 dark:hover:bg-gray-800"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Retour à la liste
-        </Button>
-      </div>
-
+      <Button
+        variant="ghost"
+        onClick={() => navigate('/entreprises')}
+        className="inline-flex h-9 items-center justify-center gap-2 whitespace-nowrap rounded-md px-3 text-sm font-medium transition-colors ring-offset-background hover:bg-gray-100 dark:hover:bg-gray-800"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        Retour à la liste
+      </Button>
+    
       {/* Title and Actions */}
-      <div>
-        {/* Mobile Layout - Title and Buttons Separated */}
-        <div className="md:hidden">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Détails de l'Entreprise</h1>
-          <div className="grid grid-cols-2 gap-3">
-            <Button
-              variant="outline"
-              onClick={handleRefresh}
-              disabled={refreshing}
-              className="flex items-center justify-center gap-2 text-gray-600 dark:text-gray-400 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800"
-            >
-              <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-              Actualiser
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => navigate(`/entreprises/${entreprise.id}/modifier`)}
-              className="flex items-center justify-center gap-2 text-gray-600 dark:text-gray-400 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800"
-            >
-              <Edit className="h-4 w-4" />
-              Modifier
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={showDeleteConfirmation}
-              disabled={deleting}
-              className="col-span-2 flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800"
-            >
-              <Trash2 className="h-4 w-4" />
-              Supprimer
-            </Button>
-          </div>
-        </div>
-
-        {/* Desktop Layout - Title and Buttons on Same Line */}
-        <div className="hidden md:flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Détails de l'Entreprise</h1>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              onClick={handleRefresh}
-              disabled={refreshing}
-              className="text-gray-600 dark:text-gray-400 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800"
-            >
-              <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-              Actualiser
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => navigate(`/entreprises/${entreprise.id}/modifier`)}
-              className="text-gray-600 dark:text-gray-400 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800"
-            >
-              <Edit className="mr-2 h-4 w-4" />
-              Modifier
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={showDeleteConfirmation}
-              disabled={deleting}
-              className="bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800"
-            >
-              <Trash2 className="mr-2 h-4 w-4" />
-              Supprimer
-            </Button>
-          </div>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <h1 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">Détails de l'Entreprise</h1>
+        <div className="grid grid-cols-2 gap-2 w-full sm:flex sm:w-auto">
+          <Button
+            variant="outline"
+            onClick={() => navigate(`/entreprises/${entreprise.id}/modifier`)}
+            className="text-gray-600 dark:text-gray-400 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800"
+          >
+            <Edit className="mr-2 h-4 w-4" />
+            Modifier
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={showDeleteConfirmation}
+            disabled={deleting}
+            className="bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800"
+          >
+            <Trash2 className="mr-2 h-4 w-4" />
+            Supprimer
+          </Button>
         </div>
       </div>
 

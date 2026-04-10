@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Search, Filter, RefreshCw, Ban, X } from 'lucide-react';
+import { Search, Filter, RefreshCw, Ban, X, PanelLeftOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -182,37 +182,99 @@ export function ColisAnnules() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
-            <Ban className="h-7 w-7 text-gray-600 dark:text-gray-400" />
+          <h1 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
+            <Ban className="h-5 w-5 sm:h-6 sm:w-6 text-gray-600 dark:text-gray-400" />
             {isLivreur ? 'Mes Colis Annulés' : 'Colis Annulés'}
           </h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            {isLivreur
-              ? `Total: ${totalCount} colis annulés`
-              : 'Liste des colis qui ont été annulés avant ou pendant la livraison'
-            }
-          </p>
-        </div>
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <Button
-            variant="outline"
-            onClick={handleRefresh}
-            disabled={refreshing}
-            className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700"
-          >
-            <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-            Actualiser
-          </Button>
         </div>
       </div>
 
       {/* Filters */}
       {isMobile ? (
-        <div className="space-y-3">
-          <div className="relative">
+        <div className="space-y-2 w-full">
+          {/* Row 1: Filtres + Actualiser */}
+          <div className="flex items-center justify-between w-full gap-2">
+            <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+              <SheetTrigger asChild>
+                <button className="flex items-center gap-2 cursor-pointer hover:opacity-70 transition-opacity">
+                  <PanelLeftOpen className="h-4 w-4 text-gray-700 dark:text-gray-300" />
+                  <span className="font-medium text-gray-700 dark:text-gray-300">Filtres</span>
+                </button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-[300px] sm:w-[400px]">
+                <SheetHeader>
+                  <SheetTitle>Filtres des Colis Annulés</SheetTitle>
+                  <SheetDescription>
+                    Filtrez les colis annulés par livreur et tri
+                  </SheetDescription>
+                </SheetHeader>
+                <div className="space-y-4 mt-6">
+                  {!isLivreur && (
+                    <Select value={delivererFilter} onValueChange={setDelivererFilter}>
+                      <SelectTrigger className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
+                        <SelectValue placeholder="Tous les livreurs" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Tous les livreurs</SelectItem>
+                        <SelectItem value="unassigned">Non assigné</SelectItem>
+                        {livreurs.map((livreur) => (
+                          <SelectItem key={livreur.id} value={livreur.id}>
+                            <div className="flex items-center gap-2">
+                              <div className="flex-shrink-0 h-6 w-6 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                                {livreur.prenom?.[0] || livreur.nom[0]}
+                              </div>
+                              <span>{`${livreur.prenom || ''} ${livreur.nom}`.trim()}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                  <Select value={sortBy} onValueChange={(value) => setSortBy(value as 'recent' | 'oldest')}>
+                    <SelectTrigger className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
+                      <SelectValue placeholder="Plus récent" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="recent">Plus récent</SelectItem>
+                      <SelectItem value="oldest">Plus ancien</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {(searchTerm || delivererFilter !== 'all' || sortBy !== 'recent') && (
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setSearchTerm('');
+                        setDelivererFilter('all');
+                        setSortBy('recent');
+                      }}
+                      className="w-full text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                    >
+                      <X className="mr-2 h-4 w-4" />
+                      Réinitialiser
+                    </Button>
+                  )}
+                </div>
+              </SheetContent>
+            </Sheet>
+            <Button
+              variant="outline"
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="text-sm"
+            >
+              {refreshing ? (
+                <RefreshCw className="h-4 w-4 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4" />
+              )}
+              Actualiser
+            </Button>
+          </div>
+          {/* Row 2: Search */}
+          <div className="relative w-full">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 z-10" />
             <Input
               name="search"
@@ -222,56 +284,28 @@ export function ColisAnnules() {
               className="pl-10 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600"
             />
           </div>
+        </div>
+      ) : (
+        <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
-              <SheetTrigger asChild>
-                <button className="flex items-center gap-2 cursor-pointer hover:opacity-70 transition-opacity">
-                  <Filter className="h-4 w-4 text-gray-500 dark:text-gray-400" />
-                  <span className="font-medium text-gray-700 dark:text-gray-300">Filtres</span>
-                </button>
-              </SheetTrigger>
-                <SheetContent side="left" className="w-[300px] sm:w-[400px]">
-                  <SheetHeader>
-                    <SheetTitle>Filtres des Colis Annulés</SheetTitle>
-                    <SheetDescription>
-                      Filtrez les colis annulés par livreur et tri
-                    </SheetDescription>
-                  </SheetHeader>
-                  <div className="space-y-4 mt-6">
-                    {!isLivreur && (
-                      <Select value={delivererFilter} onValueChange={setDelivererFilter}>
-                        <SelectTrigger className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
-                          <SelectValue placeholder="Tous les livreurs" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">Tous les livreurs</SelectItem>
-                          <SelectItem value="unassigned">Non assigné</SelectItem>
-                          {livreurs.map((livreur) => (
-                            <SelectItem key={livreur.id} value={livreur.id}>
-                              <div className="flex items-center gap-2">
-                                <div className="flex-shrink-0 h-6 w-6 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-                                  {livreur.prenom?.[0] || livreur.nom[0]}
-                                </div>
-                                <span>{`${livreur.prenom || ''} ${livreur.nom}`.trim()}</span>
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
-                    <Select value={sortBy} onValueChange={(value) => setSortBy(value as 'recent' | 'oldest')}>
-                      <SelectTrigger className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
-                        <SelectValue placeholder="Plus récent" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="recent">Plus récent</SelectItem>
-                        <SelectItem value="oldest">Plus ancien</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </SheetContent>
-              </Sheet>
+            <div className="flex items-center space-x-2">
+              <Filter className="h-4 w-4 text-gray-700 dark:text-gray-300" />
+              <span className="font-medium text-gray-700 dark:text-gray-300">Filtres</span>
+            </div>
             <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                onClick={handleRefresh}
+                disabled={refreshing}
+                className="text-sm"
+              >
+                {refreshing ? (
+                  <RefreshCw className="h-4 w-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-4 w-4" />
+                )}
+                Actualiser
+              </Button>
               {(searchTerm || delivererFilter !== 'all' || sortBy !== 'recent') && (
                 <Button
                   variant="outline"
@@ -281,37 +315,13 @@ export function ColisAnnules() {
                     setDelivererFilter('all');
                     setSortBy('recent');
                   }}
-                  className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                  className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800"
                 >
                   <X className="mr-2 h-4 w-4" />
                   Réinitialiser
                 </Button>
               )}
             </div>
-          </div>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Filter className="h-4 w-4 text-gray-500 dark:text-gray-400" />
-              <span className="font-medium text-gray-700 dark:text-gray-300">Filtres</span>
-            </div>
-            {(searchTerm || delivererFilter !== 'all' || sortBy !== 'recent') && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setSearchTerm('');
-                  setDelivererFilter('all');
-                  setSortBy('recent');
-                }}
-                className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800"
-              >
-                <X className="mr-2 h-4 w-4" />
-                Réinitialiser
-              </Button>
-            )}
           </div>
 
           <div className={`grid gap-4 ${isLivreur ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'}`}>
@@ -366,7 +376,7 @@ export function ColisAnnules() {
         <div className="space-y-3 sm:space-y-0">
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-              <span>Colis Annulés</span>
+              <span>Liste Colis Annulés</span>
             </h2>
             <div className="flex justify-between items-center sm:gap-4">
             <div className="flex items-center gap-2">

@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Package, RefreshCw, Search, Filter, X, Phone, House, MapPin, Building2, History, Info, MessageCircle, Mail, Eye } from 'lucide-react';
+import { ArrowLeft, Package, RefreshCw, Search, Filter, X, Phone, House, MapPin, Building2, History, Info, MessageCircle, Mail, Eye, PanelLeftOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Colis, Statut } from '@/types';
 import { api } from '@/lib/supabase';
@@ -12,6 +13,7 @@ import { isDateTodayLocal } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useToast } from '@/hooks/use-toast';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { useColisModals } from '@/hooks/useColisModals';
 import { ColisDetailsModal, ColisReclamationModal, ColisSuiviModal, handleWhatsApp, handleSMS, handleCall } from '@/components/colis';
 
@@ -41,6 +43,7 @@ export function MesFilteredColisView() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
 
   const statusParam = searchParams.get('status') || 'all';
 
@@ -51,8 +54,9 @@ export function MesFilteredColisView() {
   const [statusFilter, setStatusFilter] = useState<string>(statusParam);
   const [entrepriseFilter, setEntrepriseFilter] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(12);
+  const [itemsPerPage, setItemsPerPage] = useState(12);
   const [statuts, setStatuts] = useState<Statut[]>([]);
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   // Use shared modal hook
   const {
@@ -126,6 +130,13 @@ export function MesFilteredColisView() {
   useEffect(() => {
     fetchStatuts();
   }, [fetchStatuts]);
+
+  // Auto-close filter sidebar on mobile when filters change
+  useEffect(() => {
+    if (isMobile && filtersOpen) {
+      setFiltersOpen(false);
+    }
+  }, [searchTerm, entrepriseFilter, isMobile]);
 
   const resetFilters = () => {
     setSearchTerm('');
@@ -317,7 +328,7 @@ export function MesFilteredColisView() {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Button
@@ -328,64 +339,162 @@ export function MesFilteredColisView() {
           >
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <h1 className="text-lg font-bold text-gray-900 dark:text-white sm:text-xl">{title}</h1>
+          <h1 className="text-xl font-bold text-gray-900 dark:text-white sm:text-xl">{title}</h1>
         </div>
         <div>
             <p className="text-sm text-gray-600 dark:text-gray-400">{filteredColis.length} colis trouvés</p>
         </div>
       </div>
 
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold flex items-center gap-2">
-            <Filter className="h-5 w-5" />
-            Filtres
-          </h2>
-          <div className="flex items-center gap-2">
-            <Button onClick={fetchColis} variant="outline" size="sm" className="text-sm">
-              <RefreshCw className="mr-2 h-4 w-4" />
-              Actualiser
-            </Button>
-            {hasActiveFilters && (
-              <Button onClick={resetFilters} variant="outline" size="sm" className="text-sm">
-                <X className="mr-2 h-4 w-4" />
-                Réinitialiser
+      <div className="space-y-3">
+        {isMobile ? (
+          <div className="space-y-2 w-full">
+            {/* Row 1: Filtres button + Actualiser button */}
+            <div className="flex items-center justify-between w-full gap-2">
+              <Sheet open={filtersOpen} onOpenChange={setFiltersOpen}>
+                <SheetTrigger asChild>
+                  <button className="flex items-center gap-2 cursor-pointer hover:opacity-70 transition-opacity flex-1">
+                    <PanelLeftOpen className="h-4 w-4 text-gray-700 dark:text-gray-300" />
+                    <span className="font-medium text-gray-700 dark:text-gray-300">Filtres</span>
+                  </button>
+                </SheetTrigger>
+                <SheetContent side="left" className="w-[300px] sm:w-[400px]">
+                  <SheetHeader>
+                    <SheetTitle>Filtres des Colis</SheetTitle>
+                  </SheetHeader>
+                  <div className="space-y-4 mt-6">
+                    <Select value={entrepriseFilter} onValueChange={setEntrepriseFilter}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Toutes les entreprises" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Toutes les entreprises</SelectItem>
+                        {Array.from(new Set(colis
+                          .map(colisItem => colisItem.entreprise?.nom)
+                          .filter((nom): nom is string => Boolean(nom))
+                        ))
+                          .sort()
+                          .map((nom) => (
+                            <SelectItem key={nom} value={nom}>{nom}</SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
+                    <Select value={itemsPerPage.toString()} onValueChange={(value) => setItemsPerPage(Number(value))}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="12 par page" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="6">6 par page</SelectItem>
+                        <SelectItem value="12">12 par page</SelectItem>
+                        <SelectItem value="24">24 par page</SelectItem>
+                        <SelectItem value="48">48 par page</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {hasActiveFilters && (
+                      <Button
+                        onClick={() => {
+                          resetFilters();
+                          setFiltersOpen(false);
+                        }}
+                        variant="outline"
+                        size="sm"
+                        className="w-full text-sm"
+                      >
+                        <X className="mr-2 h-4 w-4" />
+                        Réinitialiser
+                      </Button>
+                    )}
+                  </div>
+                </SheetContent>
+              </Sheet>
+              <Button
+                variant="outline"
+                onClick={fetchColis}
+                disabled={false}
+                className="text-sm flex-1"
+              >
+                <RefreshCw className="h-4 w-4" />
+                Actualiser
               </Button>
-            )}
-          </div>
-        </div>
-
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="flex-1">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            </div>
+            {/* Row 2: Search input only */}
+            <div className="relative w-full">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Input
-                placeholder="Rechercher par numéro, client, adresse ou entreprise..."
+                placeholder="Rechercher..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="pl-10 w-full"
               />
             </div>
           </div>
-          <div className="flex-1 sm:w-64">
-            <Select value={entrepriseFilter} onValueChange={setEntrepriseFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="Toutes les entreprises" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Toutes les entreprises</SelectItem>
-                {Array.from(new Set(colis
-                  .map(colisItem => colisItem.entreprise?.nom)
-                  .filter((nom): nom is string => Boolean(nom))
-                ))
-                  .sort()
-                  .map((nom) => (
-                    <SelectItem key={nom} value={nom}>{nom}</SelectItem>
-                  ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
+        ) : (
+          <>
+            <div className="flex items-center justify-between">
+              <h2 className="font-medium flex items-center gap-2 text-gray-700 dark:text-gray-300">
+                <Filter className="h-4 w-4 text-gray-700 dark:text-gray-300" />
+                Filtres
+              </h2>
+              <div className="flex items-center gap-2">
+                <Button onClick={fetchColis} variant="outline" size="sm" className="text-sm">
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  Actualiser
+                </Button>
+                {hasActiveFilters && (
+                  <Button onClick={resetFilters} variant="outline" size="sm" className="text-sm">
+                    <X className="mr-2 h-4 w-4" />
+                    Réinitialiser
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex-1">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Input
+                    placeholder="Rechercher par numéro, client, adresse ou entreprise..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+              <div className="flex-1 sm:w-64">
+                <Select value={entrepriseFilter} onValueChange={setEntrepriseFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Toutes les entreprises" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Toutes les entreprises</SelectItem>
+                    {Array.from(new Set(colis
+                      .map(colisItem => colisItem.entreprise?.nom)
+                      .filter((nom): nom is string => Boolean(nom))
+                    ))
+                      .sort()
+                      .map((nom) => (
+                        <SelectItem key={nom} value={nom}>{nom}</SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex-1 sm:w-48">
+                <Select value={itemsPerPage.toString()} onValueChange={(value) => setItemsPerPage(Number(value))}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="12 par page" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="6">6 par page</SelectItem>
+                    <SelectItem value="12">12 par page</SelectItem>
+                    <SelectItem value="24">24 par page</SelectItem>
+                    <SelectItem value="48">48 par page</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
       {currentColis.length > 0 ? (

@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/select';
 import { TablePagination } from '@/components/ui/table-pagination';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import {
   Sheet,
   SheetContent,
@@ -73,6 +74,7 @@ export function ColisList() {
 
   // Bulk operations state
   const [selectedColisIds, setSelectedColisIds] = useState<string[]>([]);
+  const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false);
 
   // Debounced search term for performance
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
@@ -230,13 +232,12 @@ export function ColisList() {
   const isAllSelected = colis.length > 0 && selectedColisIds.length === colis.length;
   const isIndeterminate = selectedColisIds.length > 0 && selectedColisIds.length < colis.length;
 
-  const handleBulkDelete = async () => {
+  const handleBulkDelete = () => {
     if (selectedColisIds.length === 0) return;
+    setDeleteConfirmationOpen(true);
+  };
 
-    if (!confirm(`Êtes-vous sûr de vouloir supprimer ${selectedColisIds.length} colis ?`)) {
-      return;
-    }
-
+  const confirmDelete = async () => {
     try {
       const deletePromises = selectedColisIds.map(id => api.deleteColis(id));
       await Promise.allSettled(deletePromises);
@@ -246,6 +247,10 @@ export function ColisList() {
     } catch (error) {
       console.error('Error deleting colis:', error);
     }
+  };
+
+  const handleExport = () => {
+    handleExportExcel();
   };
 
   const handleExportExcel = () => {
@@ -672,24 +677,14 @@ export function ColisList() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
-          <Package className="h-7 w-7 text-blue-600 dark:text-blue-400" />
+        <h1 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
+          <Package className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600 dark:text-blue-400" />
           Liste des Colis
         </h1>
         <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
           <div className="flex items-center gap-2 w-full sm:w-auto">
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full sm:w-auto"
-              onClick={handleRefresh}
-              disabled={refreshing}
-            >
-              <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-              Actualiser
-            </Button>
             <Button
               className="bg-green-600 hover:bg-green-700 w-full sm:w-auto"
               size="sm"
@@ -698,36 +693,27 @@ export function ColisList() {
               <Upload className="mr-2 h-4 w-4" />
               Importer Excel
             </Button>
+            <Button
+              className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto"
+              size="sm"
+              onClick={() => navigate('/colis/ajouter')}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Ajouter un colis
+            </Button>
           </div>
-          <Button
-            className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto"
-            size="sm"
-            onClick={() => navigate('/colis/ajouter')}
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            Ajouter un colis
-          </Button>
         </div>
       </div>
 
       {/* Filters */}
       {isMobile ? (
-        <div className="space-y-3">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 z-10" />
-            <Input
-              name="search"
-              placeholder="Rechercher..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600"
-            />
-          </div>
-          <div className="flex items-center justify-between">
+        <div className="space-y-3 w-full">
+          {/* Row 1: Filtres button + Actualiser button */}
+          <div className="flex items-center justify-between w-full gap-2">
             <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
               <SheetTrigger asChild>
-                <button className="flex items-center gap-2 cursor-pointer hover:opacity-70 transition-opacity">
-                  <Filter className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                <button className="flex items-center gap-2 cursor-pointer hover:opacity-70 transition-opacity flex-1">
+                  <Filter className="h-4 w-4 text-gray-700 dark:text-gray-300" />
                   <span className="font-medium text-gray-700 dark:text-gray-300">Filtres</span>
                 </button>
               </SheetTrigger>
@@ -776,111 +762,70 @@ export function ColisList() {
                       <SelectItem value="status">Par statut</SelectItem>
                     </SelectContent>
                   </Select>
+                  {hasActiveFilters && (
+                    <Button
+                      onClick={() => {
+                        resetFilters();
+                        setIsFilterOpen(false);
+                      }}
+                      variant="outline"
+                      size="sm"
+                      className="w-full text-sm"
+                    >
+                      <X className="mr-2 h-4 w-4" />
+                      Réinitialiser
+                    </Button>
+                  )}
                 </div>
               </SheetContent>
             </Sheet>
-            <div className="flex items-center gap-2">
-              {/* Bulk operations buttons - shown when colis are selected on mobile */}
-              {selectedColisIds.length > 0 && (
-                <>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleBulkDelete}
-                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleExportExcel}
-                    className="text-green-600 hover:text-green-700 hover:bg-green-50"
-                  >
-                    <Download className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleExportCSV}
-                    className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                  >
-                    <FileText className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handlePrint}
-                    className="text-purple-600 hover:text-purple-700 hover:bg-purple-50"
-                  >
-                    <Printer className="h-4 w-4" />
-                  </Button>
-                </>
+            <Button
+              variant="outline"
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="text-sm flex-1"
+            >
+              {refreshing ? (
+                <RefreshCw className="h-4 w-4 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4" />
               )}
-              {/* Reset filters button - shown when filters are active */}
-              {hasActiveFilters && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={resetFilters}
-                  className="text-xs text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-                >
-                  <X className="mr-1 h-3 w-3" />
-                  Réinitialiser
-                </Button>
-              )}
-            </div>
+              Actualiser
+            </Button>
+          </div>
+          {/* Row 2: Search input only */}
+          <div className="relative w-full">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <Input
+              name="search"
+              placeholder="Rechercher..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 w-full bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600"
+            />
           </div>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
-              <Filter className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+              <Filter className="h-4 w-4 text-gray-700 dark:text-gray-300" />
               <span className="font-medium text-gray-700 dark:text-gray-300">Filtres</span>
             </div>
             <div className="flex items-center gap-2">
-              {/* Bulk operations buttons - shown when colis are selected */}
-              {selectedColisIds.length > 0 && (
-                <>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleBulkDelete}
-                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Supprimer ({selectedColisIds.length})
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleExportExcel}
-                    className="text-green-600 hover:text-green-700 hover:bg-green-50"
-                  >
-                    <Download className="mr-2 h-4 w-4" />
-                    Excel
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleExportCSV}
-                    className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                  >
-                    <FileText className="mr-2 h-4 w-4" />
-                    CSV
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handlePrint}
-                    className="text-purple-600 hover:text-purple-700 hover:bg-purple-50"
-                  >
-                    <Printer className="mr-2 h-4 w-4" />
-                    Imprimer
-                  </Button>
-                </>
-              )}
+              <Button
+                variant="outline"
+                onClick={handleRefresh}
+                disabled={refreshing}
+                className="text-sm"
+              >
+                {refreshing ? (
+                  <RefreshCw className="h-4 w-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-4 w-4" />
+                )}
+                Actualiser
+              </Button>
               {/* Reset filters button - shown when filters are active */}
               {hasActiveFilters && (
                 <Button
@@ -947,6 +892,53 @@ export function ColisList() {
                 <SelectItem value="status">Par statut</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Operations Bar */}
+      {selectedColisIds.length > 0 && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
+          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            {selectedColisIds.length} colis sélectionné{selectedColisIds.length > 1 ? 's' : ''}
+          </span>
+          <div className="flex items-center justify-start sm:justify-end gap-2 w-full sm:w-auto overflow-x-auto whitespace-nowrap">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleBulkDelete}
+              className="text-red-600 dark:text-red-400 border-red-300 dark:border-red-700 hover:bg-red-50 dark:hover:bg-red-950"
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Supprimer
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExport}
+              className="text-green-600 dark:text-green-400 border-green-300 dark:border-green-700 hover:bg-green-50 dark:hover:bg-green-950"
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Excel
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExportCSV}
+              className="text-amber-600 dark:text-amber-400 border-amber-300 dark:border-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950"
+            >
+              <FileText className="mr-2 h-4 w-4" />
+              CSV
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handlePrint}
+              className="text-blue-600 dark:text-blue-400 border-blue-300 dark:border-blue-700 hover:bg-blue-50 dark:hover:bg-blue-950"
+            >
+              <Printer className="mr-2 h-4 w-4" />
+              Imprimer
+            </Button>
           </div>
         </div>
       )}
@@ -1093,6 +1085,18 @@ export function ColisList() {
           setImportModalOpen(false);
           fetchColis({ _refresh: true }); // Refresh the list after successful import
         }}
+      />
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmationDialog
+        open={deleteConfirmationOpen}
+        onOpenChange={setDeleteConfirmationOpen}
+        title="Supprimer les colis"
+        description={`Êtes-vous sûr de vouloir supprimer ${selectedColisIds.length} colis ? Cette action est irréversible.`}
+        confirmText="Supprimer"
+        cancelText="Annuler"
+        onConfirm={confirmDelete}
+        variant="destructive"
       />
     </div>
   );

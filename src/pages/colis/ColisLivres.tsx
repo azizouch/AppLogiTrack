@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Search, Filter, RefreshCw, Eye, CheckCircle, Phone, MessageCircle, MapPin, Building, Package, Info, X } from 'lucide-react';
+import { Search, Filter, RefreshCw, Eye, CheckCircle, Phone, MessageCircle, MapPin, Building, Package, Info, X, PanelLeftOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -215,41 +215,25 @@ export function ColisLivres() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-3 dark:text-white ">
-            <CheckCircle className="h-7 w-7 text-green-600" />
+          <h1 className="text-lg sm:text-xl font-bold text-gray-900 flex items-center gap-3 dark:text-white ">
+            <CheckCircle className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
             {isLivreur ? 'Mes Colis Livrés' : 'Colis Livrés'}
           </h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            {isLivreur
-              ? `Total: ${totalCount} colis livrés`
-              : 'Liste des colis qui ont été livrés avec succès'
-            }
-          </p>
         </div>
-        <div></div>
       </div>
 
       {/* Filters */}
       {isMobile ? (
-        <div className="space-y-3">
-          <div className="relative w-full">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-            <Input
-              name="search"
-              placeholder="Rechercher..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600"
-            />
-          </div>
-          <div className="flex items-center justify-between">
+        <div className="space-y-3 w-full">
+          {/* Row 1: Filtres button + Actualiser button */}
+          <div className="flex items-center justify-between w-full gap-2">
             <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
               <SheetTrigger asChild>
                 <button className="flex items-center gap-2 cursor-pointer hover:opacity-70 transition-opacity">
-                  <Filter className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                  <PanelLeftOpen className="h-4 w-4 text-gray-700 dark:text-gray-300" />
                   <span className="font-medium text-gray-700 dark:text-gray-300">Filtres</span>
                 </button>
               </SheetTrigger>
@@ -291,33 +275,56 @@ export function ColisLivres() {
                       <SelectItem value="oldest">Plus ancien</SelectItem>
                     </SelectContent>
                   </Select>
+                  {(searchTerm || delivererFilter !== 'all' || sortBy !== 'recent') && (
+                    <Button
+                      onClick={() => {
+                        setSearchTerm('');
+                        setDelivererFilter('all');
+                        setSortBy('recent');
+                        setIsFilterOpen(false);
+                      }}
+                      variant="outline"
+                      size="sm"
+                      className="w-full text-sm"
+                    >
+                      <X className="mr-2 h-4 w-4" />
+                      Réinitialiser
+                    </Button>
+                  )}
                 </div>
               </SheetContent>
             </Sheet>
-            <div className="flex items-center gap-2">
-              {(searchTerm || delivererFilter !== 'all' || sortBy !== 'recent') && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setSearchTerm('');
-                    setDelivererFilter('all');
-                    setSortBy('recent');
-                  }}
-                  className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-                >
-                  <X className="mr-2 h-4 w-4" />
-                  Réinitialiser
-                </Button>
+            <Button
+              variant="outline"
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="text-sm"
+            >
+              {refreshing ? (
+                <RefreshCw className="h-4 w-4 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4" />
               )}
-            </div>
+              Actualiser
+            </Button>
+          </div>
+          {/* Row 2: Search input only */}
+          <div className="relative w-full">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <Input
+              name="search"
+              placeholder="Rechercher..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 w-full"
+            />
           </div>
         </div>
       ) : (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
-              <Filter className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+              <Filter className="h-4 w-4 text-gray-700 dark:text-gray-300" />
               <span className="font-medium text-gray-700 dark:text-gray-300">Filtres</span>
             </div>
             <div className="flex items-center gap-2">
@@ -400,7 +407,7 @@ export function ColisLivres() {
         <div className="space-y-3 sm:space-y-0">
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-              <span>Colis Livrés</span>
+              <span>Liste Colis Livrés</span>
             </h2>
             <div className="flex justify-between items-center sm:gap-4">
             <div className="flex items-center gap-2">

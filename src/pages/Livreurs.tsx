@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Plus, Search, RefreshCw, Eye, Edit, Trash2, Truck, User, X, Package } from 'lucide-react';
+import { Plus, Search, RefreshCw, Eye, Edit, Trash2, Truck, User, X, Package, PanelLeftOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -279,25 +279,13 @@ export function Livreurs() {
   }, [searchTerm, zoneFilter, vehiculeFilter, nombreFilter, isMobile]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
-            <Truck className="h-7 w-7 text-blue-600 dark:text-blue-400" />
-            Livreurs
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400">Gestion des livreurs</p>
-        </div>
+        <h1 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
+          <Truck className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600 dark:text-blue-400" />
+          Gestion des Livreurs
+        </h1>
         <div className="flex items-center gap-1 sm:gap-2 w-full sm:w-auto">
-          <Button
-            variant="outline"
-            onClick={handleRefresh}
-            disabled={refreshing}
-            className="bg-transparent border-gray-600 dark:border-gray-600 text-gray-900 dark:text-gray-100 hover:bg-gray-700/10 dark:hover:bg-gray-700/20 px-2 sm:px-4 py-1 sm:py-2 text-xs sm:text-sm flex-1 sm:flex-none"
-          >
-            <RefreshCw className={`mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4 ${refreshing ? 'animate-spin' : ''}`} />
-            Actualiser
-          </Button>
           <Button
             className="bg-green-600 hover:bg-green-700 flex-1 sm:flex-none px-2 sm:px-4 py-1 sm:py-2 text-xs sm:text-sm"
             onClick={() => navigate('/livreurs/ajouter')}
@@ -310,24 +298,16 @@ export function Livreurs() {
 
       {/* Filters */}
       {isMobile ? (
-        <div className="space-y-3">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 z-10" />
-            <Input
-              name="search"
-              placeholder="Rechercher..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600"
-            />
-          </div>
-          <div className="flex items-center justify-between">
+        <div className="space-y-3 w-full">
+          {/* Row 1: Filtres + Actualiser */}
+          <div className="flex items-center justify-between w-full gap-2">
             <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
               <SheetTrigger asChild>
                 <button className="flex items-center gap-2 cursor-pointer hover:opacity-70 transition-opacity">
-                  <svg className="h-4 w-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  {/* <svg className="h-4 w-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.707A1 1 0 013 7V4z" />
-                  </svg>
+                  </svg> */}
+                  <PanelLeftOpen className="h-4 w-4 text-gray-700 dark:text-gray-300" />
                   <span className="font-medium text-gray-700 dark:text-gray-300">Filtres</span>
                 </button>
               </SheetTrigger>
@@ -340,45 +320,108 @@ export function Livreurs() {
                 </SheetHeader>
                 <div className="space-y-4 mt-6">
                   <Select value={zoneFilter} onValueChange={setZoneFilter}>
-                      <SelectTrigger className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
-                        <SelectValue placeholder="Toutes les zones" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Toutes les zones</SelectItem>
-                        {zones.map((zone) => (
-                          <SelectItem key={zone} value={zone}>
-                            {zone}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Select value={vehiculeFilter} onValueChange={setVehiculeFilter}>
-                      <SelectTrigger className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
-                        <SelectValue placeholder="Tous les véhicules" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Tous les véhicules</SelectItem>
-                        {vehicules.map((vehicule) => (
-                          <SelectItem key={vehicule} value={vehicule}>
-                            {vehicule}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Select value={nombreFilter} onValueChange={setNombreFilter}>
-                      <SelectTrigger className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
-                        <SelectValue placeholder="Tous les nombres" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Tous les nombres</SelectItem>
-                        <SelectItem value="plus">Plus de colis</SelectItem>
-                        <SelectItem value="moins">Moins de colis</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </SheetContent>
-              </Sheet>
+                    <SelectTrigger className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
+                      <SelectValue placeholder="Toutes les zones" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Toutes les zones</SelectItem>
+                      {zones.map((zone) => (
+                        <SelectItem key={zone} value={zone}>
+                          {zone}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select value={vehiculeFilter} onValueChange={setVehiculeFilter}>
+                    <SelectTrigger className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
+                      <SelectValue placeholder="Tous les véhicules" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Tous les véhicules</SelectItem>
+                      {vehicules.map((vehicule) => (
+                        <SelectItem key={vehicule} value={vehicule}>
+                          {vehicule}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select value={nombreFilter} onValueChange={setNombreFilter}>
+                    <SelectTrigger className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
+                      <SelectValue placeholder="Tous les nombres" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Tous les nombres</SelectItem>
+                      <SelectItem value="plus">Plus de colis</SelectItem>
+                      <SelectItem value="moins">Moins de colis</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {(searchTerm || zoneFilter !== 'all' || vehiculeFilter !== 'all' || nombreFilter !== 'all') && (
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setSearchTerm('');
+                        setZoneFilter('all');
+                        setVehiculeFilter('all');
+                        setNombreFilter('all');
+                      }}
+                      className="w-full text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                    >
+                      <X className="mr-2 h-4 w-4" />
+                      Réinitialiser
+                    </Button>
+                  )}
+                </div>
+              </SheetContent>
+            </Sheet>
+            <Button
+              variant="outline"
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="text-sm"
+            >
+              {refreshing ? (
+                <RefreshCw className="h-4 w-4 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4" />
+              )}
+              Actualiser
+            </Button>
+          </div>
+          {/* Row 2: Search */}
+          <div className="relative w-full">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 z-10" />
+            <Input
+              name="search"
+              placeholder="Rechercher..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600"
+            />
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
+              <svg className="h-4 w-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.707A1 1 0 013 7V4z" />
+              </svg>
+              <span className="font-medium text-gray-700 dark:text-gray-300">Filtres</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                onClick={handleRefresh}
+                disabled={refreshing}
+                className="text-sm"
+              >
+                {refreshing ? (
+                  <RefreshCw className="h-4 w-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-4 w-4" />
+                )}
+                Actualiser
+              </Button>
               {(searchTerm || zoneFilter !== 'all' || vehiculeFilter !== 'all' || nombreFilter !== 'all') && (
                 <Button
                   variant="outline"
@@ -397,34 +440,8 @@ export function Livreurs() {
               )}
             </div>
           </div>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <svg className="h-4 w-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.707A1 1 0 013 7V4z" />
-              </svg>
-              <span className="font-medium text-gray-700 dark:text-gray-300">Filtres</span>
-            </div>
-            {(searchTerm || zoneFilter !== 'all' || vehiculeFilter !== 'all' || nombreFilter !== 'all') && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setSearchTerm('');
-                  setZoneFilter('all');
-                  setVehiculeFilter('all');
-                  setNombreFilter('all');
-                }}
-                className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-              >
-                <X className="mr-2 h-4 w-4" />
-                Réinitialiser
-              </Button>
-            )}
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Input

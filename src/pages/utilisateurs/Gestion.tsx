@@ -77,6 +77,7 @@ export function Gestion() {
 
   // Mobile state
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -128,6 +129,15 @@ export function Gestion() {
       setLoading(false);
     }
   }, [toast]);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await fetchUsers();
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   useEffect(() => {
     fetchUsers();
@@ -526,14 +536,14 @@ export function Gestion() {
   const hasActiveFilters = searchTerm || roleFilter !== 'all' || statusFilter !== 'all';
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header */}
       <div className="space-y-3">
         {/* Small screens: Title and Roles on one line, other buttons on separate line */}
         {/* Large screens: All buttons on same line */}
         <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
-            <UserCog className="h-7 w-7 text-blue-600 dark:text-blue-400" />
+          <h1 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
+            <UserCog className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600 dark:text-blue-400" />
             Gestion des Utilisateurs
           </h1>
 
@@ -604,24 +614,14 @@ export function Gestion() {
 
       {/* Filters */}
       {isMobile ? (
-        <div className="space-y-3">
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search className="h-4 w-4 text-gray-400" />
-            </div>
-            <Input
-              placeholder="Rechercher..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
-            />
-          </div>
-          <div className="flex items-center justify-between">
+        <div className="space-y-2 w-full">
+          {/* Row 1: Filtres + Actualiser */}
+          <div className="flex items-center justify-between w-full gap-2">
             <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
               <SheetTrigger asChild>
-                <button className="flex items-center gap-2 cursor-pointer hover:opacity-70 transition-opacity">
-                  <Filter className="h-4 w-4 text-gray-600 dark:text-gray-400" />
-                  <span className="text-sm font-medium text-gray-900 dark:text-white">Filtres</span>
+                <button className="flex items-center gap-2 cursor-pointer hover:opacity-70 transition-opacity flex-1">
+                  <Filter className="h-4 w-4 text-gray-700 dark:text-gray-300" />
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Filtres</span>
                 </button>
               </SheetTrigger>
               <SheetContent side="left" className="w-[300px] sm:w-[400px]">
@@ -633,35 +633,100 @@ export function Gestion() {
                 </SheetHeader>
                 <div className="space-y-4 mt-6">
                   <Select value={roleFilter} onValueChange={setRoleFilter}>
-                      <SelectTrigger className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white">
-                        <SelectValue placeholder="Tous les rôles" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Tous les rôles</SelectItem>
-                        <SelectItem value="Admin">Admin</SelectItem>
-                        <SelectItem value="Gestionnaire">Gestionnaire</SelectItem>
-                        <SelectItem value="Livreur">Livreur</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Select value={statusFilter} onValueChange={setStatusFilter}>
-                      <SelectTrigger className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white">
-                        <SelectValue placeholder="Tous les statuts" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Tous les statuts</SelectItem>
-                        <SelectItem value="Actif">Actif</SelectItem>
-                        <SelectItem value="Inactif">Inactif</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </SheetContent>
-              </Sheet>
+                    <SelectTrigger className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white">
+                      <SelectValue placeholder="Tous les rôles" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Tous les rôles</SelectItem>
+                      <SelectItem value="Admin">Admin</SelectItem>
+                      <SelectItem value="Gestionnaire">Gestionnaire</SelectItem>
+                      <SelectItem value="Livreur">Livreur</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white">
+                      <SelectValue placeholder="Tous les statuts" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Tous les statuts</SelectItem>
+                      <SelectItem value="Actif">Actif</SelectItem>
+                      <SelectItem value="Inactif">Inactif</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {(searchTerm || roleFilter !== 'all' || statusFilter !== 'all') && (
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setSearchTerm('');
+                        setRoleFilter('all');
+                        setStatusFilter('all');
+                      }}
+                      className="w-full text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                    >
+                      <X className="mr-2 h-4 w-4" />
+                      Réinitialiser
+                    </Button>
+                  )}
+                </div>
+              </SheetContent>
+            </Sheet>
+            <Button
+              variant="outline"
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="text-sm flex-1"
+            >
+              {refreshing ? (
+                <RefreshCw className="h-4 w-4 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4" />
+              )}
+              Actualiser
+            </Button>
+          </div>
+          {/* Row 2: Search */}
+          <div className="relative w-full">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Search className="h-4 w-4 text-gray-400" />
+            </div>
+            <Input
+              placeholder="Rechercher..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
+            />
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <Filter className="h-4 w-4 text-gray-700 dark:text-gray-300" />
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Filtres</span>
+            </div>
             <div className="flex items-center gap-2">
-              {hasActiveFilters && (
+              <Button
+                variant="outline"
+                onClick={handleRefresh}
+                disabled={refreshing}
+                className="text-sm"
+              >
+                {refreshing ? (
+                  <RefreshCw className="h-4 w-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-4 w-4" />
+                )}
+                Actualiser
+              </Button>
+              {(searchTerm || roleFilter !== 'all' || statusFilter !== 'all') && (
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={resetFilters}
+                  onClick={() => {
+                    setSearchTerm('');
+                    setRoleFilter('all');
+                    setStatusFilter('all');
+                  }}
                   className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                 >
                   <X className="mr-2 h-4 w-4" />
@@ -669,26 +734,6 @@ export function Gestion() {
                 </Button>
               )}
             </div>
-          </div>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Filter className="h-4 w-4 text-gray-600 dark:text-gray-400" />
-              <span className="text-sm font-medium text-gray-900 dark:text-white">Filtres</span>
-            </div>
-            {hasActiveFilters && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={resetFilters}
-                className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-              >
-                <X className="mr-2 h-4 w-4" />
-                Réinitialiser
-              </Button>
-            )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

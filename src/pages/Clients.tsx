@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Plus, Search, RefreshCw, Eye, Edit, Trash2, Users, X, Filter } from 'lucide-react';
+import { Plus, Search, RefreshCw, Eye, Edit, Trash2, Users, X, Filter, PanelLeftOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -264,25 +264,16 @@ export function Clients() {
   }, [fetchClients]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
-            <Users className="h-6 w-6 sm:h-7 sm:w-7 text-blue-600 dark:text-blue-400" />
+          <h1 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
+            <Users className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600 dark:text-blue-400" />
             Gestion des Clients
           </h1>
         </div>
         <div className="flex items-center gap-1 sm:gap-2 w-full sm:w-auto">
-          <Button
-            variant="outline"
-            onClick={handleRefresh}
-            disabled={refreshing}
-            className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700 px-2 sm:px-4 py-1 sm:py-2 text-xs sm:text-sm flex-1 sm:flex-none"
-          >
-            <RefreshCw className={`mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4 ${refreshing ? 'animate-spin' : ''}`} />
-            Actualiser
-          </Button>
           <Button
             className="bg-blue-600 hover:bg-blue-700 px-2 sm:px-4 py-1 sm:py-2 text-xs sm:text-sm flex-1 sm:flex-none"
             onClick={() => navigate('/clients/nouveau')}
@@ -295,8 +286,89 @@ export function Clients() {
 
       {/* Filters */}
       {isMobile ? (
-        <div className="space-y-3">
-          <div className="relative">
+        <div className="space-y-3 w-full">
+          {/* Row 1: Filtres + Actualiser */}
+          <div className="flex items-center justify-between w-full gap-2">
+            <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+              <SheetTrigger asChild>
+                <button className="flex items-center gap-2 cursor-pointer hover:opacity-70 transition-opacity">
+                  <PanelLeftOpen className="h-4 w-4 text-gray-700 dark:text-gray-300" />
+                  <span className="font-medium text-gray-700 dark:text-gray-300">Filtres</span>
+                </button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-[300px] sm:w-[400px]">
+                <SheetHeader>
+                  <SheetTitle>Filtres des Clients</SheetTitle>
+                  <SheetDescription>
+                    Filtrez les clients par ville et entreprise
+                  </SheetDescription>
+                </SheetHeader>
+                <div className="space-y-4 mt-6">
+                  <Select value={cityFilter} onValueChange={setCityFilter}>
+                    <SelectTrigger className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white">
+                      <SelectValue placeholder="Toutes les villes" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600">
+                      <SelectItem value="all" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600">Toutes les villes</SelectItem>
+                      {hasClientsWithoutVille && (
+                        <SelectItem value="sans_ville" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600">
+                          <span className="text-orange-600 dark:text-orange-400">Sans ville</span>
+                        </SelectItem>
+                      )}
+                      {uniqueCities.map((city) => (
+                        <SelectItem key={city} value={city} className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600">
+                          {city}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select value={entrepriseFilter} onValueChange={setEntrepriseFilter}>
+                    <SelectTrigger className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white">
+                      <SelectValue placeholder="Toutes les entreprises" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600">
+                      <SelectItem value="all" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600">Toutes les entreprises</SelectItem>
+                      {hasClientsWithoutEntreprise && (
+                        <SelectItem value="sans_entreprise" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600">
+                          <span className="text-orange-600 dark:text-orange-400">Sans entreprise</span>
+                        </SelectItem>
+                      )}
+                      {allEntrepriseNames.map((entreprise) => (
+                        <SelectItem key={entreprise} value={entreprise} className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600">
+                          {entreprise}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {hasActiveFilters && (
+                    <Button
+                      variant="outline"
+                      onClick={resetFilters}
+                      className="w-full text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                    >
+                      <X className="mr-2 h-4 w-4" />
+                      Réinitialiser
+                    </Button>
+                  )}
+                </div>
+              </SheetContent>
+            </Sheet>
+            <Button
+              variant="outline"
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="text-sm"
+            >
+              {refreshing ? (
+                <RefreshCw className="h-4 w-4 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4" />
+              )}
+              Actualiser
+            </Button>
+          </div>
+          {/* Row 2: Search */}
+          <div className="relative w-full">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 z-10" />
             <Input
               placeholder="Rechercher..."
@@ -305,62 +377,30 @@ export function Clients() {
               className="pl-10 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400"
             />
           </div>
+        </div>
+      ) : (
+        <div className="space-y-3 sm:space-y-4">
           <div className="flex items-center justify-between">
-            <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
-              <SheetTrigger asChild>
-                <button className="flex items-center gap-2 cursor-pointer hover:opacity-70 transition-opacity">
-                  <Filter className="h-4 w-4 text-gray-500 dark:text-gray-400" />
-                  <span className="font-medium text-gray-700 dark:text-gray-300">Filtres</span>
-                </button>
-              </SheetTrigger>
-                <SheetContent side="left" className="w-[300px] sm:w-[400px]">
-                  <SheetHeader>
-                    <SheetTitle>Filtres des Clients</SheetTitle>
-                    <SheetDescription>
-                      Filtrez les clients par ville et entreprise
-                    </SheetDescription>
-                  </SheetHeader>
-                  <div className="space-y-4 mt-6">
-                    <Select value={cityFilter} onValueChange={setCityFilter}>
-                      <SelectTrigger className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white">
-                        <SelectValue placeholder="Toutes les villes" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600">
-                        <SelectItem value="all" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600">Toutes les villes</SelectItem>
-                        {hasClientsWithoutVille && (
-                          <SelectItem value="sans_ville" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600">
-                            <span className="text-orange-600 dark:text-orange-400">Sans ville</span>
-                          </SelectItem>
-                        )}
-                        {uniqueCities.map((city) => (
-                          <SelectItem key={city} value={city} className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600">
-                            {city}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Select value={entrepriseFilter} onValueChange={setEntrepriseFilter}>
-                      <SelectTrigger className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white">
-                        <SelectValue placeholder="Toutes les entreprises" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600">
-                        <SelectItem value="all" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600">Toutes les entreprises</SelectItem>
-                        {hasClientsWithoutEntreprise && (
-                          <SelectItem value="sans_entreprise" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600">
-                            <span className="text-orange-600 dark:text-orange-400">Sans entreprise</span>
-                          </SelectItem>
-                        )}
-                        {allEntrepriseNames.map((entreprise) => (
-                          <SelectItem key={entreprise} value={entreprise} className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600">
-                            {entreprise}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </SheetContent>
-              </Sheet>
             <div className="flex items-center gap-2">
+              <svg className="h-4 w-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.707A1 1 0 013 7V4z" />
+              </svg>
+              <span className="font-medium text-gray-700 dark:text-gray-300">Filtres</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                onClick={handleRefresh}
+                disabled={refreshing}
+                className="text-sm"
+              >
+                {refreshing ? (
+                  <RefreshCw className="h-4 w-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-4 w-4" />
+                )}
+                Actualiser
+              </Button>
               {hasActiveFilters && (
                 <Button
                   variant="outline"
@@ -373,28 +413,6 @@ export function Clients() {
                 </Button>
               )}
             </div>
-          </div>
-        </div>
-      ) : (
-        <div className="space-y-3 sm:space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <svg className="h-4 w-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.707A1 1 0 013 7V4z" />
-              </svg>
-              <span className="font-medium text-gray-700 dark:text-gray-300">Filtres</span>
-            </div>
-            {hasActiveFilters && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={resetFilters}
-                className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-              >
-                <X className="mr-2 h-4 w-4" />
-                Réinitialiser
-              </Button>
-            )}
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="relative">

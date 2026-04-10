@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Bell, RefreshCw, Check, CheckCheck, Trash2, Calendar, User, Filter, Search, X, ArrowBigDownDash, ArrowDown, ArrowRightIcon, ChevronRight } from 'lucide-react';
+import { Bell, RefreshCw, Check, CheckCheck, Trash2, Calendar, User, Filter, Search, X, ArrowBigDownDash, ArrowDown, ArrowRightIcon, ChevronRight, PanelLeftOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -359,7 +359,10 @@ export function Notifications() {
       <div className="w-full">
         {/* Desktop layout - only show on very large screens */}
         <div className="hidden xl:flex xl:items-center xl:justify-between">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Notifications</h1>
+          <h1 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
+            <Bell className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+            Notifications
+          </h1>
           {unreadCount > 0 && (
             <Button
               onClick={markAllAsRead}
@@ -373,7 +376,10 @@ export function Notifications() {
 
         {/* Mobile layout - show on most screens */}
         <div className="xl:hidden space-y-4">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Notifications</h1>
+          <h1 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-3">
+            <Bell className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+            Notifications
+          </h1>
           {unreadCount > 0 && (
             <Button
               onClick={markAllAsRead}
@@ -394,9 +400,8 @@ export function Notifications() {
             <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
               <SheetTrigger asChild>
                 <button className="flex items-center gap-2 cursor-pointer hover:opacity-70 transition-opacity">
-                  <Filter className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+                  <PanelLeftOpen className="h-4 w-4 text-gray-700 dark:text-gray-300" />
                   <span className="font-medium text-gray-700 dark:text-gray-300">Filtres</span>
-                  <ChevronRight className="h-5 w-5 text-gray-400" />
                 </button>
               </SheetTrigger>
               <SheetContent side="left" className="w-[300px] sm:w-[400px]">
@@ -503,8 +508,8 @@ export function Notifications() {
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-gray-600 dark:text-gray-400" />
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Filtres</span>
+              <Filter className="h-4 w-4 text-gray-700 dark:text-gray-300" />
+              <span className="font-medium text-gray-700 dark:text-gray-300">Filtres</span>
             </div>
             <div className="flex items-center gap-2">
               {hasActiveFilters && (

@@ -310,7 +310,7 @@ export function LivreurDashboard() {
   ];
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div className="space-y-3 sm:space-y-5">
       {/* Header with date */}
       <div className="flex justify-between items-center">
         <button
@@ -357,37 +357,34 @@ export function LivreurDashboard() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               {/* BLUE */}
               <button
-                className="flex justify-between items-center w-full sm:w-auto 
-                          bg-gradient-to-r from-blue-400 via-blue-500 to-blue-700 
-                          text-white px-3 py-2 pt-4 pb-4 rounded-lg border-l-4 border-blue-700"
+                className="flex justify-between items-center w-full sm:w-auto
+                          text-black px-3 py-2 pt-4 pb-4 rounded-lg border border-l-4 border-blue-700 dark:text-white"
                 onClick={() => navigate('/bons/mes-distribution')}
               >
                 <span>Bons Distribution</span>
-                <Badge className="ml-2 bg-white text-black dark:bg-black dark:text-white">
+                <Badge className="ml-2 bg-white border-blue-700 text-black dark:bg-black dark:text-white">
                   {bonStats.distribution?.total ?? 0}
                 </Badge>
               </button>
               {/* GREEN */}
               <button
-                className="flex justify-between items-center w-full sm:w-auto 
-                          bg-gradient-to-r from-green-400 via-green-500 to-green-700 
-                          text-white px-3 py-2 pt-4 pb-4 rounded-lg border-l-4 border-green-700"
+                className="flex justify-between items-center w-full sm:w-auto
+                          text-black px-3 py-2 pt-4 pb-4 rounded-lg border border-l-4 border-green-700 dark:text-white"
                 onClick={() => navigate('/bons/mes-paiement')}
               >
                 <span>Bons Paiement</span>
-                <Badge className="ml-2 bg-white text-black dark:bg-black dark:text-white">
+                <Badge className="ml-2 bg-white border-green-700 text-black dark:bg-black dark:text-white">
                   {bonStats.paiement?.total ?? 0}
                 </Badge>
               </button>
               {/* RED */}
               <button
-                className="flex justify-between items-center w-full sm:w-auto 
-                          bg-gradient-to-r from-red-400 via-red-500 to-red-700 
-                          text-white px-3 py-2 pt-4 pb-4 rounded-lg border-l-4 border-red-700"
+                className="flex justify-between items-center w-full sm:w-auto
+                          text-black px-3 py-2 pt-4 pb-4 rounded-lg border border-l-4 border-red-700 dark:text-white"
                 onClick={() => navigate('/bons/mes-retour')}
               >
                 <span>Bons Retour</span>
-                <Badge className="ml-2 bg-white text-black dark:bg-black dark:text-white">
+                <Badge className="ml-2 bg-white border-red-700 text-black dark:bg-black dark:text-white">
                   {bonStats.retour?.total ?? 0}
                 </Badge>
               </button>

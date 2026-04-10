@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Package, Search, Filter, RefreshCw, Phone, MessageCircle, MapPin, Building, Calendar, Eye, Info, CheckCircle, AlertCircle, Clock, House, Building2, Save, MessageSquare, CircleAlert, X, Send, Mail, RotateCcw, History, ChevronDown } from 'lucide-react';
+import { Package, Search, Filter, RefreshCw, Phone, MessageCircle, MapPin, Building, Calendar, Eye, Info, CheckCircle, AlertCircle, Clock, House, Building2, Save, MessageSquare, CircleAlert, X, Send, Mail, RotateCcw, History, ChevronDown, PanelLeftOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -375,14 +375,14 @@ export function MesColis({
                 <Sheet open={filtersOpen} onOpenChange={setFiltersOpen}>
                   <SheetTrigger asChild>
                     <button className="flex items-center gap-2 cursor-pointer hover:opacity-70 transition-opacity flex-1">
-                      <Filter className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                      <PanelLeftOpen className="h-4 w-4 text-gray-700 dark:text-gray-300" />
                       <span className="font-medium text-gray-700 dark:text-gray-300">Filtres</span>
                     </button>
                   </SheetTrigger>
                   <SheetContent side="left" className="w-[300px] sm:w-[400px]">
                     <SheetHeader>
                       <SheetTitle className="flex items-center gap-2">
-                        <Filter className="h-5 w-5" />
+                        <Filter className="h-5 w-5 text-gray-700 dark:text-gray-300" />
                         Filtres
                       </SheetTitle>
                     </SheetHeader>
@@ -519,8 +519,8 @@ export function MesColis({
               </div>
             </div>
           ) : (
-            <h2 className="text-lg font-semibold flex items-center gap-2">
-              <Filter className="h-5 w-5" />
+            <h2 className="font-medium flex items-center gap-2 text-gray-700 dark:text-gray-300">
+              <Filter className="h-4 w-4 text-gray-700 dark:text-gray-300" />
               Filtres
             </h2>
           )}
