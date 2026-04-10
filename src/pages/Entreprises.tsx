@@ -281,48 +281,32 @@ export function Entreprises() {
       {/* Filters */}
       {isMobile ? (
         <div className="space-y-3">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 z-10" />
+            <Input
+              placeholder="Rechercher..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600"
+            />
+          </div>
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-gray-500 dark:text-gray-400" />
-              <span className="font-medium text-gray-700 dark:text-gray-300">Filtres</span>
-            </div>
-            <div className="flex items-center gap-2">
-              {hasActiveFilters && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={resetFilters}
-                  className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-                >
-                  <X className="mr-2 h-4 w-4" />
-                  Réinitialiser
-                </Button>
-              )}
-              <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
-                <SheetTrigger asChild>
-                  <Button variant="outline" size="sm" className="text-sm">
-                    <Filter className="mr-2 h-4 w-4" />
-                    Filtres
-                  </Button>
-                </SheetTrigger>
-                <SheetContent side="left" className="w-[300px] sm:w-[400px]">
-                  <SheetHeader>
-                    <SheetTitle>Filtres des Entreprises</SheetTitle>
-                    <SheetDescription>
-                      Filtrez les entreprises par recherche, ville et statut
-                    </SheetDescription>
-                  </SheetHeader>
-                  <div className="space-y-4 mt-6">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                      <Input
-                        placeholder="Rechercher..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600"
-                      />
-                    </div>
-                    <Select value={cityFilter} onValueChange={setCityFilter}>
+            <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+              <SheetTrigger asChild>
+                <button className="flex items-center gap-2 cursor-pointer hover:opacity-70 transition-opacity">
+                  <Filter className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                  <span className="font-medium text-gray-700 dark:text-gray-300">Filtres</span>
+                </button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-[300px] sm:w-[400px]">
+                <SheetHeader>
+                  <SheetTitle>Filtres des Entreprises</SheetTitle>
+                  <SheetDescription>
+                    Filtrez les entreprises par ville et statut
+                  </SheetDescription>
+                </SheetHeader>
+                <div className="space-y-4 mt-6">
+                  <Select value={cityFilter} onValueChange={setCityFilter}>
                       <SelectTrigger className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
                         <SelectValue placeholder="Toutes les villes" />
                       </SelectTrigger>
@@ -350,6 +334,18 @@ export function Entreprises() {
                   </div>
                 </SheetContent>
               </Sheet>
+            <div className="flex items-center gap-2">
+              {hasActiveFilters && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={resetFilters}
+                  className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                >
+                  <X className="mr-2 h-4 w-4" />
+                  Réinitialiser
+                </Button>
+              )}
             </div>
           </div>
         </div>

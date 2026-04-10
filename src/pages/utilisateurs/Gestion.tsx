@@ -605,50 +605,34 @@ export function Gestion() {
       {/* Filters */}
       {isMobile ? (
         <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Filter className="h-4 w-4 text-gray-600 dark:text-gray-400" />
-              <span className="text-sm font-medium text-gray-900 dark:text-white">Filtres</span>
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Search className="h-4 w-4 text-gray-400" />
             </div>
-            <div className="flex items-center gap-2">
-              {hasActiveFilters && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={resetFilters}
-                  className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-                >
-                  <X className="mr-2 h-4 w-4" />
-                  Réinitialiser
-                </Button>
-              )}
-              <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
-                <SheetTrigger asChild>
-                  <Button variant="outline" size="sm" className="text-sm">
-                    <Filter className="mr-2 h-4 w-4" />
-                    Filtres
-                  </Button>
-                </SheetTrigger>
-                <SheetContent side="left" className="w-[300px] sm:w-[400px]">
-                  <SheetHeader>
-                    <SheetTitle>Filtres des Utilisateurs</SheetTitle>
-                    <SheetDesc>
-                      Filtrez les utilisateurs par recherche, rôle et statut
-                    </SheetDesc>
-                  </SheetHeader>
-                  <div className="space-y-4 mt-6">
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Search className="h-4 w-4 text-gray-400" />
-                      </div>
-                      <Input
-                        placeholder="Rechercher..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
-                      />
-                    </div>
-                    <Select value={roleFilter} onValueChange={setRoleFilter}>
+            <Input
+              placeholder="Rechercher..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
+            />
+          </div>
+          <div className="flex items-center justify-between">
+            <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+              <SheetTrigger asChild>
+                <button className="flex items-center gap-2 cursor-pointer hover:opacity-70 transition-opacity">
+                  <Filter className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">Filtres</span>
+                </button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-[300px] sm:w-[400px]">
+                <SheetHeader>
+                  <SheetTitle>Filtres des Utilisateurs</SheetTitle>
+                  <SheetDesc>
+                    Filtrez les utilisateurs par rôle et statut
+                  </SheetDesc>
+                </SheetHeader>
+                <div className="space-y-4 mt-6">
+                  <Select value={roleFilter} onValueChange={setRoleFilter}>
                       <SelectTrigger className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white">
                         <SelectValue placeholder="Tous les rôles" />
                       </SelectTrigger>
@@ -672,6 +656,18 @@ export function Gestion() {
                   </div>
                 </SheetContent>
               </Sheet>
+            <div className="flex items-center gap-2">
+              {hasActiveFilters && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={resetFilters}
+                  className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                >
+                  <X className="mr-2 h-4 w-4" />
+                  Réinitialiser
+                </Button>
+              )}
             </div>
           </div>
         </div>

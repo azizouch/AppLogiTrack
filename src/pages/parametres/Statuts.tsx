@@ -383,6 +383,15 @@ export function Statuts() {
       {/* Filters */}
       {isMobile ? (
         <div className="space-y-3">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Input
+              placeholder="Rechercher un statut..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400"
+            />
+          </div>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Filter className="h-4 w-4 text-gray-500 dark:text-gray-400" />
@@ -402,27 +411,16 @@ export function Statuts() {
               )}
               <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
                 <SheetTrigger asChild>
-                  <Button variant="outline" size="sm" className="text-sm">
-                    <Filter className="mr-2 h-4 w-4" />
-                    Filtres
+                  <Button variant="ghost" size="sm">
+                    <Filter className="h-4 w-4" />
                   </Button>
                 </SheetTrigger>
                 <SheetContent side="left" className="w-[300px] sm:w-[400px]">
                   <SheetHeader>
                     <SheetTitle>Filtres des Statuts</SheetTitle>
-                    <SheetDescription>Filtrez les statuts par recherche, type et état</SheetDescription>
+                    <SheetDescription>Filtrez les statuts par type et état</SheetDescription>
                   </SheetHeader>
                   <div className="space-y-4 mt-6">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                      <Input
-                        placeholder="Rechercher un statut..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400"
-                      />
-                    </div>
-
                     <Select value={typeFilter} onValueChange={setTypeFilter}>
                       <SelectTrigger className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white">
                         <SelectValue placeholder="Tous les types" />

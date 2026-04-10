@@ -239,117 +239,125 @@ export function MesColisLivres() {
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           {isMobile ? (
-            <Sheet open={filtersOpen} onOpenChange={setFiltersOpen}>
-              <SheetTrigger asChild>
-                <Button
-                  variant="ghost"
-                  className="p-0 h-auto font-semibold text-lg flex items-center gap-2 hover:bg-transparent"
-                >
-                  <Filter className="h-5 w-5" />
-                  Filtres
-                  <ChevronDown className="h-4 w-4" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="w-[300px] sm:w-[400px]">
-                <SheetHeader>
-                  <SheetTitle className="flex items-center gap-2">
-                    <Filter className="h-5 w-5" />
-                    Filtres
-                  </SheetTitle>
-                </SheetHeader>
-                <div className="mt-6 space-y-4">
-                  <div className="space-y-2">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                      <Input
-                        placeholder="Rechercher..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10"
-                      />
+            <div className="space-y-3 w-full">
+              <div className="flex items-center justify-between w-full gap-2">
+                <Sheet open={filtersOpen} onOpenChange={setFiltersOpen}>
+                  <SheetTrigger asChild>
+                    <button className="flex items-center gap-2 cursor-pointer hover:opacity-70 transition-opacity flex-1">
+                      <Filter className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                      <span className="font-medium text-gray-700 dark:text-gray-300">Filtres</span>
+                    </button>
+                  </SheetTrigger>
+                  <SheetContent side="left" className="w-[300px] sm:w-[400px]">
+                    <SheetHeader>
+                      <SheetTitle>Filtres</SheetTitle>
+                    </SheetHeader>
+                    <div className="mt-6 space-y-4">
+                      <div className="space-y-2">
+                        <Select
+                          value={sortBy}
+                          onValueChange={(value) => {
+                            setSortBy(value);
+                            setFiltersOpen(false);
+                          }}
+                        >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Plus récent" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="recent">Plus récent</SelectItem>
+                          <SelectItem value="oldest">Plus ancien</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
-                  </div>
 
-                  <div className="space-y-2">
-                    <Select
-                      value={sortBy}
-                      onValueChange={(value) => {
-                        setSortBy(value);
-                        setFiltersOpen(false);
-                      }}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Plus récent" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="recent">Plus récent</SelectItem>
-                        <SelectItem value="oldest">Plus ancien</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                    <div className="space-y-2">
+                      <Select
+                        value={dateFilter}
+                        onValueChange={(value) => {
+                          setDateFilter(value);
+                          setFiltersOpen(false);
+                        }}
+                      >
+                        <SelectTrigger>
+                          <Calendar className="h-4 w-4 mr-2" />
+                          <SelectValue placeholder="Toutes les dates" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="toutes">Toutes les dates</SelectItem>
+                          <SelectItem value="aujourd_hui">Aujourd'hui</SelectItem>
+                          <SelectItem value="hier">Hier</SelectItem>
+                          <SelectItem value="7_derniers_jours">7 derniers jours</SelectItem>
+                          <SelectItem value="30_derniers_jours">30 derniers jours</SelectItem>
+                          <SelectItem value="ce_mois">Ce mois</SelectItem>
+                          <SelectItem value="le_mois_dernier">Le mois dernier</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
 
-                  <div className="space-y-2">
-                    <Select
-                      value={dateFilter}
-                      onValueChange={(value) => {
-                        setDateFilter(value);
-                        setFiltersOpen(false);
-                      }}
-                    >
-                      <SelectTrigger>
-                        <Calendar className="h-4 w-4 mr-2" />
-                        <SelectValue placeholder="Toutes les dates" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="toutes">Toutes les dates</SelectItem>
-                        <SelectItem value="aujourd_hui">Aujourd'hui</SelectItem>
-                        <SelectItem value="hier">Hier</SelectItem>
-                        <SelectItem value="7_derniers_jours">7 derniers jours</SelectItem>
-                        <SelectItem value="30_derniers_jours">30 derniers jours</SelectItem>
-                        <SelectItem value="ce_mois">Ce mois</SelectItem>
-                        <SelectItem value="le_mois_dernier">Le mois dernier</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                    <div className="space-y-2">
+                      <Select
+                        value={entriesPerPage.toString()}
+                        onValueChange={(value) => {
+                          setEntriesPerPage(Number(value));
+                          setCurrentPage(1);
+                          setFiltersOpen(false);
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Entrées par page" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="5">5 par page</SelectItem>
+                          <SelectItem value="10">10 par page</SelectItem>
+                          <SelectItem value="25">25 par page</SelectItem>
+                          <SelectItem value="50">50 par page</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
 
-                  <div className="space-y-2">
-                    <Select
-                      value={entriesPerPage.toString()}
-                      onValueChange={(value) => {
-                        setEntriesPerPage(Number(value));
-                        setCurrentPage(1);
-                        setFiltersOpen(false);
-                      }}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Entrées par page" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="5">5 par page</SelectItem>
-                        <SelectItem value="10">10 par page</SelectItem>
-                        <SelectItem value="25">25 par page</SelectItem>
-                        <SelectItem value="50">50 par page</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    {hasActiveFilters && (
+                      <Button
+                        onClick={() => {
+                          resetFilters();
+                          setFiltersOpen(false);
+                        }}
+                        variant="outline"
+                        size="sm"
+                        className="w-full text-sm"
+                      >
+                        <X className="mr-2 h-4 w-4" />
+                        Réinitialiser
+                      </Button>
+                    )}
                   </div>
-
-                  {hasActiveFilters && (
-                    <Button
-                      onClick={() => {
-                        resetFilters();
-                        setFiltersOpen(false);
-                      }}
-                      variant="outline"
-                      size="sm"
-                      className="w-full text-sm"
-                    >
-                      <X className="mr-2 h-4 w-4" />
-                      Réinitialiser
-                    </Button>
+                </SheetContent>
+              </Sheet>
+                <Button
+                  onClick={() => fetchColis(true)}
+                  variant="outline"
+                  size="sm"
+                  disabled={refreshing}
+                  className="text-sm flex-1"
+                >
+                  {refreshing ? (
+                    <RefreshCw className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <RefreshCw className="h-4 w-4" />
                   )}
-                </div>
-              </SheetContent>
-            </Sheet>
+                  Actualiser
+                </Button>
+              </div>
+              <div className="relative w-full mb-3">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input
+                  placeholder="Rechercher..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 w-full"
+                />
+              </div>
+            </div>
           ) : (
             <h2 className="text-lg font-semibold flex items-center gap-2">
               <Filter className="h-5 w-5" />
@@ -357,20 +365,22 @@ export function MesColisLivres() {
             </h2>
           )}
           <div className="flex items-center gap-2">
-            <Button
-              onClick={() => fetchColis(true)}
-              variant="outline"
-              size="sm"
-              disabled={refreshing}
-              className="text-sm"
-            >
-              {refreshing ? (
-                <RefreshCw className="h-4 w-4 animate-spin" />
-              ) : (
-                <RefreshCw className="h-4 w-4" />
-              )}
-              Actualiser
-            </Button>
+            {!isMobile && (
+              <Button
+                onClick={() => fetchColis(true)}
+                variant="outline"
+                size="sm"
+                disabled={refreshing}
+                className="text-sm"
+              >
+                {refreshing ? (
+                  <RefreshCw className="h-4 w-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-4 w-4" />
+                )}
+                Actualiser
+              </Button>
+            )}
 
             {!isMobile && hasActiveFilters && (
               <Button

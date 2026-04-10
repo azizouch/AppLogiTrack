@@ -713,130 +713,122 @@ export function ColisList() {
       {/* Filters */}
       {isMobile ? (
         <div className="space-y-3">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 z-10" />
+            <Input
+              name="search"
+              placeholder="Rechercher..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600"
+            />
+          </div>
           <div className="flex items-center justify-between">
+            <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+              <SheetTrigger asChild>
+                <button className="flex items-center gap-2 cursor-pointer hover:opacity-70 transition-opacity">
+                  <Filter className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                  <span className="font-medium text-gray-700 dark:text-gray-300">Filtres</span>
+                </button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-[300px] sm:w-[400px]">
+                <SheetHeader>
+                  <SheetTitle>Filtres des Colis</SheetTitle>
+                  <SheetDescription>
+                    Filtrez les colis par statut, livreur et tri
+                  </SheetDescription>
+                </SheetHeader>
+                <div className="space-y-4 mt-6">
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
+                      <SelectValue placeholder="Tous les statuts" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Tous les statuts</SelectItem>
+                      {statuts.map((statut) => (
+                        <SelectItem key={statut.id} value={statut.nom}>
+                          {statut.nom}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select value={delivererFilter} onValueChange={setDelivererFilter}>
+                    <SelectTrigger className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
+                      <SelectValue placeholder="Tous les livreurs" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Tous les livreurs</SelectItem>
+                      <SelectItem value="unassigned">Non assigné</SelectItem>
+                      {livreurs.map((livreur) => (
+                        <SelectItem key={livreur.id} value={livreur.id}>
+                          {`${livreur.prenom || ''} ${livreur.nom}`.trim()}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select value={sortBy} onValueChange={(value) => setSortBy(value as 'recent' | 'oldest' | 'status')}>
+                    <SelectTrigger className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
+                      <SelectValue placeholder="Plus récent" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="recent">Plus récent</SelectItem>
+                      <SelectItem value="oldest">Plus ancien</SelectItem>
+                      <SelectItem value="status">Par statut</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </SheetContent>
+            </Sheet>
             <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-gray-500 dark:text-gray-400" />
-              <span className="font-medium text-gray-700 dark:text-gray-300">Filtres</span>
-            </div>
-            <div className="flex items-center gap-2">
-              {/* Bulk operations buttons - shown when colis are selected */}
+              {/* Bulk operations buttons - shown when colis are selected on mobile */}
               {selectedColisIds.length > 0 && (
                 <>
                   <Button
-                    variant="outline"
+                    variant="ghost"
                     size="sm"
                     onClick={handleBulkDelete}
                     className="text-red-600 hover:text-red-700 hover:bg-red-50"
                   >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Supprimer ({selectedColisIds.length})
+                    <Trash2 className="h-4 w-4" />
                   </Button>
                   <Button
-                    variant="outline"
+                    variant="ghost"
                     size="sm"
                     onClick={handleExportExcel}
                     className="text-green-600 hover:text-green-700 hover:bg-green-50"
                   >
-                    <Download className="mr-2 h-4 w-4" />
-                    Excel
+                    <Download className="h-4 w-4" />
                   </Button>
                   <Button
-                    variant="outline"
+                    variant="ghost"
                     size="sm"
                     onClick={handleExportCSV}
                     className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
                   >
-                    <FileText className="mr-2 h-4 w-4" />
-                    CSV
+                    <FileText className="h-4 w-4" />
                   </Button>
                   <Button
-                    variant="outline"
+                    variant="ghost"
                     size="sm"
                     onClick={handlePrint}
                     className="text-purple-600 hover:text-purple-700 hover:bg-purple-50"
                   >
-                    <Printer className="mr-2 h-4 w-4" />
-                    Imprimer
+                    <Printer className="h-4 w-4" />
                   </Button>
                 </>
               )}
               {/* Reset filters button - shown when filters are active */}
               {hasActiveFilters && (
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   size="sm"
                   onClick={resetFilters}
-                  className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                  className="text-xs text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                 >
-                  <X className="mr-2 h-4 w-4" />
+                  <X className="mr-1 h-3 w-3" />
                   Réinitialiser
                 </Button>
               )}
-              <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
-                <SheetTrigger asChild>
-                  <Button variant="outline" size="sm" className="text-sm">
-                    <Filter className="mr-2 h-4 w-4" />
-                    Filtres
-                  </Button>
-                </SheetTrigger>
-                <SheetContent side="left" className="w-[300px] sm:w-[400px]">
-                  <SheetHeader>
-                    <SheetTitle>Filtres des Colis</SheetTitle>
-                    <SheetDescription>
-                      Filtrez les colis par recherche, statut, livreur et tri
-                    </SheetDescription>
-                  </SheetHeader>
-                  <div className="space-y-4 mt-6">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                      <Input
-                        name="search"
-                        placeholder="Rechercher..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600"
-                      />
-                    </div>
-                    <Select value={statusFilter} onValueChange={setStatusFilter}>
-                      <SelectTrigger className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
-                        <SelectValue placeholder="Tous les statuts" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Tous les statuts</SelectItem>
-                        {statuts.map((statut) => (
-                          <SelectItem key={statut.id} value={statut.nom}>
-                            {statut.nom}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Select value={delivererFilter} onValueChange={setDelivererFilter}>
-                      <SelectTrigger className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
-                        <SelectValue placeholder="Tous les livreurs" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Tous les livreurs</SelectItem>
-                        <SelectItem value="unassigned">Non assigné</SelectItem>
-                        {livreurs.map((livreur) => (
-                          <SelectItem key={livreur.id} value={livreur.id}>
-                            {`${livreur.prenom || ''} ${livreur.nom}`.trim()}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Select value={sortBy} onValueChange={(value) => setSortBy(value as 'recent' | 'oldest' | 'status')}>
-                      <SelectTrigger className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
-                        <SelectValue placeholder="Plus récent" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="recent">Plus récent</SelectItem>
-                        <SelectItem value="oldest">Plus ancien</SelectItem>
-                        <SelectItem value="status">Par statut</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </SheetContent>
-              </Sheet>
             </div>
           </div>
         </div>

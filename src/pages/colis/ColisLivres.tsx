@@ -229,27 +229,71 @@ export function ColisLivres() {
             }
           </p>
         </div>
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <Button
-            variant="outline"
-            onClick={handleRefresh}
-            disabled={refreshing}
-            className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700"
-          >
-            <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-            Actualiser
-          </Button>
-        </div>
+        <div></div>
       </div>
 
       {/* Filters */}
       {isMobile ? (
         <div className="space-y-3">
+          <div className="relative w-full">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <Input
+              name="search"
+              placeholder="Rechercher..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600"
+            />
+          </div>
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-gray-500 dark:text-gray-400" />
-              <span className="font-medium text-gray-700 dark:text-gray-300">Filtres</span>
-            </div>
+            <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+              <SheetTrigger asChild>
+                <button className="flex items-center gap-2 cursor-pointer hover:opacity-70 transition-opacity">
+                  <Filter className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                  <span className="font-medium text-gray-700 dark:text-gray-300">Filtres</span>
+                </button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-[300px] sm:w-[400px]">
+                <SheetHeader>
+                  <SheetTitle>Filtres des Colis Livrés</SheetTitle>
+                  <SheetDescription>
+                    Filtrez les colis livrés par livreur et tri
+                  </SheetDescription>
+                </SheetHeader>
+                <div className="space-y-4 mt-6">
+                  {!isLivreur && (
+                    <Select value={delivererFilter} onValueChange={setDelivererFilter}>
+                      <SelectTrigger className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
+                        <SelectValue placeholder="Tous les livreurs" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Tous les livreurs</SelectItem>
+                        <SelectItem value="unassigned">Non assigné</SelectItem>
+                        {livreurs.map((livreur) => (
+                          <SelectItem key={livreur.id} value={livreur.id}>
+                            <div className="flex items-center gap-2">
+                              <div className="flex-shrink-0 h-6 w-6 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                                {livreur.prenom?.[0] || livreur.nom[0]}
+                              </div>
+                              <span>{`${livreur.prenom || ''} ${livreur.nom}`.trim()}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                  <Select value={sortBy} onValueChange={(value) => setSortBy(value as 'recent' | 'oldest')}>
+                    <SelectTrigger className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
+                      <SelectValue placeholder="Plus récent" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="recent">Plus récent</SelectItem>
+                      <SelectItem value="oldest">Plus ancien</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </SheetContent>
+            </Sheet>
             <div className="flex items-center gap-2">
               {(searchTerm || delivererFilter !== 'all' || sortBy !== 'recent') && (
                 <Button
@@ -266,64 +310,6 @@ export function ColisLivres() {
                   Réinitialiser
                 </Button>
               )}
-              <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
-                <SheetTrigger asChild>
-                  <Button variant="outline" size="sm" className="text-sm">
-                    <Filter className="mr-2 h-4 w-4" />
-                    Filtres
-                  </Button>
-                </SheetTrigger>
-                <SheetContent side="left" className="w-[300px] sm:w-[400px]">
-                  <SheetHeader>
-                    <SheetTitle>Filtres des Colis Livrés</SheetTitle>
-                    <SheetDescription>
-                      Filtrez les colis livrés par recherche, livreur et tri
-                    </SheetDescription>
-                  </SheetHeader>
-                  <div className="space-y-4 mt-6">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                      <Input
-                        name="search"
-                        placeholder="Rechercher..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600"
-                      />
-                    </div>
-                    {!isLivreur && (
-                      <Select value={delivererFilter} onValueChange={setDelivererFilter}>
-                        <SelectTrigger className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
-                          <SelectValue placeholder="Tous les livreurs" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">Tous les livreurs</SelectItem>
-                          <SelectItem value="unassigned">Non assigné</SelectItem>
-                          {livreurs.map((livreur) => (
-                            <SelectItem key={livreur.id} value={livreur.id}>
-                              <div className="flex items-center gap-2">
-                                <div className="flex-shrink-0 h-6 w-6 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-                                  {livreur.prenom?.[0] || livreur.nom[0]}
-                                </div>
-                                <span>{`${livreur.prenom || ''} ${livreur.nom}`.trim()}</span>
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
-                    <Select value={sortBy} onValueChange={(value) => setSortBy(value as 'recent' | 'oldest')}>
-                      <SelectTrigger className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
-                        <SelectValue placeholder="Plus récent" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="recent">Plus récent</SelectItem>
-                        <SelectItem value="oldest">Plus ancien</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </SheetContent>
-              </Sheet>
             </div>
           </div>
         </div>
@@ -334,21 +320,32 @@ export function ColisLivres() {
               <Filter className="h-4 w-4 text-gray-500 dark:text-gray-400" />
               <span className="font-medium text-gray-700 dark:text-gray-300">Filtres</span>
             </div>
-            {(searchTerm || delivererFilter !== 'all' || sortBy !== 'recent') && (
+            <div className="flex items-center gap-2">
               <Button
                 variant="outline"
-                size="sm"
-                onClick={() => {
-                  setSearchTerm('');
-                  setDelivererFilter('all');
-                  setSortBy('recent');
-                }}
-                className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800"
+                onClick={handleRefresh}
+                disabled={refreshing}
+                className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700"
               >
-                <X className="mr-2 h-4 w-4" />
-                Réinitialiser
+                <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+                Actualiser
               </Button>
-            )}
+              {(searchTerm || delivererFilter !== 'all' || sortBy !== 'recent') && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setSearchTerm('');
+                    setDelivererFilter('all');
+                    setSortBy('recent');
+                  }}
+                  className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800"
+                >
+                  <X className="mr-2 h-4 w-4" />
+                  Réinitialiser
+                </Button>
+              )}
+            </div>
           </div>
 
           <div className={`grid gap-4 ${isLivreur ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'}`}>
