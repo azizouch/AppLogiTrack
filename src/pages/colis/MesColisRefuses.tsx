@@ -183,19 +183,17 @@ export function MesColisRefuses() {
 
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Colis Retournés</h1>
-          <p className="text-gray-600 dark:text-gray-400">
+          <h1 className="text-xl font-bold text-gray-900 dark:text-white">Colis Retournés</h1>
+          <p className="text-sm text-gray-600 dark:text-gray-400">
             Total: {totalCount} colis retournés
           </p>
-        </div>
       </div>
 
       {/* Filters */}
-      <div className="space-y-2">
+      <div className="space-y-3">
         <div className="flex items-center justify-between">
           {isMobile ? (
             <div className="space-y-3 w-full">
@@ -323,41 +321,40 @@ export function MesColisRefuses() {
               Filtres
             </h2>
           )}
+        
+          <div className="flex items-center gap-2">
+            {!isMobile && (
+              <Button
+                onClick={() => fetchColis(true)}
+                variant="outline"
+                size="sm"
+                disabled={refreshing}
+                className="text-sm"
+              >
+                {refreshing ? (
+                  <RefreshCw className="h-4 w-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-4 w-4" />
+                )}
+                Actualiser
+              </Button>
+            )}
+
+            {!isMobile && hasActiveFilters && (
+              <Button
+                onClick={resetFilters}
+                variant="outline"
+                size="sm"
+                className="text-sm"
+              >
+                <X className="mr-2 h-4 w-4" />
+                Réinitialiser
+              </Button>
+            )}
+          </div>
         </div>
-
-        <div className="flex items-center gap-2">
-          {!isMobile && (
-            <Button
-              onClick={() => fetchColis(true)}
-              variant="outline"
-              size="sm"
-              disabled={refreshing}
-              className="text-sm"
-            >
-              {refreshing ? (
-                <RefreshCw className="h-4 w-4 animate-spin" />
-              ) : (
-                <RefreshCw className="h-4 w-4" />
-              )}
-              Actualiser
-            </Button>
-          )}
-
-          {!isMobile && hasActiveFilters && (
-            <Button
-              onClick={resetFilters}
-              variant="outline"
-              size="sm"
-              className="text-sm"
-            >
-              <X className="mr-2 h-4 w-4" />
-              Réinitialiser
-            </Button>
-          )}
-        </div>
-
         {!isMobile && (
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 w-full">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 w-full">
             <div className="space-y-2">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />

@@ -358,14 +358,16 @@ export function MesColis({
   }, [debouncedSearchTerm, statusFilter, sortBy, dateFilter]);
 
   return (
-    <div className="space-y-5">
-      {/* Page Header */}
-      <div>
+    <div className="space-y-3">
+      {/* Header */}
+      <div className='flex items-center justify-between'>
         <h1 className="text-xl font-bold text-gray-900 dark:text-white">{pageTitle}</h1>
-        <p className="text-gray-600 dark:text-gray-400">{pageDescription}</p>
+        <p className="text-sm text-gray-600 dark:text-gray-400">
+          Total: {totalCount} colis
+        </p>
       </div>
       {/* Filters */}
-      <div className="space-y-2">
+      <div className="space-y-3">
         <div className="flex items-center justify-between">
           {isMobile ? (
             <div className="space-y-3 w-full">
@@ -394,103 +396,103 @@ export function MesColis({
                               setFiltersOpen(false);
                             }}
                           >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Tous les statuts" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="tous">Tous les statuts</SelectItem>
-                          {statuts.map((statut) => (
-                            <SelectItem key={statut.id} value={statut.nom}>
-                              {statut.nom}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Tous les statuts" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="tous">Tous les statuts</SelectItem>
+                              {statuts.map((statut) => (
+                                <SelectItem key={statut.id} value={statut.nom}>
+                                  {statut.nom}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
+
+                      <div className="space-y-2">
+                        <Select 
+                          value={sortBy} 
+                          onValueChange={(value) => {
+                            setSortBy(value);
+                            setFiltersOpen(false);
+                          }}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Plus récent" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="recent">Plus récent</SelectItem>
+                            <SelectItem value="oldest">Plus ancien</SelectItem>
+                            <SelectItem value="status">Par statut</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Select 
+                          value={dateFilter} 
+                          onValueChange={(value) => {
+                            setDateFilter(value);
+                            setFiltersOpen(false);
+                          }}
+                        >
+                          <SelectTrigger>
+                            <Calendar className="h-4 w-4 mr-2" />
+                            <SelectValue placeholder="Toutes les dates" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="toutes">Toutes les dates</SelectItem>
+                            <SelectItem value="aujourd_hui">Aujourd'hui</SelectItem>
+                            <SelectItem value="hier">Hier</SelectItem>
+                            <SelectItem value="7_derniers_jours">7 derniers jours</SelectItem>
+                            <SelectItem value="30_derniers_jours">30 derniers jours</SelectItem>
+                            <SelectItem value="ce_mois">Ce mois</SelectItem>
+                            <SelectItem value="le_mois_dernier">Le mois dernier</SelectItem>
+                            <SelectItem value="periode_personnalisee">Période personnalisée</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Select 
+                          value={entriesPerPage.toString()} 
+                          onValueChange={(value) => {
+                            setEntriesPerPage(Number(value));
+                            setCurrentPage(1);
+                            setFiltersOpen(false);
+                          }}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Entrées par page" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="5">5 par page</SelectItem>
+                            <SelectItem value="10">10 par page</SelectItem>
+                            <SelectItem value="25">25 par page</SelectItem>
+                            <SelectItem value="50">50 par page</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {hasActiveFilters && (
+                        <Button
+                          onClick={() => {
+                            resetFilters();
+                            setFiltersOpen(false);
+                          }}
+                          variant="outline"
+                          size="sm"
+                          className="w-full text-sm"
+                        >
+                          <X className="mr-2 h-4 w-4" />
+                          Réinitialiser
+                        </Button>
+                      )}
                     </div>
-                  )}
-
-                  <div className="space-y-2">
-                    <Select 
-                      value={sortBy} 
-                      onValueChange={(value) => {
-                        setSortBy(value);
-                        setFiltersOpen(false);
-                      }}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Plus récent" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="recent">Plus récent</SelectItem>
-                        <SelectItem value="oldest">Plus ancien</SelectItem>
-                        <SelectItem value="status">Par statut</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Select 
-                      value={dateFilter} 
-                      onValueChange={(value) => {
-                        setDateFilter(value);
-                        setFiltersOpen(false);
-                      }}
-                    >
-                      <SelectTrigger>
-                        <Calendar className="h-4 w-4 mr-2" />
-                        <SelectValue placeholder="Toutes les dates" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="toutes">Toutes les dates</SelectItem>
-                        <SelectItem value="aujourd_hui">Aujourd'hui</SelectItem>
-                        <SelectItem value="hier">Hier</SelectItem>
-                        <SelectItem value="7_derniers_jours">7 derniers jours</SelectItem>
-                        <SelectItem value="30_derniers_jours">30 derniers jours</SelectItem>
-                        <SelectItem value="ce_mois">Ce mois</SelectItem>
-                        <SelectItem value="le_mois_dernier">Le mois dernier</SelectItem>
-                        <SelectItem value="periode_personnalisee">Période personnalisée</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Select 
-                      value={entriesPerPage.toString()} 
-                      onValueChange={(value) => {
-                        setEntriesPerPage(Number(value));
-                        setCurrentPage(1);
-                        setFiltersOpen(false);
-                      }}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Entrées par page" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="5">5 par page</SelectItem>
-                        <SelectItem value="10">10 par page</SelectItem>
-                        <SelectItem value="25">25 par page</SelectItem>
-                        <SelectItem value="50">50 par page</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {hasActiveFilters && (
-                    <Button
-                      onClick={() => {
-                        resetFilters();
-                        setFiltersOpen(false);
-                      }}
-                      variant="outline"
-                      size="sm"
-                      className="w-full text-sm"
-                    >
-                      <X className="mr-2 h-4 w-4" />
-                      Réinitialiser
-                    </Button>
-                  )}
-                </div>
-              </SheetContent>
-            </Sheet>
+                  </SheetContent>
+                </Sheet>
                 <Button
                   onClick={() => fetchColis(true)}
                   variant="outline"
@@ -555,7 +557,7 @@ export function MesColis({
         </div>
 
         {!isMobile && (
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 w-full">
+          <div className={`grid gap-4 w-full ${initialStatus === 'tous' ? 'grid-cols-1 md:grid-cols-5' : 'grid-cols-1 md:grid-cols-4'}`}>
             <div className="space-y-2">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Bell, RefreshCw, Check, CheckCheck, Trash2, Calendar, User, Filter, Search, X } from 'lucide-react';
+import { Bell, RefreshCw, Check, CheckCheck, Trash2, Calendar, User, Filter, Search, X, ArrowBigDownDash, ArrowDown, ArrowRightIcon, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -354,79 +354,49 @@ export function Notifications() {
   const hasActiveFilters = searchTerm || typeFilter !== 'all' || statusFilter !== 'all' || dateFilter !== 'all';
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {/* Header */}
       <div className="w-full">
         {/* Desktop layout - only show on very large screens */}
         <div className="hidden xl:flex xl:items-center xl:justify-between">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Notifications</h1>
-          <div className="flex items-center gap-2">
+          {unreadCount > 0 && (
             <Button
-              variant="outline"
-              onClick={handleRefresh}
-              disabled={refreshing}
-              className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700"
+              onClick={markAllAsRead}
+              className="bg-blue-600 hover:bg-blue-700"
             >
-              <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-              Actualiser
+              <CheckCheck className="mr-2 h-4 w-4" />
+              Tout marquer comme lu
             </Button>
-            {unreadCount > 0 && (
-              <Button
-                onClick={markAllAsRead}
-                className="bg-blue-600 hover:bg-blue-700"
-              >
-                <CheckCheck className="mr-2 h-4 w-4" />
-                Tout marquer comme lu
-              </Button>
-            )}
-          </div>
+          )}
         </div>
 
         {/* Mobile layout - show on most screens */}
         <div className="xl:hidden space-y-4">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Notifications</h1>
-          <div className="flex items-center gap-1 sm:gap-2 w-full">
+          {unreadCount > 0 && (
             <Button
-              variant="outline"
-              onClick={handleRefresh}
-              disabled={refreshing}
-              className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700 px-2 sm:px-4 py-1 sm:py-2 text-xs sm:text-sm flex-1"
+              onClick={markAllAsRead}
+              className="w-full bg-blue-600 hover:bg-blue-700"
             >
-              <RefreshCw className={`mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4 ${refreshing ? 'animate-spin' : ''}`} />
-              Actualiser
+              <CheckCheck className="mr-2 h-4 w-4" />
+              Tout marquer comme lu
             </Button>
-            {unreadCount > 0 && (
-              <Button
-                onClick={markAllAsRead}
-                className="bg-blue-600 hover:bg-blue-700 px-2 sm:px-4 py-1 sm:py-2 text-xs sm:text-sm flex-1"
-              >
-                <CheckCheck className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-                Tout marquer comme lu
-              </Button>
-            )}
-          </div>
+          )}
         </div>
       </div>
 
       {/* Filters Section - Without rounded container */}
       {isMobile ? (
-        <div className="space-y-3">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 z-10" />
-            <Input
-              name="search"
-              placeholder="Rechercher..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-          <div className="flex items-center justify-between">
+        <div className="space-y-3 w-full">
+          {/* Row 1: Filtres button + Actualiser button */}
+          <div className="flex items-center justify-between w-full gap-2">
             <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
               <SheetTrigger asChild>
                 <button className="flex items-center gap-2 cursor-pointer hover:opacity-70 transition-opacity">
                   <Filter className="h-4 w-4 text-gray-600 dark:text-gray-400" />
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Filtres</span>
+                  <span className="font-medium text-gray-700 dark:text-gray-300">Filtres</span>
+                  <ChevronRight className="h-5 w-5 text-gray-400" />
                 </button>
               </SheetTrigger>
               <SheetContent side="left" className="w-[300px] sm:w-[400px]">
@@ -475,9 +445,67 @@ export function Notifications() {
                         <SelectItem value="month">Ce mois</SelectItem>
                       </SelectContent>
                     </Select>
+                    <Select value={entriesPerPage.toString()} onValueChange={(value) => setEntriesPerPage(Number(value))}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="10 par page" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="5">5 par page</SelectItem>
+                        <SelectItem value="10">10 par page</SelectItem>
+                        <SelectItem value="20">20 par page</SelectItem>
+                        <SelectItem value="50">50 par page</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {hasActiveFilters && (
+                      <Button
+                        onClick={() => {
+                          resetFilters();
+                          setIsFilterOpen(false);
+                        }}
+                        variant="outline"
+                        size="sm"
+                        className="w-full text-sm"
+                      >
+                        <X className="mr-2 h-4 w-4" />
+                        Réinitialiser
+                      </Button>
+                    )}
                   </div>
                 </SheetContent>
               </Sheet>
+            <Button
+              variant="outline"
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="text-sm"
+            >
+              {refreshing ? (
+                <RefreshCw className="h-4 w-4 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4" />
+              )}
+              Actualiser
+            </Button>
+          </div>
+          {/* Row 2: Search input only */}
+          <div className="relative w-full">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <Input
+              name="search"
+              placeholder="Rechercher..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 w-full"
+            />
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Filtres</span>
+            </div>
             <div className="flex items-center gap-2">
               {hasActiveFilters && (
                 <Button
@@ -490,27 +518,21 @@ export function Notifications() {
                   Réinitialiser
                 </Button>
               )}
-            </div>
-          </div>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-gray-600 dark:text-gray-400" />
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Filtres</span>
-            </div>
-            {hasActiveFilters && (
               <Button
-                variant="ghost"
+                onClick={handleRefresh}
+                variant="outline"
                 size="sm"
-                onClick={resetFilters}
-                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                disabled={refreshing}
+                className="text-sm"
               >
-                <X className="h-4 w-4 mr-1" />
-                Réinitialiser
+                {refreshing ? (
+                  <RefreshCw className="h-4 w-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-4 w-4" />
+                )}
+                Actualiser
               </Button>
-            )}
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
