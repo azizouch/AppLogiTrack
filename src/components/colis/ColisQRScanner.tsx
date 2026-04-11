@@ -401,36 +401,53 @@ export function ColisQRScanner({
           {/* Colis Details View */}
           {scannedColis && !scanning && (
             <>
-              <div className="space-y-3 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-                <div className="border-b border-gray-200 dark:border-gray-700 pb-3">
-                  <p className="text-xs text-gray-500 dark:text-gray-400 uppercase font-mono">ID du colis</p>
-                  <p className="font-mono font-bold text-lg text-gray-900 dark:text-white">{scannedColis.id}</p>
-                </div>
-
-                <div>
-                  <p className="text-xs text-gray-600 dark:text-gray-400 font-semibold mb-1">CLIENT</p>
-                  <p className="font-semibold text-gray-900 dark:text-white">{scannedColis.client?.nom || 'Non défini'}</p>
-                </div>
-
-                <div>
-                  <p className="text-xs text-gray-600 dark:text-gray-400 font-semibold mb-1">ADRESSE DE LIVRAISON</p>
-                  <p className="text-sm text-gray-900 dark:text-white">{scannedColis.client?.adresse || 'Non défini'}</p>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs text-gray-600 dark:text-gray-400 font-semibold mb-1">STATUT</p>
-                    <Badge className="bg-blue-100 dark:bg-blue-900 text-blue-900 dark:text-blue-100">
-                      {scannedColis.statut}
-                    </Badge>
+              {/* Header Info */}
+              <div className="space-y-4">
+                {/* Main Details Card */}
+                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg p-6 border border-blue-200 dark:border-blue-800 space-y-4">
+                  {/* ID Section - Prominent */}
+                  <div className="pb-4 border-b border-blue-200 dark:border-blue-700">
+                    <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider mb-2">ID du colis</p>
+                    <p className="font-mono font-bold text-2xl text-blue-600 dark:text-blue-400 break-all">{scannedColis.id}</p>
                   </div>
-                  {scannedColis.prix && (
-                    <div className="text-right">
-                      <p className="text-xs text-gray-600 dark:text-gray-400 font-semibold mb-1">PRIX</p>
-                      <p className="font-bold text-gray-900 dark:text-white">{scannedColis.prix} DH</p>
+
+                  {/* Client Info */}
+                  <div className="space-y-4">
+                    <div className="space-y-1">
+                      <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">📦 Récepteur</p>
+                      <p className="text-lg font-bold text-gray-900 dark:text-white">{scannedColis.client?.nom || 'Non défini'}</p>
                     </div>
-                  )}
+
+                    <div className="space-y-1">
+                      <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">📍 Adresse de livraison</p>
+                      <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{scannedColis.client?.adresse || 'Non défini'}</p>
+                    </div>
+
+                    {/* Status and Price Row */}
+                    <div className="grid grid-cols-2 gap-4 pt-2">
+                      <div>
+                        <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider mb-2">Statut</p>
+                        <Badge className="bg-blue-100 dark:bg-blue-900 text-blue-900 dark:text-blue-100 text-sm py-1 px-3 font-semibold">
+                          {scannedColis.statut}
+                        </Badge>
+                      </div>
+                      {scannedColis.prix && (
+                        <div className="text-right">
+                          <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider mb-2">Montant</p>
+                          <p className="text-lg font-bold text-green-600 dark:text-green-400">{scannedColis.prix} DH</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
+
+                {/* Additional Info if available */}
+                {scannedColis.description && (
+                  <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+                    <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider mb-2">📝 Description</p>
+                    <p className="text-sm text-gray-700 dark:text-gray-300">{scannedColis.description}</p>
+                  </div>
+                )}
               </div>
 
               {/* Error State */}
@@ -442,33 +459,37 @@ export function ColisQRScanner({
               )}
 
               {/* Action Buttons for Details */}
-              <div className="flex gap-2 pt-2">
-                <Button
-                  onClick={handleBack}
-                  variant="outline"
-                  className="flex-1 flex items-center justify-center gap-2"
-                >
-                  <ArrowLeft className="h-4 w-4" />
-                  Retour
-                </Button>
-                <Button
-                  onClick={onClose}
-                  variant="outline"
-                  className="flex-1"
-                >
-                  Annuler
-                </Button>
+              <div className="flex flex-col gap-3 pt-2">
+                {/* Primary Action - Associate */}
                 <Button
                   onClick={handleAssociate}
                   disabled={associating || scannedColis.livreur_id === authState.user?.id}
-                  className="flex-1 bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800 text-white"
+                  className="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white font-semibold py-6 text-base rounded-lg transition-all"
                 >
                   {scannedColis.livreur_id === authState.user?.id
-                    ? 'Déjà associé'
+                    ? '✓ Déjà associé à votre compte'
                     : associating
-                    ? 'Association...'
-                    : 'Associer'}
+                    ? 'Assignation en cours...'
+                    : '🔗 Associer à mon compte'}
                 </Button>
+
+                {/* Secondary Actions */}
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    onClick={handleBack}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    ↺ Scanner un autre
+                  </Button>
+                  <Button
+                    onClick={onClose}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    Fermer
+                  </Button>
+                </div>
               </div>
             </>
           )}
