@@ -648,11 +648,11 @@ export function AppSidebar() {
           <Button
             variant="ghost"
             size="icon"
-            className="h-10 w-10 hover:bg-blue-100 dark:hover:bg-blue-900 rounded-md transition-colors"
+            className="h-10 w-10 bg-black dark:bg-blue-900 hover:bg-gray-700 dark:hover:bg-blue-900 dark:hover:text-blue-100 rounded-md transition-colors"
             onClick={openScanner}
             title="Scanner un colis"
           >
-            <QrCode className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+            <QrCode className="h-5 w-5 text-white" />
           </Button>
         )}
         
