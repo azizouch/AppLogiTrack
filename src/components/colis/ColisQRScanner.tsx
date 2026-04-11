@@ -40,20 +40,86 @@ export function ColisQRScanner({
   useEffect(() => {
     if (!isOpen) return;
 
+    let timeoutId: NodeJS.Timeout | null = null;
+    let handleCanPlay: (() => void) | null = null;
+
     const startCamera = async () => {
       try {
         setError(null);
         setScannedColis(null);
-        setScanning(false);
+        
+        console.log('Starting camera...');
+        console.log('videoRef.current exists:', !!videoRef.current);
+        
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: 'environment' }
+          video: { 
+            facingMode: 'environment',
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
+          }
         });
         
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          streamRef.current = stream;
+        console.log('Stream obtained:', stream);
+        
+        // Check if video element exists, if not wait a bit for it to mount
+        let videoElement = videoRef.current;
+        let attempts = 0;
+        while (!videoElement && attempts < 5) {
+          console.log('Video element not found, waiting...', attempts);
+          await new Promise(resolve => setTimeout(resolve, 50));
+          videoElement = videoRef.current;
+          attempts++;
+        }
+        
+        if (!videoElement) {
+          console.error('Video element failed to mount after 5 attempts');
+          setError('Erreur: Élément vidéo non trouvé');
+          return;
+        }
+        
+        console.log('Video element found, attaching stream');
+        videoElement.srcObject = stream;
+        streamRef.current = stream;
+        
+        // Set up loadedmetadata event (more reliable than canplay)
+        handleCanPlay = () => {
+          console.log('Video metadata loaded');
+          setScanning(true);
+          if (videoElement && handleCanPlay) {
+            videoElement.removeEventListener('loadedmetadata', handleCanPlay);
+          }
+          if (timeoutId) clearTimeout(timeoutId);
+        };
+        
+        videoElement.addEventListener('loadedmetadata', handleCanPlay);
+        
+        // Try to play the video
+        console.log('Attempting to play video...');
+        const playPromise = videoElement.play();
+        if (playPromise !== undefined) {
+          playPromise
+            .then(() => {
+              console.log('Video play successful');
+              setScanning(true);
+            })
+            .catch(err => {
+              console.log('Auto-play blocked or failed:', err.message);
+              // Still force show camera even if play fails
+              setScanning(true);
+            });
+        } else {
+          console.log('Play returns undefined (older browser)');
           setScanning(true);
         }
+        
+        // Aggressive fallback - show camera within 300ms regardless
+        timeoutId = setTimeout(() => {
+          console.log('Fallback timeout (300ms) - forcing camera display');
+          setScanning(true);
+          if (videoElement && handleCanPlay) {
+            videoElement.removeEventListener('loadedmetadata', handleCanPlay);
+          }
+        }, 300);
       } catch (err: any) {
         console.error('Camera error:', err);
         if (err.name === 'NotAllowedError') {
@@ -74,6 +140,10 @@ export function ColisQRScanner({
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop());
         streamRef.current = null;
+      }
+      if (timeoutId) clearTimeout(timeoutId);
+      if (videoRef.current && handleCanPlay) {
+        videoRef.current.removeEventListener('loadedmetadata', handleCanPlay);
       }
       setScanning(false);
     };
@@ -210,58 +280,50 @@ export function ColisQRScanner({
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Error State - Show first if there's an error */}
-          {error && !scannedColis && (
-            <>
-              <div className="w-full bg-gray-100 dark:bg-gray-700 rounded-lg aspect-square flex items-center justify-center">
-                <Camera className="h-16 w-16 text-gray-400" />
-              </div>
-              <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-              <div className="flex gap-2 pt-2">
-                <Button onClick={onClose} className="flex-1">
-                  Fermer
-                </Button>
-              </div>
-            </>
-          )}
-
-          {/* Loading/Initializing Camera */}
-          {!scanning && !error && !scannedColis && (
-            <>
-              <div className="w-full bg-gray-100 dark:bg-gray-700 rounded-lg aspect-square flex items-center justify-center">
+          {/* Main container - video or loading placeholder */}
+          <div className={`relative w-full rounded-lg overflow-hidden aspect-square ${
+            scanning ? 'bg-black' : 'bg-gray-100 dark:bg-gray-700'
+          }`}>
+            {/* Canvas for processing (hidden) */}
+            <canvas ref={canvasRef} className="hidden" />
+            
+            {/* Video element - always rendered internally */}
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              muted
+              className={`w-full h-full object-cover ${
+                scanning && !scannedColis ? 'block' : 'hidden'
+              }`}
+            />
+            
+            {/* Loading state */}
+            {!scanning && !error && !scannedColis && (
+              <div className="w-full h-full flex items-center justify-center">
                 <div className="flex flex-col items-center gap-2">
                   <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
                   <p className="text-sm text-gray-600 dark:text-gray-400">Initialisation de la caméra...</p>
                 </div>
               </div>
-              <Button onClick={onClose} variant="outline" className="w-full">
-                Fermer
-              </Button>
-            </>
-          )}
-
-          {/* Camera View */}
-          {scanning && !scannedColis && (
-            <>
-              <div className="relative w-full bg-black rounded-lg overflow-hidden aspect-square">
-                <video
-                  ref={videoRef}
-                  autoPlay
-                  playsInline
-                  muted
-                  className="w-full h-full object-cover"
-                />
-                <canvas ref={canvasRef} className="hidden" />
-                
+            )}
+            
+            {/* Camera placeholder on error */}
+            {error && !scannedColis && (
+              <div className="w-full h-full flex items-center justify-center">
+                <Camera className="h-16 w-16 text-gray-400" />
+              </div>
+            )}
+            
+            {/* Scanning overlay - only show when actively scanning */}
+            {scanning && !scannedColis && (
+              <>
                 {/* Scanning Guide Overlay */}
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                   <div className="w-64 h-64 border-2 border-white rounded-lg opacity-50"></div>
                 </div>
 
-                {/* Loading State */}
+                {/* Loading State During Capture */}
                 {loading && (
                   <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
                     <div className="flex flex-col items-center gap-2">
@@ -270,9 +332,28 @@ export function ColisQRScanner({
                     </div>
                   </div>
                 )}
-              </div>
+              </>
+            )}
+          </div>
+          
+          {/* Error State - Show alert below if there's an error */}
+          {error && !scannedColis && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
 
-              {/* Instructions for Camera */}
+          {/* Close button when loading or error */}
+          {!scanning && !scannedColis && (
+            <Button onClick={onClose} variant="outline" className="w-full">
+              Fermer
+            </Button>
+          )}
+
+          {/* Instructions for Camera - show when actively scanning */}
+          {scanning && !scannedColis && (
+            <>
               <div className="text-sm text-gray-600 dark:text-gray-400 space-y-2 bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
                 <p className="font-semibold">Instructions:</p>
                 <ul className="list-disc list-inside space-y-1 text-xs">
