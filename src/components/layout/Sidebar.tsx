@@ -26,7 +26,8 @@ import {
   UserX,
   User,
   PanelLeftOpen,
-  PanelLeftClose
+  PanelLeftClose,
+  QrCode
 } from 'lucide-react';
 import {
   Sidebar,
@@ -43,6 +44,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/contexts/AuthContext';
+import { useQRScanner } from '@/contexts/QRScannerContext';
 import { api } from '@/lib/supabase';
 
 export function AppSidebar() {
@@ -50,6 +52,7 @@ export function AppSidebar() {
   const navigate = useNavigate();
   const { state, toggleSidebar } = useSidebar();
   const { state: authState } = useAuth();
+  const { openScanner } = useQRScanner();
   const isMobile = useIsMobile();
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -638,13 +641,28 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      {/* Theme Toggle Button - Fixed at bottom */}
-      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2">
+      {/* Bottom Buttons - QR Scanner (for livreurs) and Theme Toggle */}
+      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex flex-col items-center gap-2">
+        {/* QR Scanner Button - Only show for livreurs */}
+        {authState.user?.role === 'Livreur' && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-10 w-10 hover:bg-blue-100 dark:hover:bg-blue-900 rounded-md transition-colors"
+            onClick={openScanner}
+            title="Scanner un colis"
+          >
+            <QrCode className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+          </Button>
+        )}
+        
+        {/* Theme Toggle Button */}
         <Button
           variant="ghost"
           size="icon"
           className="h-10 w-10 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
           onClick={toggleDarkMode}
+          title={isDarkMode ? 'Mode clair' : 'Mode sombre'}
         >
           {isDarkMode ? (
             <Sun className="h-5 w-5 transition-colors text-white" />

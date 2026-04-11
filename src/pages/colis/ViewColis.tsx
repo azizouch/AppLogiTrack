@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/select';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { ColisQRCode } from '@/components/colis';
 import { api, supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -560,6 +561,9 @@ export function ViewColis() {
               </Button>
             </div>
           </div>
+
+          {/* QR Code */}
+          <ColisQRCode colisId={colis.id} colisNumber={colis.id} />
 
           {/* Entreprise */}
           <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 md:p-6">

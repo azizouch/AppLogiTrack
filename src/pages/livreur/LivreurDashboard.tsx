@@ -2,12 +2,16 @@ import { useState, useEffect } from 'react';
 import { Package, Clock, CheckCircle, RotateCcw, User, MapPin, Truck, Calendar, Award, LucideIcon } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { ColisQRScanner } from '@/components/colis';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/AuthContext';
+import { useQRScanner } from '@/contexts/QRScannerContext';
 import { useNavigate } from 'react-router-dom';
 import { api } from '@/lib/supabase';
 import { isDateTodayLocal, isDateThisMonthLocal } from '@/lib/utils';
 import { CircularStats } from '@/components/ui/circular-stats';
-
+import { Colis } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 
 // StatItem component for profile card
@@ -104,6 +108,16 @@ export function LivreurDashboard() {
   const { state } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { 
+    isQRScannerOpen, 
+    setIsQRScannerOpen,
+    scannedColis, 
+    setScannedColis,
+    isScannedColisModalOpen, 
+    setIsScannedColisModalOpen,
+    scannedColisLoading,
+    setScannedColisLoading
+  } = useQRScanner();
 
   const [stats, setStats] = useState<LivreurStats>({
     aLivrerAujourdhui: 0,
@@ -254,6 +268,76 @@ export function LivreurDashboard() {
     navigate(`/colis/mes-filtered?status=${status}`);
   };
 
+  // Handle QR scan
+  const handleQRScan = async (colisId: string) => {
+    try {
+      setScannedColisLoading(true);
+      setIsQRScannerOpen(false);
+
+      // Fetch the scanned colis details
+      const result = await api.getColisById(colisId);
+      const { data: colisData, error } = result;
+
+      if (error || !colisData) {
+        toast({
+          title: 'Erreur',
+          description: `Colis ${colisId} non trouvé`,
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      setScannedColis(colisData);
+      setIsScannedColisModalOpen(true);
+    } catch (error) {
+      toast({
+        title: 'Erreur',
+        description: 'Impossible de récupérer les données du colis',
+        variant: 'destructive',
+      });
+    } finally {
+      setScannedColisLoading(false);
+    }
+  };
+
+  // Handle associating colis with livreur
+  const handleAssociateColis = async () => {
+    if (!scannedColis || !state.user?.id) return;
+
+    try {
+      setScannedColisLoading(true);
+
+      // Update colis with livreur association
+      const { error } = await api.updateColis(scannedColis.id, {
+        livreur_id: state.user.id,
+        statut: scannedColis.statut === 'en_attente' ? 'pris_en_charge' : scannedColis.statut
+      });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      toast({
+        title: 'Succès',
+        description: `Colis ${scannedColis.id} associé avec succès`,
+      });
+
+      setIsScannedColisModalOpen(false);
+      setScannedColis(null);
+
+      // Refresh dashboard
+      window.location.reload();
+    } catch (error) {
+      toast({
+        title: 'Erreur',
+        description: 'Impossible d\'associer le colis',
+        variant: 'destructive',
+      });
+    } finally {
+      setScannedColisLoading(false);
+    }
+  };
+
   const statsCards = [
     {
       title: 'À livrer aujourd\'hui',
@@ -314,13 +398,13 @@ export function LivreurDashboard() {
       {/* Header with date */}
       <div className="flex justify-between items-center">
         <button
-          className="text-2xl font-bold text-gray-900 dark:text-gray-100 cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 focus:outline-none focus:text-gray-900 dark:focus:text-gray-100 transition-colors select-none bg-transparent border-none p-0 m-0 text-left"
+          className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100 cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 focus:outline-none focus:text-gray-900 dark:focus:text-gray-100 transition-colors select-none bg-transparent border-none p-0 m-0 text-left"
           onClick={() => navigate('/')}
           onMouseLeave={(e) => e.currentTarget.blur()}
         >
           Tableau de bord Livreur
         </button>
-        <p className="text-sm text-gray-500">
+        <p className="text-xs sm:text-sm text-gray-500">
           {getCurrentDate()}
         </p>
       </div>
@@ -349,7 +433,7 @@ export function LivreurDashboard() {
 
       {/* Quick links to livreur bons pages */}
       <div className="mt-4">
-          <CardHeader className="p-0 pb-2 pt-3">
+          <CardHeader className="p-0 pb-2">
             <CardTitle className="text-lg">Mes bons</CardTitle>
           </CardHeader>
 
@@ -514,6 +598,86 @@ export function LivreurDashboard() {
           loading={bonStatsLoading}
         />
       </div>
+
+      {/* QR Scanner Modal */}
+      <ColisQRScanner
+        isOpen={isQRScannerOpen}
+        onClose={() => setIsQRScannerOpen(false)}
+        onScan={handleQRScan}
+        title="Scanner un colis"
+        description="Scannez le code QR du colis pour afficher ses détails"
+      />
+
+      {/* Scanned Colis Details Modal */}
+      <Dialog open={isScannedColisModalOpen} onOpenChange={setIsScannedColisModalOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Détails du colis scanné</DialogTitle>
+            <DialogDescription>
+              {scannedColis?.id}
+            </DialogDescription>
+          </DialogHeader>
+
+          {scannedColisLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin h-8 w-8 border-4 border-blue-600 border-t-transparent rounded-full"></div>
+            </div>
+          ) : scannedColis ? (
+            <div className="space-y-4">
+              {/* Colis Info */}
+              <div className="space-y-3 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                <div>
+                  <p className="text-xs text-gray-600 dark:text-gray-400">ID du colis</p>
+                  <p className="font-mono font-bold text-gray-900 dark:text-white">{scannedColis.id}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-600 dark:text-gray-400">Client</p>
+                  <p className="font-semibold text-gray-900 dark:text-white">{scannedColis.client?.nom || 'Non défini'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-600 dark:text-gray-400">Adresse</p>
+                  <p className="text-sm text-gray-900 dark:text-white">{scannedColis.client?.adresse || 'Non défini'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-600 dark:text-gray-400">Statut</p>
+                  <Badge className="bg-blue-100 dark:bg-blue-900 text-blue-900 dark:text-blue-100">
+                    {scannedColis.statut}
+                  </Badge>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-2 pt-4">
+                <Button
+                  onClick={() => setIsScannedColisModalOpen(false)}
+                  variant="outline"
+                  className="flex-1"
+                >
+                  Fermer
+                </Button>
+                <Button
+                  onClick={() => navigate(`/colis/${scannedColis.id}`)}
+                  variant="outline"
+                  className="flex-1"
+                >
+                  Voir les détails
+                </Button>
+                <Button
+                  onClick={handleAssociateColis}
+                  disabled={scannedColisLoading || scannedColis.livreur_id === state.user?.id}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800"
+                >
+                  {scannedColis.livreur_id === state.user?.id
+                    ? 'Déjà associé'
+                    : scannedColisLoading
+                    ? 'Association...'
+                    : 'Associer à moi'}
+                </Button>
+              </div>
+            </div>
+          ) : null}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
