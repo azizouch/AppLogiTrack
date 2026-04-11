@@ -35,22 +35,23 @@ export function ColisQRScanner({
   const [loading, setLoading] = useState(false);
   const [scannedColis, setScannedColis] = useState<Colis | null>(null);
   const [associating, setAssociating] = useState(false);
+  const scanningRef = useRef(false);
+  const lastScannedRef = useRef<string | null>(null);
 
-  // Initialize camera when dialog opens
+  // Initialize camera and start scanning
   useEffect(() => {
     if (!isOpen) return;
 
     let timeoutId: NodeJS.Timeout | null = null;
-    let handleCanPlay: (() => void) | null = null;
+    let animationFrameId: number | null = null;
 
     const startCamera = async () => {
       try {
         setError(null);
         setScannedColis(null);
+        lastScannedRef.current = null;
         
         console.log('Starting camera...');
-        console.log('videoRef.current exists:', !!videoRef.current);
-        
         const stream = await navigator.mediaDevices.getUserMedia({
           video: { 
             facingMode: 'environment',
@@ -61,65 +62,46 @@ export function ColisQRScanner({
         
         console.log('Stream obtained:', stream);
         
-        // Check if video element exists, if not wait a bit for it to mount
-        let videoElement = videoRef.current;
-        let attempts = 0;
-        while (!videoElement && attempts < 5) {
-          console.log('Video element not found, waiting...', attempts);
-          await new Promise(resolve => setTimeout(resolve, 50));
-          videoElement = videoRef.current;
-          attempts++;
-        }
-        
-        if (!videoElement) {
-          console.error('Video element failed to mount after 5 attempts');
+        if (!videoRef.current) {
+          console.error('Video element not found');
           setError('Erreur: Élément vidéo non trouvé');
           return;
         }
         
-        console.log('Video element found, attaching stream');
-        videoElement.srcObject = stream;
+        videoRef.current.srcObject = stream;
         streamRef.current = stream;
         
-        // Set up loadedmetadata event (more reliable than canplay)
-        handleCanPlay = () => {
-          console.log('Video metadata loaded');
+        // Wait for video to be ready
+        const videoElement = videoRef.current;
+        const onLoadedMetadata = async () => {
+          console.log('Video loaded, starting QR scan');
           setScanning(true);
-          if (videoElement && handleCanPlay) {
-            videoElement.removeEventListener('loadedmetadata', handleCanPlay);
-          }
-          if (timeoutId) clearTimeout(timeoutId);
+          scanningRef.current = true;
+          startQRScan();
+          videoElement.removeEventListener('loadedmetadata', onLoadedMetadata);
         };
         
-        videoElement.addEventListener('loadedmetadata', handleCanPlay);
+        videoElement.addEventListener('loadedmetadata', onLoadedMetadata);
         
-        // Try to play the video
-        console.log('Attempting to play video...');
-        const playPromise = videoElement.play();
-        if (playPromise !== undefined) {
-          playPromise
-            .then(() => {
-              console.log('Video play successful');
-              setScanning(true);
-            })
-            .catch(err => {
-              console.log('Auto-play blocked or failed:', err.message);
-              // Still force show camera even if play fails
-              setScanning(true);
-            });
-        } else {
-          console.log('Play returns undefined (older browser)');
+        // Try to play video
+        try {
+          await videoElement.play();
+        } catch (err) {
+          console.log('Autoplay blocked, but will try scanning anyway');
           setScanning(true);
+          scanningRef.current = true;
+          startQRScan();
         }
         
-        // Aggressive fallback - show camera within 300ms regardless
+        // Fallback: Start scanning even if video doesn't load
         timeoutId = setTimeout(() => {
-          console.log('Fallback timeout (300ms) - forcing camera display');
-          setScanning(true);
-          if (videoElement && handleCanPlay) {
-            videoElement.removeEventListener('loadedmetadata', handleCanPlay);
+          if (!scanningRef.current) {
+            console.log('Starting scan anyway after timeout');
+            setScanning(true);
+            scanningRef.current = true;
+            startQRScan();
           }
-        }, 300);
+        }, 1000);
       } catch (err: any) {
         console.error('Camera error:', err);
         if (err.name === 'NotAllowedError') {
@@ -133,73 +115,113 @@ export function ColisQRScanner({
       }
     };
 
+    const startQRScan = () => {
+      const scan = async () => {
+        if (!scanningRef.current || !videoRef.current || !canvasRef.current) return;
+        if (scannedColis) return; // Don't scan if already found one
+        
+        try {
+          const canvas = canvasRef.current;
+          const video = videoRef.current;
+          const context = canvas.getContext('2d');
+          
+          if (!context || video.videoWidth === 0) {
+            animationFrameId = requestAnimationFrame(scan);
+            return;
+          }
+          
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+          context.drawImage(video, 0, 0);
+          
+          // Try to decode QR code using jsQR if available
+          const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+          
+          // Simple QR detection: look for the black and white pattern
+          // This is a basic implementation - for production, use jsQR library
+          const qrData = await detectQRCode(imageData.data, canvas.width, canvas.height);
+          
+          if (qrData && qrData !== lastScannedRef.current) {
+            console.log('QR Code detected:', qrData);
+            lastScannedRef.current = qrData;
+            
+            // Fetch colis details
+            try {
+              const result = await api.getColisById(qrData.trim());
+              const { data: colisData, error: colisError } = result;
+              
+              if (!colisError && colisData) {
+                console.log('Colis found:', colisData.id);
+                setScannedColis(colisData);
+                scanningRef.current = false;
+                
+                // Call onScan callback if provided
+                if (onScan) {
+                  onScan(qrData.trim());
+                }
+              } else {
+                console.log('Colis not found:', qrData);
+                lastScannedRef.current = null;
+              }
+            } catch (err) {
+              console.error('Error fetching colis:', err);
+              lastScannedRef.current = null;
+            }
+          }
+        } catch (err) {
+          console.error('Scan error:', err);
+        }
+        
+        animationFrameId = requestAnimationFrame(scan);
+      };
+      
+      animationFrameId = requestAnimationFrame(scan);
+    };
+
     startCamera();
 
     return () => {
-      // Stop camera when dialog closes
+      // Cleanup
+      scanningRef.current = false;
+      if (animationFrameId !== null) {
+        cancelAnimationFrame(animationFrameId);
+      }
+      if (timeoutId) clearTimeout(timeoutId);
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop());
         streamRef.current = null;
       }
-      if (timeoutId) clearTimeout(timeoutId);
-      if (videoRef.current && handleCanPlay) {
-        videoRef.current.removeEventListener('loadedmetadata', handleCanPlay);
-      }
       setScanning(false);
     };
-  }, [isOpen]);
+  }, [isOpen, onScan, scannedColis]);
 
-  const handleCapture = useCallback(async () => {
-    if (!videoRef.current || !canvasRef.current) return;
-
+  // QR code detection helper
+  const detectQRCode = async (imageData: Uint8ClampedArray, width: number, height: number): Promise<string | null> => {
     try {
-      setLoading(true);
-      setError(null);
-      const canvas = canvasRef.current;
-      const context = canvas.getContext('2d');
+      const jsQR = (window as any).jsQR;
+      if (!jsQR) {
+        console.warn('jsQR library not loaded yet');
+        return null;
+      }
       
-      if (!context) return;
-
-      canvas.width = videoRef.current.videoWidth;
-      canvas.height = videoRef.current.videoHeight;
-      context.drawImage(videoRef.current, 0, 0);
-
-      // Prompt user to enter the colis ID they see from their device
-      const colisId = prompt('Entrez l\'ID du colis (lisible sur le QR code affiché à l\'écran):');
+      const result = jsQR(imageData, width, height, {
+        inversionAttempts: 'dontInvert'
+      });
       
-      if (colisId && colisId.trim()) {
-        // Fetch colis details
-        const result = await api.getColisById(colisId.trim());
-        const { data: colisData, error: colisError } = result;
-
-        if (colisError || !colisData) {
-          setError(`Colis ${colisId} non trouvé`);
-          setLoading(false);
-          return;
-        }
-
-        // Stop camera and show details
-        if (streamRef.current) {
-          streamRef.current.getTracks().forEach(track => track.stop());
-          streamRef.current = null;
-        }
-        setScanning(false);
-        setScannedColis(colisData);
-        
-        // Call onScan callback if provided
-        if (onScan) {
-          onScan(colisId.trim());
-        }
-      } else {
-        setError('Action annulée');
+      if (result && result.data) {
+        return result.data;
       }
     } catch (err) {
-      console.error('Capture error:', err);
-      setError('Erreur lors de la capture. Réessayez.');
-    } finally {
-      setLoading(false);
+      console.error('QR detection error:', err);
     }
-  }, [onScan]);
+    return null;
+  };
+
+  const handleCapture = useCallback(async () => {
+    // This button now just retriggers manual scan if automatic fails
+    // The automatic scanning is handled by the continuous scan loop
+    setError('Scannez un code QR valide avec la caméra');
+  }, []);
 
   const handleAssociate = async () => {
     if (!scannedColis || !authState.user?.id) return;
@@ -354,13 +376,12 @@ export function ColisQRScanner({
           {/* Instructions for Camera - show when actively scanning */}
           {scanning && !scannedColis && (
             <>
-              <div className="text-sm text-gray-600 dark:text-gray-400 space-y-2 bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
-                <p className="font-semibold">Instructions:</p>
-                <ul className="list-disc list-inside space-y-1 text-xs">
-                  <li>Ouvrez la caméra sur l'étiquette/QR du colis</li>
-                  <li>Lisez l'ID du colis (numéro visible sur le QR)</li>
-                  <li>Cliquez sur "Capturer et confirmer"</li>
-                  <li>Entrez l'ID du colis dans la boîte de dialogue</li>
+              <div className="text-sm text-gray-600 dark:text-gray-400 space-y-2 bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-200 dark:border-blue-800">
+                <p className="font-semibold text-blue-900 dark:text-blue-100">En cours de scan...</p>
+                <ul className="list-disc list-inside space-y-1 text-xs text-blue-800 dark:text-blue-200">
+                  <li>Pointez le QR code du colis vers la caméra</li>
+                  <li>Le code sera détecté automatiquement</li>
+                  <li>Les détails s'afficheront immédiatement</li>
                 </ul>
               </div>
 
@@ -372,13 +393,6 @@ export function ColisQRScanner({
                   className="flex-1"
                 >
                   Fermer
-                </Button>
-                <Button
-                  onClick={handleCapture}
-                  disabled={loading}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white"
-                >
-                  {loading ? 'Traitement...' : 'Capturer et confirmer'}
                 </Button>
               </div>
             </>
