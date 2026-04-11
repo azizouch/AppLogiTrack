@@ -354,8 +354,12 @@ export function MesFilteredColisView() {
               <Sheet open={filtersOpen} onOpenChange={setFiltersOpen}>
                 <SheetTrigger asChild>
                   <button className="flex items-center gap-2 cursor-pointer hover:opacity-70 transition-opacity flex-1">
-                    <PanelLeftOpen className="h-4 w-4 text-gray-700 dark:text-gray-300" />
+                    <svg className="h-4 w-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.707A1 1 0 013 7V4z" />
+                    </svg>
                     <span className="font-medium text-gray-700 dark:text-gray-300">Filtres</span>
+                    <PanelLeftOpen className="h-4 w-4 text-gray-700 dark:text-gray-300" />
+                    
                   </button>
                 </SheetTrigger>
                 <SheetContent side="left" className="w-[300px] sm:w-[400px]">

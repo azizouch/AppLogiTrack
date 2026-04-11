@@ -221,11 +221,13 @@ export function General() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Paramètres</h1>
-        <p className="text-gray-600 dark:text-gray-400">Configurez les paramètres de votre système de gestion logistique</p>
+        <h1 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
+          <Settings className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600 dark:text-blue-400" />
+          Paramètres</h1>
+        <p className="text-sm text-gray-600 dark:text-gray-400">Configurez les paramètres de votre système de gestion logistique</p>
       </div>
 
       {/* Tabs */}
@@ -257,8 +259,8 @@ export function General() {
           {/* Company Information */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Building className="h-5 w-5" />
+              <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
+                <Building className="h-5 w-5 sm:h-6 sm:w-6" />
                 Informations de l'entreprise
               </CardTitle>
               <CardDescription>
@@ -340,8 +342,8 @@ export function General() {
           {/* System Preferences */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Settings className="h-5 w-5" />
+              <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
+                <Settings className="h-5 w-5 sm:h-6 sm:w-6" />
                 Préférences système
               </CardTitle>
               <CardDescription>
@@ -404,8 +406,8 @@ export function General() {
           {/* Appearance Settings */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Sun className="h-5 w-5" />
+              <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
+                <Sun className="h-5 w-5 sm:h-6 sm:w-6" />
                 Apparence
               </CardTitle>
               <CardDescription>

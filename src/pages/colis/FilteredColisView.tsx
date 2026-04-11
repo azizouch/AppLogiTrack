@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Package, RefreshCw, Search, Filter, Phone, House, MapPin, Building2, Clock, CheckCircle, XCircle, Truck, AlertCircle, MessageCircle, Info, Mail, Eye, Save, Send, MessageSquare } from 'lucide-react';
+import { ArrowLeft, Package, RefreshCw, Search, Filter, Phone, House, MapPin, Building2, Clock, CheckCircle, XCircle, Truck, AlertCircle, MessageCircle, Info, Mail, Eye, Save, Send, MessageSquare, PanelLeftOpen, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -19,6 +19,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet';
 import { TablePagination } from '@/components/ui/table-pagination';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
@@ -29,6 +37,7 @@ import { api } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useToast } from '@/hooks/use-toast';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 // Status mapping for dashboard cards to database statuses
 const STATUS_MAPPING = {
@@ -61,6 +70,7 @@ export function FilteredColisView() {
   const { state } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [searchParams] = useSearchParams();
   const statusFilter = searchParams.get('status') || '';
 
@@ -79,6 +89,9 @@ export function FilteredColisView() {
   const [livreurs, setLivreurs] = useState<User[]>([]);
   const [statuts, setStatuts] = useState<any[]>([]);
 
+  // Mobile state
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+
   // Modal states
   const [selectedColis, setSelectedColis] = useState<Colis | null>(null);
   const [showReclamationModal, setShowReclamationModal] = useState(false);
@@ -86,17 +99,17 @@ export function FilteredColisView() {
   const [reclamationText, setReclamationText] = useState('');
 
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
-  const isLivreur = state.user?.role?.toLowerCase() === 'livreur';
 
-  // Get the database statuses to filter by
-  const getFilterStatuses = useCallback(() => {
-    const mapping = STATUS_MAPPING[statusFilter as keyof typeof STATUS_MAPPING];
-    if (mapping === 'exclude') {
-      // For "En traitement": exclude en_attente, Livré, Retourné
-      return 'exclude';
-    }
-    return mapping || [];
-  }, [statusFilter]);
+  // Check if any filters are active
+  const hasActiveFilters = searchTerm || livreurFilter !== 'all' || sortBy !== 'recent';
+
+  // Reset filters function
+  const resetFilters = () => {
+    setSearchTerm('');
+    setLivreurFilter('all');
+    setSortBy('recent');
+    setCurrentPage(1);
+  };
 
   // Fetch livreurs for filter dropdown
   const fetchLivreurs = useCallback(async () => {
@@ -109,6 +122,17 @@ export function FilteredColisView() {
       console.error('Error fetching livreurs:', error);
     }
   }, []);
+
+  // Get the database statuses to filter by
+  const getFilterStatuses = useCallback(() => {
+    const mapping = STATUS_MAPPING[statusFilter as keyof typeof STATUS_MAPPING];
+    if (mapping === 'exclude') {
+      // For "En traitement": exclude en_attente, Livré, Retourné
+      return 'exclude';
+    }
+    return mapping || [];
+  }, [statusFilter]);
+
   const fetchStatuts = useCallback(async () => {
     try {
       const result = await api.getStatuts('colis');
@@ -143,10 +167,8 @@ export function FilteredColisView() {
         sortBy: sortBy,
       };
 
-      // Add livreur filter for livreur users or when filter is selected
-      if (isLivreur && state.user?.id) {
-        params.livreurId = state.user.id;
-      } else if (livreurFilter && livreurFilter !== 'all') {
+      // Add livreur filter when selected
+      if (livreurFilter && livreurFilter !== 'all') {
         params.livreurId = livreurFilter;
       }
 
@@ -207,20 +229,25 @@ export function FilteredColisView() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [currentPage, debouncedSearchTerm, itemsPerPage, sortBy, livreurFilter, getFilterStatuses, isLivreur, state.user?.id]);
+  }, [currentPage, debouncedSearchTerm, itemsPerPage, sortBy, livreurFilter, getFilterStatuses]);
 
   useEffect(() => {
     fetchColis();
-    if (!isLivreur) {
-      fetchLivreurs();
-    }
+    fetchLivreurs();
     fetchStatuts();
-  }, [fetchColis, fetchLivreurs, fetchStatuts, isLivreur]);
+  }, [fetchColis, fetchLivreurs, fetchStatuts]);
 
   // Handle refresh
   const handleRefresh = () => {
     fetchColis(true);
   };
+
+  // Auto-close filter sidebar on mobile when filters change
+  useEffect(() => {
+    if (isMobile && isFilterOpen) {
+      setIsFilterOpen(false);
+    }
+  }, [searchTerm, livreurFilter, sortBy, isMobile]);
 
   // Handle page change
   const handlePageChange = (page: number) => {
@@ -302,236 +329,212 @@ export function FilteredColisView() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <Button
             variant="ghost"
             onClick={() => navigate('/')}
-            className="p-2"
+            className="flex items-center bg-gray-50 dark:bg-gray-900 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-800"
           >
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
-              <Package className="h-7 w-7 text-blue-600 dark:text-blue-400" />
+            <h1 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
+              <Package className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600 dark:text-blue-400" />
               {getPageTitle()}
             </h1>
-            <p className="text-gray-600 dark:text-gray-400">
+            <p className="text-sm text-gray-600 dark:text-gray-400">
               Liste des colis avec le statut: {STATUS_DISPLAY_NAMES[statusFilter as keyof typeof STATUS_DISPLAY_NAMES]}
             </p>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Total: {totalCount} colis</p>
+            {/* <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Total: {totalCount} colis</p> */}
           </div>
         </div>
-        <Button
-          variant="outline"
-          onClick={handleRefresh}
-          disabled={refreshing}
-        >
-          <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-          Actualiser
-        </Button>
       </div>
 
       {/* Search and Filters */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-          <Input
-            placeholder="Rechercher par ID, client, entreprise..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 w-full"
-          />
-        </div>
+      {isMobile ? (
+        <div className="space-y-3 w-full">
+          {/* Row 1: Filtres + Actualiser */}
+          <div className="flex items-center justify-between w-full gap-2">
+            <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+              <SheetTrigger asChild>
+                <button className="flex items-center gap-2 cursor-pointer hover:opacity-70 transition-opacity">
+                  <svg className="h-4 w-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.707A1 1 0 013 7V4z" />
+                  </svg>
+                  <span className="font-medium text-gray-700 dark:text-gray-300">Filtres</span>
+                  <PanelLeftOpen className="h-4 w-4 text-gray-700 dark:text-gray-300" />
+                  
+                </button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-[300px] sm:w-[400px]">
+                <SheetHeader>
+                  <SheetTitle>Filtres des Colis</SheetTitle>
+                  <SheetDescription>
+                    Filtrez les colis par livreur et tri
+                  </SheetDescription>
+                </SheetHeader>
+                <div className="space-y-4 mt-6">
+                  {/* Livreur Filter */}
+                  <Select value={livreurFilter} onValueChange={setLivreurFilter}>
+                    <SelectTrigger className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white">
+                      <SelectValue placeholder="Tous les livreurs" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600">
+                      <SelectItem value="all" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600">Tous les livreurs</SelectItem>
+                      {livreurs.map((livreur) => (
+                        <SelectItem key={livreur.id} value={livreur.id} className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600">
+                          {`${livreur.prenom || ''} ${livreur.nom}`.trim()}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
 
-        {/* Livreur Filter - Only show for admin/gestionnaire */}
-        {!isLivreur && (
-          <Select value={livreurFilter} onValueChange={setLivreurFilter}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Tous les livreurs" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Tous les livreurs</SelectItem>
-              {livreurs.map((livreur) => (
-                <SelectItem key={livreur.id} value={livreur.id}>
-                  {`${livreur.prenom || ''} ${livreur.nom}`.trim()}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        )}
-
-        {/* Sort Filter */}
-        <Select value={sortBy} onValueChange={setSortBy}>
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="Plus récent" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="recent">Plus récent</SelectItem>
-            <SelectItem value="oldest">Plus ancien</SelectItem>
-            <SelectItem value="price_high">Prix décroissant</SelectItem>
-            <SelectItem value="price_low">Prix croissant</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Content based on user role */}
-      {isLivreur ? (
-        // Detailed card view for livreur (like Mes Colis)
-        <div className="space-y-4">
-          {loading ? (
-            <div className="text-center py-8">
-              <RefreshCw className="h-8 w-8 animate-spin mx-auto text-gray-400" />
-              <p className="text-gray-500 mt-2">Chargement des colis...</p>
-            </div>
-          ) : colis.length === 0 ? (
-            <div className="text-center py-12">
-              <Package className="h-16 w-16 mx-auto text-gray-400 mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Aucun colis trouvé</h3>
-              <p className="text-gray-500 dark:text-gray-400">Aucun colis trouvé pour ce statut.</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {colis.map((colisItem) => (
-                <Card key={colisItem.id} className="rounded-lg bg-card text-card-foreground shadow-sm overflow-hidden border hover:shadow-md transition-all">
-                  <CardContent className="p-0">
-                    {/* Header with ID and Date */}
-                    <div className="flex justify-between items-center p-3 bg-muted/30">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium">{colisItem.id}</span>
-                      </div>
-                      <div className="text-sm text-muted-foreground">
-                        {new Date(colisItem.date_creation).toLocaleDateString('fr-FR')}
-                      </div>
-                    </div>
-
-                    {/* Main Content */}
-                    <div className="p-4">
-                      <div className="flex justify-between items-start mb-4">
-                        <div className="space-y-1">
-                          <h3 className="font-semibold">{colisItem.client?.nom || 'Client inconnu'}</h3>
-
-                          <div className="flex items-center text-sm text-muted-foreground">
-                            <Phone className="h-3 w-3 mr-1 inline" />
-                            <span>{colisItem.client?.telephone || 'N/A'}</span>
-                          </div>
-
-                          <div className="flex items-center text-sm text-muted-foreground">
-                            <House className="h-3 w-3 mr-1 inline" />
-                            <span>{colisItem.adresse_livraison || 'Adresse non spécifiée'}</span>
-                          </div>
-
-                          <div className="flex items-center text-sm text-muted-foreground">
-                            <MapPin className="h-3 w-3 mr-1 inline" />
-                            <span>Casablanca</span>
-                          </div>
-                        </div>
-
-                        {/* Status Badge */}
-                        <StatusBadge statut={colisItem.statut} statuts={statuts} />
-                      </div>
-
-                      {/* Company and Price */}
-                      <div className="flex justify-between items-center">
-                        <div className="text-sm text-muted-foreground flex items-center">
-                          <Building2 className="h-3 w-3 mr-1 inline" />
-                          <span>{colisItem.entreprise?.nom || 'N/A'}</span>
-                        </div>
-                        <div className="text-xl font-bold">
-                          {colisItem.prix ? `${colisItem.prix} DH` : '0 DH'}
-                          {colisItem.frais && <span className="text-sm text-muted-foreground"> (+{colisItem.frais} frais)</span>}
-                        </div>
-                      </div>
-
-                      {/* Contact Buttons */}
-                      <div className="mt-4">
-                        <div className="grid grid-cols-2 gap-2">
-                          <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white text-xs" onClick={() => handleCall(colisItem)}>
-                            <Phone className="h-3 w-3 mr-1" />
-                            Vendeur B
-                          </Button>
-                          <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white text-xs" onClick={() => handleWhatsApp(colisItem)}>
-                            <MessageCircle className="h-3 w-3 mr-1" />
-                            Vendeur B
-                          </Button>
-                          <Button size="sm" className="bg-purple-600 hover:bg-purple-700 text-white text-xs" onClick={() => handleCall(colisItem)}>
-                            <Phone className="h-3 w-3 mr-1" />
-                            Vendeur P
-                          </Button>
-                          <Button size="sm" className="bg-pink-600 hover:bg-pink-700 text-white text-xs" onClick={() => handleWhatsApp(colisItem)}>
-                            <MessageCircle className="h-3 w-3 mr-1" />
-                            Vendeur P
-                          </Button>
-                        </div>
-                      </div>
-
-                      {/* Status Change Button - Hidden for delivered packages */}
-                      {colisItem.statut !== 'Livré' && colisItem.statut !== 'livre' && (
-                        <div className="mt-4 mb-4">
-                          <Button
-                            className="w-full bg-amber-600 hover:bg-amber-700 text-white"
-                            onClick={() => handleStatusChange(colisItem)}
-                          >
-                            <Save className="mr-2 h-4 w-4" />
-                            Changer le statut
-                          </Button>
-                        </div>
-                      )}
-
-                      {/* Bottom Action Icons */}
-                      <div className="flex justify-center gap-3 pt-2 pb-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="px-3 py-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/40 border border-blue-200 dark:border-blue-800"
-                          onClick={() => handleReclamation(colisItem)}
-                        >
-                          <Info className="h-4 w-4 text-blue-600" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="px-3 py-2 bg-green-50 dark:bg-green-900/20 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/40 border border-green-200 dark:border-green-800"
-                          onClick={() => handleWhatsApp(colisItem)}
-                        >
-                          <MessageCircle className="h-4 w-4 text-green-600" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="px-3 py-2 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg hover:bg-yellow-100 dark:hover:bg-yellow-900/40 border border-yellow-200 dark:border-yellow-800"
-                          onClick={() => handleSMS(colisItem)}
-                        >
-                          <Mail className="h-4 w-4 text-yellow-600" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="px-3 py-2 bg-purple-50 dark:bg-purple-900/20 rounded-lg hover:bg-purple-100 dark:hover:bg-purple-900/40 border border-purple-200 dark:border-purple-800"
-                          onClick={() => handleCall(colisItem)}
-                        >
-                          <Phone className="h-4 w-4 text-purple-600" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="px-3 py-2 bg-gray-50 dark:bg-gray-900/20 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-900/40 border border-gray-200 dark:border-gray-800"
-                          onClick={() => handleViewDetails(colisItem)}
-                        >
-                          <Eye className="h-4 w-4 text-gray-600" />
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
+                  {/* Sort Filter */}
+                  <Select value={sortBy} onValueChange={setSortBy}>
+                    <SelectTrigger className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white">
+                      <SelectValue placeholder="Plus récent" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600">
+                      <SelectItem value="recent" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600">Plus récent</SelectItem>
+                      <SelectItem value="oldest" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600">Plus ancien</SelectItem>
+                      <SelectItem value="price_high" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600">Prix décroissant</SelectItem>
+                      <SelectItem value="price_low" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600">Prix croissant</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {hasActiveFilters && (
+                    <Button
+                      onClick={() => {
+                        resetFilters();
+                        setIsFilterOpen(false);
+                      }}
+                      variant="outline"
+                      size="sm"
+                      className="w-full text-sm"
+                    >
+                      <X className="mr-2 h-4 w-4" />
+                      Réinitialiser
+                    </Button>
+                  )}
+                </div>
+              </SheetContent>
+            </Sheet>
+            <Button
+              variant="outline"
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700 px-2 py-1 text-xs h-9 inline-flex items-center gap-2"
+            >
+              {refreshing ? (
+                <RefreshCw className="h-3 w-3 animate-spin" />
+              ) : (
+                <RefreshCw className="h-3 w-3" />
+              )}
+              Actualiser
+            </Button>
+          </div>
+          {/* Row 2: Search */}
+          <div className="relative w-full">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 z-10" />
+            <Input
+              placeholder="Rechercher..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400"
+            />
+          </div>
         </div>
       ) : (
-        // Table view for admin/gestionnaire
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+              <span className="font-medium text-gray-700 dark:text-gray-300">Filtres</span>
+            </div>
+            <div className="flex items-center gap-2">
+              {hasActiveFilters && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={resetFilters}
+                  className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                >
+                  <X className="mr-2 h-4 w-4" />
+                  Réinitialiser
+                </Button>
+              )}
+              <Button
+                variant="outline"
+                onClick={handleRefresh}
+                disabled={refreshing}
+                className="text-sm"
+              >
+                {refreshing ? (
+                  <RefreshCw className="h-4 w-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-4 w-4" />
+                )}
+                Actualiser
+              </Button>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input
+                placeholder="Rechercher par ID, client, entreprise..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400"
+              />
+            </div>
+
+            {/* Livreur Filter */}
+            <Select value={livreurFilter} onValueChange={setLivreurFilter}>
+              <SelectTrigger className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white">
+                <SelectValue placeholder="Tous les livreurs" />
+              </SelectTrigger>
+              <SelectContent className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600">
+                <SelectItem value="all" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600">Tous les livreurs</SelectItem>
+                {livreurs.map((livreur) => (
+                  <SelectItem key={livreur.id} value={livreur.id} className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600">
+                    {`${livreur.prenom || ''} ${livreur.nom}`.trim()}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* Sort Filter */}
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white">
+                <SelectValue placeholder="Plus récent" />
+              </SelectTrigger>
+              <SelectContent className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600">
+                <SelectItem value="recent" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600">Plus récent</SelectItem>
+                <SelectItem value="oldest" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600">Plus ancien</SelectItem>
+                <SelectItem value="price_high" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600">Prix décroissant</SelectItem>
+                <SelectItem value="price_low" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600">Prix croissant</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      )}
+
+      {/* Table view - admin/gestionnaire only */}
+      {loading ? (
+        <div className="text-center py-8">
+          <RefreshCw className="h-8 w-8 animate-spin mx-auto text-gray-400" />
+          <p className="text-gray-500 mt-2">Chargement des colis...</p>
+        </div>
+      ) : colis.length === 0 ? (
+        <div className="text-center py-12">
+          <Package className="h-16 w-16 mx-auto text-gray-400 mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Aucun colis trouvé</h3>
+          <p className="text-gray-500 dark:text-gray-400">Aucun colis trouvé pour ce statut.</p>
+        </div>
+      ) : (
         <div className="space-y-4">
           <div className="flex justify-between items-center">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
@@ -541,24 +544,22 @@ export function FilteredColisView() {
               <div className="flex items-center gap-2">
                 <span className="text-sm text-gray-500 dark:text-gray-400">Afficher</span>
                 <Select value={itemsPerPage.toString()} onValueChange={(value) => {
-                    setItemsPerPage(Number(value));
-                    setCurrentPage(1);
-                  }}>
-                    <SelectTrigger className="w-16 h-8">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="10">10</SelectItem>
-                      <SelectItem value="25">25</SelectItem>
-                      <SelectItem value="50">50</SelectItem>
-                    </SelectContent>
-                  </Select>
-                <span className="text-sm text-gray-500 dark:text-gray-400">entrées</span>
+                  setItemsPerPage(Number(value));
+                  setCurrentPage(1);
+                }}>
+                  <SelectTrigger className="w-16 h-8">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="10">10</SelectItem>
+                    <SelectItem value="25">25</SelectItem>
+                    <SelectItem value="50">50</SelectItem>
+                    <SelectItem value="100">100</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-              <span className="text-sm text-gray-500 dark:text-gray-400">Total: {totalCount} colis</span>
             </div>
           </div>
-
           <div className="overflow-x-auto">
             <Table className="bg-transparent min-w-full">
               <TableHeader>

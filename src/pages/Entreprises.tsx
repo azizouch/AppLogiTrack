@@ -257,7 +257,7 @@ export function Entreprises() {
         </h1>
         <div className="flex items-center gap-1 sm:gap-2 w-full sm:w-auto">
           <Button
-            className="bg-blue-600 hover:bg-blue-700 flex-1 sm:flex-none px-2 sm:px-4 py-1 sm:py-2 text-xs sm:text-sm"
+            className="bg-blue-600 hover:bg-blue-700 flex-1 sm:flex-none px-2 sm:px-4 py-1 sm:py-2 text-sm"
             onClick={() => navigate('/entreprises/ajouter')}
           >
             <Plus className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
@@ -274,8 +274,12 @@ export function Entreprises() {
             <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
               <SheetTrigger asChild>
                 <button className="flex items-center gap-2 cursor-pointer hover:opacity-70 transition-opacity">
-                  <PanelLeftOpen className="h-4 w-4 text-gray-700 dark:text-gray-300" />
+                  <svg className="h-4 w-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.707A1 1 0 013 7V4z" />
+                  </svg>
                   <span className="font-medium text-gray-700 dark:text-gray-300">Filtres</span>
+                  <PanelLeftOpen className="h-4 w-4 text-gray-700 dark:text-gray-300" />
+                  
                 </button>
               </SheetTrigger>
               <SheetContent side="left" className="w-[300px] sm:w-[400px]">
@@ -328,12 +332,12 @@ export function Entreprises() {
               variant="outline"
               onClick={handleRefresh}
               disabled={refreshing}
-              className="text-sm"
+              className="border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700 px-2 py-1 text-xs h-9 inline-flex items-center gap-2"
             >
               {refreshing ? (
-                <RefreshCw className="h-4 w-4 animate-spin" />
+                <RefreshCw className="h-3 w-3 animate-spin" />
               ) : (
-                <RefreshCw className="h-4 w-4" />
+                <RefreshCw className="h-3 w-3" />
               )}
               Actualiser
             </Button>
@@ -350,10 +354,12 @@ export function Entreprises() {
           </div>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-gray-700 dark:text-gray-300" />
+              <svg className="h-4 w-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.707A1 1 0 013 7V4z" />
+              </svg>
               <span className="font-medium text-gray-700 dark:text-gray-300">Filtres</span>
             </div>
             <div className="flex items-center gap-2">

@@ -35,7 +35,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
-import { Filter, Search, UserPlus, ShieldCheck, Edit, Trash2, X, UserCog, Eye, EyeOff, RefreshCw } from 'lucide-react';
+import { Filter, Search, UserPlus, ShieldCheck, Edit, Trash2, X, UserCog, Eye, EyeOff, RefreshCw, PanelLeftOpen } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { api, auth } from '@/lib/supabase';
@@ -536,72 +536,29 @@ export function Gestion() {
   const hasActiveFilters = searchTerm || roleFilter !== 'all' || statusFilter !== 'all';
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {/* Header */}
       <div className="space-y-3">
-        {/* Small screens: Title and Roles on one line, other buttons on separate line */}
-        {/* Large screens: All buttons on same line */}
-        <div className="flex justify-between items-center">
+
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
           <h1 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
             <UserCog className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600 dark:text-blue-400" />
             Gestion des Utilisateurs
           </h1>
 
-          {/* On small screens, only show Roles button here */}
-          <div className="sm:hidden">
+          {/* buttons */}
+          <div className="flex gap-2">
+
             <Dialog open={showRolesModal} onOpenChange={setShowRolesModal}>
               <DialogTrigger asChild>
-                <Button variant="outline" className="h-9 inline-flex items-center gap-1 transition-colors border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 px-2 py-1 text-xs">
+                <Button variant="outline" className="h-9 inline-flex items-center gap-1 transition-colors border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 px-2 py-1 text-xs flex-1">
                   <ShieldCheck className="h-3 w-3" />
-                  Rôles et permissions
-                </Button>
-              </DialogTrigger>
-            </Dialog>
-          </div>
-
-          {/* On large screens, show all buttons */}
-          <div className="hidden sm:flex gap-2">
-            <Button
-              variant="outline"
-              onClick={fetchUsers}
-              className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700 px-4 py-2 text-sm h-9 inline-flex items-center gap-2"
-            >
-              <RefreshCw className="h-4 w-4" />
-              Actualiser
-            </Button>
-
-            <Dialog open={showRolesModal} onOpenChange={setShowRolesModal}>
-              <DialogTrigger asChild>
-                <Button variant="outline" className="h-9 inline-flex items-center gap-2 transition-colors border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 px-4 py-2 text-sm">
-                  <ShieldCheck className="h-4 w-4" />
                   Rôles et permissions
                 </Button>
               </DialogTrigger>
             </Dialog>
 
             <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
-              <DialogTrigger asChild>
-                <Button className="h-9 inline-flex items-center gap-2 transition-colors bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 text-sm">
-                  <UserPlus className="h-4 w-4" />
-                  Ajouter un utilisateur
-                </Button>
-              </DialogTrigger>
-            </Dialog>
-          </div>
-        </div>
-
-        {/* On small screens, show other buttons on separate line */}
-        <div className="flex gap-2 sm:hidden">
-          <Button
-            variant="outline"
-            onClick={fetchUsers}
-            className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700 px-2 py-1 text-xs h-9 inline-flex items-center gap-1 flex-1"
-          >
-            <RefreshCw className="h-3 w-3" />
-            Actualiser
-          </Button>
-
-          <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
             <DialogTrigger asChild>
               <Button className="h-9 inline-flex items-center gap-1 transition-colors bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 text-xs flex-1">
                 <UserPlus className="h-3 w-3" />
@@ -609,19 +566,23 @@ export function Gestion() {
               </Button>
             </DialogTrigger>
           </Dialog>
+          </div>
         </div>
       </div>
 
       {/* Filters */}
       {isMobile ? (
-        <div className="space-y-2 w-full">
+        <div className="space-y-3 w-full">
           {/* Row 1: Filtres + Actualiser */}
           <div className="flex items-center justify-between w-full gap-2">
             <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
               <SheetTrigger asChild>
-                <button className="flex items-center gap-2 cursor-pointer hover:opacity-70 transition-opacity flex-1">
-                  <Filter className="h-4 w-4 text-gray-700 dark:text-gray-300" />
+                <button className="flex items-center gap-2 cursor-pointer hover:opacity-70 transition-opacity">
+                  <svg className="h-4 w-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.707A1 1 0 013 7V4z" />
+                  </svg>
                   <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Filtres</span>
+                  <PanelLeftOpen className="h-4 w-4 text-gray-700 dark:text-gray-300" />
                 </button>
               </SheetTrigger>
               <SheetContent side="left" className="w-[300px] sm:w-[400px]">
@@ -674,12 +635,12 @@ export function Gestion() {
               variant="outline"
               onClick={handleRefresh}
               disabled={refreshing}
-              className="text-sm flex-1"
+              className="border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700 px-2 py-1 text-xs h-9 inline-flex items-center gap-2"
             >
               {refreshing ? (
-                <RefreshCw className="h-4 w-4 animate-spin" />
+                <RefreshCw className="h-3 w-3 animate-spin" />
               ) : (
-                <RefreshCw className="h-4 w-4" />
+                <RefreshCw className="h-3 w-3" />
               )}
               Actualiser
             </Button>
@@ -698,10 +659,12 @@ export function Gestion() {
           </div>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
-              <Filter className="h-4 w-4 text-gray-700 dark:text-gray-300" />
+              <svg className="h-4 w-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.707A1 1 0 013 7V4z" />
+              </svg>
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Filtres</span>
             </div>
             <div className="flex items-center gap-2">

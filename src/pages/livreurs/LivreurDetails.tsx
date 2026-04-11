@@ -249,8 +249,7 @@ export function LivreurDetails() {
     <div className="space-y-3">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="mb-2">
-          <Button
+        <Button
             variant="ghost"
             onClick={() => navigate('/livreurs')}
             className="inline-flex h-9 items-center justify-center gap-2 whitespace-nowrap rounded-md px-3 text-sm font-medium transition-colors ring-offset-background hover:bg-gray-100 dark:hover:bg-gray-800"
@@ -258,13 +257,12 @@ export function LivreurDetails() {
             <ArrowLeft className="h-4 w-4" />
             Retour à la liste
           </Button>
-        </div>
       </div>
 
       {/* Livreur Info Header */}
-      <div className="flex flex-col sm:flex-row sm:justify-between mb-8">
+      <div className="flex flex-col sm:flex-row sm:justify-between">
         {/* Title Row */}
-        <div className="flex items-center gap-4 mb-4">
+        <div className="flex items-center gap-4 mb-3">
           <Avatar className="w-10 h-10 sm:w-12 sm:h-12">
             <AvatarImage
               src={livreur.image_url}
@@ -347,7 +345,7 @@ export function LivreurDetails() {
       </div>
 
       {/* Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
         {/* Left Column - Livreur Information */}
         <div className="space-y-6">
           <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 md:p-6">
@@ -489,7 +487,7 @@ export function LivreurDetails() {
         </div>
 
         {/* Right Column - Colis and Bons */}
-        <div className="space-y-6">
+        <div className="space-y-3">
           {/* Colis associés */}
           <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 md:p-6">
             <div className="flex items-center gap-2 mb-4">
