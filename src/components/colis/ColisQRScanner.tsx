@@ -401,91 +401,82 @@ export function ColisQRScanner({
           {/* Colis Details View */}
           {scannedColis && !scanning && (
             <>
-              {/* Header Info */}
-              <div className="space-y-4">
-                {/* Main Details Card */}
-                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg p-6 border border-blue-200 dark:border-blue-800 space-y-4">
-                  {/* ID Section - Prominent */}
-                  <div className="pb-4 border-b border-blue-200 dark:border-blue-700">
-                    <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider mb-2">ID du colis</p>
-                    <p className="font-mono font-bold text-2xl text-blue-600 dark:text-blue-400 break-all">{scannedColis.id}</p>
-                  </div>
-
-                  {/* Client Info */}
-                  <div className="space-y-4">
-                    <div className="space-y-1">
-                      <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">📦 Récepteur</p>
-                      <p className="text-lg font-bold text-gray-900 dark:text-white">{scannedColis.client?.nom || 'Non défini'}</p>
-                    </div>
-
-                    <div className="space-y-1">
-                      <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">📍 Adresse de livraison</p>
-                      <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{scannedColis.client?.adresse || 'Non défini'}</p>
-                    </div>
-
-                    {/* Status and Price Row */}
-                    <div className="grid grid-cols-2 gap-4 pt-2">
-                      <div>
-                        <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider mb-2">Statut</p>
-                        <Badge className="bg-blue-100 dark:bg-blue-900 text-blue-900 dark:text-blue-100 text-sm py-1 px-3 font-semibold">
-                          {scannedColis.statut}
-                        </Badge>
-                      </div>
-                      {scannedColis.prix && (
-                        <div className="text-right">
-                          <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider mb-2">Montant</p>
-                          <p className="text-lg font-bold text-green-600 dark:text-green-400">{scannedColis.prix} DH</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
+              {/* Main Details Card */}
+              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg p-4 sm:p-6 border border-blue-200 dark:border-blue-800 space-y-3 sm:space-y-4">
+                {/* ID Section - Prominent */}
+                <div className="pb-3 sm:pb-4 border-b border-blue-200 dark:border-blue-700">
+                  <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider mb-1">ID du colis</p>
+                  <p className="font-mono font-bold text-lg sm:text-2xl text-blue-600 dark:text-blue-400 break-all line-clamp-2">{scannedColis.id}</p>
                 </div>
 
-                {/* Additional Info if available */}
-                {scannedColis.description && (
-                  <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-                    <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider mb-2">📝 Description</p>
-                    <p className="text-sm text-gray-700 dark:text-gray-300">{scannedColis.description}</p>
+                {/* Client Info */}
+                <div className="space-y-3">
+                  {/* Client Name */}
+                  <div className="space-y-1">
+                    <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">📦 Client</p>
+                    <p className="text-base sm:text-lg font-bold text-gray-900 dark:text-white line-clamp-2">{scannedColis.client?.nom || 'Non défini'}</p>
                   </div>
-                )}
+
+                  {/* Address */}
+                  <div className="space-y-1">
+                    <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">📍 Adresse</p>
+                    <p className="text-sm text-gray-700 dark:text-gray-300 line-clamp-2">{scannedColis.client?.adresse || 'Non défini'}</p>
+                  </div>
+
+                  {/* Status and Price Row */}
+                  <div className="grid grid-cols-2 gap-3 pt-2">
+                    <div>
+                      <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider mb-1">Statut</p>
+                      <Badge className="bg-blue-100 dark:bg-blue-900 text-blue-900 dark:text-blue-100 text-xs sm:text-sm py-1 px-2 sm:px-3 font-semibold inline-block">
+                        {scannedColis.statut}
+                      </Badge>
+                    </div>
+                    {scannedColis.prix && (
+                      <div className="text-right">
+                        <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider mb-1">Montant</p>
+                        <p className="text-base sm:text-lg font-bold text-green-600 dark:text-green-400">{scannedColis.prix} DH</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
 
               {/* Error State */}
               {error && (
-                <Alert variant="destructive">
+                <Alert variant="destructive" className="text-sm">
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>{error}</AlertDescription>
                 </Alert>
               )}
 
-              {/* Action Buttons for Details */}
-              <div className="flex flex-col gap-3 pt-2">
+              {/* Action Buttons - Optimized for Mobile */}
+              <div className="flex flex-col gap-2 pt-2">
                 {/* Primary Action - Associate */}
                 <Button
                   onClick={handleAssociate}
                   disabled={associating || scannedColis.livreur_id === authState.user?.id}
-                  className="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white font-semibold py-6 text-base rounded-lg transition-all"
+                  className="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white font-semibold py-3 sm:py-6 text-sm sm:text-base rounded-lg transition-all"
                 >
                   {scannedColis.livreur_id === authState.user?.id
-                    ? '✓ Déjà associé à votre compte'
+                    ? '✓ Déjà associé'
                     : associating
-                    ? 'Assignation en cours...'
-                    : '🔗 Associer à mon compte'}
+                    ? 'Assignation...'
+                    : '🔗 Associer'}
                 </Button>
 
-                {/* Secondary Actions */}
+                {/* Secondary Actions - Side by Side on Mobile */}
                 <div className="grid grid-cols-2 gap-2">
                   <Button
                     onClick={handleBack}
                     variant="outline"
-                    className="w-full"
+                    className="w-full text-sm sm:text-base"
                   >
-                    ↺ Scanner un autre
+                    ↺ Scanner
                   </Button>
                   <Button
                     onClick={onClose}
                     variant="outline"
-                    className="w-full"
+                    className="w-full text-sm sm:text-base"
                   >
                     Fermer
                   </Button>
