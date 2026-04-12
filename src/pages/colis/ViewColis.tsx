@@ -699,7 +699,7 @@ export function ViewColis() {
       <Dialog open={showQRModal} onOpenChange={setShowQRModal}>
         <DialogContent className="w-auto max-w-[95%] sm:max-w-[500px] gap-2 p-3 sm:p-6 max-h-[85vh] overflow-y-auto overflow-x-hidden">
           {colis && (
-            <div className="flex justify-center items-center py-4 w-full">
+            <div className="flex justify-center items-center py-6 sm:py-4 w-full">
               <ColisQRCode colisId={colis.id} colisNumber={colis.id} />
             </div>
           )}
