@@ -44,12 +44,39 @@ body[style*="margin-right"] {
 }
 
 /* Center notification dropdown for all small screens */
-@media (max-width: 639px) {
+/* @media (max-width: 639px) {
   [data-radix-popper-content-wrapper] {
     left: 50% !important;
     transform: translate(-50%, 49.5px) !important;
   }
-}
+} */
+/* @media (max-width: 639px) {
+  [data-radix-popper-content-wrapper] {
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    width: 90vw;
+    max-width: 24rem;
+  }
+} */
+ /* <PopoverContent
+  data-no-center="true"
+  className="w-[90vw] max-w-sm p-0"
+  side="bottom"
+  sideOffset={10}
+/>
+
+@media (max-width: 639px) {
+  [data-radix-popper-content-wrapper]:not(:has([data-no-center="true"])) {
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    width: 90vw;
+    max-width: 24rem;
+  }
+} */
 
 /* Header responsive positioning - pure CSS without JavaScript */
 .header-responsive {

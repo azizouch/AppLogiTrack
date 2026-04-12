@@ -327,7 +327,12 @@ export function Header() {
                   )}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-80 p-0" align="end">
+              <PopoverContent className="w-[90vw] max-w-sm p-0"
+                              align="center"
+                              side="bottom"
+                              sideOffset={10}
+                              avoidCollisions={true}
+                              collisionPadding={10}>
                 <Card className="shadow-lg border-border animate-in fade-in zoom-in-95 duration-200">
                   <CardHeader className="pb-3 pt-4 px-4">
                     <div className="flex items-center justify-between">

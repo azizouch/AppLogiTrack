@@ -27,7 +27,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
-import { Colis, User } from '@/types';
+import { Colis, User, Entreprise } from '@/types';
 import { api } from '@/lib/supabase';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -48,13 +48,14 @@ export function ColisRefuses() {
   // Data state
   const [colis, setColis] = useState<Colis[]>([]);
   const [livreurs, setLivreurs] = useState<User[]>([]);
+  const [entreprises, setEntreprises] = useState<Entreprise[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   // Filter state
   const [searchTerm, setSearchTerm] = useState('');
   const [delivererFilter, setDelivererFilter] = useState('all');
-  const [sortBy, setSortBy] = useState<'recent' | 'oldest'>('recent');
+  const [entrepriseFilter, setEntrepriseFilter] = useState('all');
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -83,7 +84,8 @@ export function ColisRefuses() {
         search: debouncedSearchTerm,
         status: 'Refusé',
         livreurId: isLivreur ? state.user?.id : (delivererFilter !== 'all' ? delivererFilter : undefined),
-        sortBy: sortBy
+        entrepriseId: entrepriseFilter !== 'all' ? entrepriseFilter : undefined,
+        sortBy: 'recent'
       });
 
       if (error) {
@@ -111,7 +113,7 @@ export function ColisRefuses() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [currentPage, debouncedSearchTerm, delivererFilter, sortBy, itemsPerPage, isLivreur, state.user?.id]);
+  }, [currentPage, debouncedSearchTerm, delivererFilter, entrepriseFilter, itemsPerPage, isLivreur, state.user?.id]);
 
   // Fetch livreurs for filter dropdown
   const fetchLivreurs = useCallback(async () => {
@@ -129,10 +131,25 @@ export function ColisRefuses() {
     }
   }, [isLivreur]);
 
+  // Fetch entreprises for filter dropdown
+  const fetchEntreprises = useCallback(async () => {
+    try {
+      const { data, error } = await api.getEntreprises();
+      if (error) {
+        console.error('Error fetching entreprises:', error);
+      } else if (data) {
+        setEntreprises(data);
+      }
+    } catch (error) {
+      console.error('Error fetching entreprises:', error);
+    }
+  }, []);
+
   // Initial data fetch
   useEffect(() => {
     fetchLivreurs();
-  }, [fetchLivreurs]);
+    fetchEntreprises();
+  }, [fetchLivreurs, fetchEntreprises]);
 
   // Fetch colis when filters or pagination change
   useEffect(() => {
@@ -144,14 +161,14 @@ export function ColisRefuses() {
     if (currentPage !== 1) {
       setCurrentPage(1);
     }
-  }, [debouncedSearchTerm, delivererFilter, sortBy]);
+  }, [debouncedSearchTerm, delivererFilter, entrepriseFilter]);
 
   // Auto-close mobile filter sidebar when filters change
   useEffect(() => {
     if (isMobile && isFilterOpen) {
       setIsFilterOpen(false);
     }
-  }, [debouncedSearchTerm, delivererFilter, sortBy, isMobile]);
+  }, [debouncedSearchTerm, delivererFilter, entrepriseFilter, isMobile]);
 
   const getLivreurInfo = (colis: Colis) => {
     if (!colis.livreur_id || !colis.livreur) {
@@ -236,21 +253,25 @@ export function ColisRefuses() {
                         </SelectContent>
                       </Select>
                     )}
-                    <Select value={sortBy} onValueChange={(value) => setSortBy(value as 'recent' | 'oldest')}>
+                    <Select value={entrepriseFilter} onValueChange={setEntrepriseFilter}>
                       <SelectTrigger className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
-                        <SelectValue placeholder="Plus récent" />
+                        <SelectValue placeholder="Sélectionner une entreprise" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="recent">Plus récent</SelectItem>
-                        <SelectItem value="oldest">Plus ancien</SelectItem>
+                        <SelectItem value="all">Toutes les entreprises</SelectItem>
+                        {entreprises.map((entreprise) => (
+                          <SelectItem key={entreprise.id} value={entreprise.id}>
+                            {entreprise.nom}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
-                    {(searchTerm || delivererFilter !== 'all' || sortBy !== 'recent') && (
+                    {(searchTerm || delivererFilter !== 'all' || entrepriseFilter !== 'all') && (
                       <Button
                         onClick={() => {
                           setSearchTerm('');
                           setDelivererFilter('all');
-                          setSortBy('recent');
+                          setEntrepriseFilter('all');
                           setIsFilterOpen(false);
                         }}
                         variant="outline"
@@ -300,6 +321,21 @@ export function ColisRefuses() {
               <span className="font-medium text-gray-700 dark:text-gray-300">Filtres</span>
             </div>
             <div className="flex items-center gap-2">
+              {(searchTerm || delivererFilter !== 'all' || entrepriseFilter !== 'all') && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setSearchTerm('');
+                    setDelivererFilter('all');
+                    setEntrepriseFilter('all');
+                  }}
+                  className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800"
+                >
+                  <X className="mr-2 h-4 w-4" />
+                  Réinitialiser
+                </Button>
+              )}
               <Button
                 variant="outline"
                 onClick={handleRefresh}
@@ -313,21 +349,6 @@ export function ColisRefuses() {
                 )}
                 Actualiser
               </Button>
-              {(searchTerm || delivererFilter !== 'all' || sortBy !== 'recent') && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setSearchTerm('');
-                    setDelivererFilter('all');
-                    setSortBy('recent');
-                  }}
-                  className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800"
-                >
-                  <X className="mr-2 h-4 w-4" />
-                  Réinitialiser
-                </Button>
-              )}
             </div>
           </div>
 
@@ -365,13 +386,17 @@ export function ColisRefuses() {
               </Select>
             )}
 
-            <Select value={sortBy} onValueChange={(value) => setSortBy(value as 'recent' | 'oldest')}>
+            <Select value={entrepriseFilter} onValueChange={setEntrepriseFilter}>
               <SelectTrigger className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white">
-                <SelectValue placeholder="Plus récent" />
+                <SelectValue placeholder="Sélectionner une entreprise" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="recent">Plus récent</SelectItem>
-                <SelectItem value="oldest">Plus ancien</SelectItem>
+                <SelectItem value="all">Toutes les entreprises</SelectItem>
+                {entreprises.map((entreprise) => (
+                  <SelectItem key={entreprise.id} value={entreprise.id}>
+                    {entreprise.nom}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>

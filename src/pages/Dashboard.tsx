@@ -169,10 +169,10 @@ export function Dashboard() {
     <div className="space-y-4 sm:space-y-6">
       {/* Header with date */}
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+        <h1 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100">
           Tableau de bord
         </h1>
-        <p className="text-sm text-gray-500">
+        <p className="text-xs sm:text-sm text-gray-500">
           {getCurrentDate()}
         </p>
       </div>

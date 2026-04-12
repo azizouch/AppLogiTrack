@@ -859,6 +859,7 @@ export const api = {
     search?: string;
     status?: string;
     livreurId?: string;
+    entrepriseId?: string;
     sortBy?: 'recent' | 'oldest' | 'status';
     dateFilter?: string;
     _refresh?: boolean; // Cache-busting parameter
@@ -870,6 +871,7 @@ export const api = {
       search = '',
       status = '',
       livreurId = '',
+      entrepriseId = '',
       sortBy = 'recent',
       dateFilter = '',
       _refresh = false
@@ -976,6 +978,11 @@ export const api = {
         } else {
           query = query.eq('livreur_id', livreurId);
         }
+      }
+
+      // Apply entreprise filter
+      if (entrepriseId && entrepriseId !== 'all') {
+        query = query.eq('entreprise_id', entrepriseId);
       }
 
       // Apply sorting

@@ -32,7 +32,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
-import { Colis, User, Statut } from '@/types';
+import { Colis, User, Statut, Entreprise } from '@/types';
 import { api } from '@/lib/supabase';
 import { ImportColisModal } from '@/components/modals/ImportColisModal';
 
@@ -54,6 +54,7 @@ export function ColisList() {
   // Data state
   const [colis, setColis] = useState<Colis[]>([]);
   const [livreurs, setLivreurs] = useState<User[]>([]);
+  const [entreprises, setEntreprises] = useState<Entreprise[]>([]);
   const [statuts, setStatuts] = useState<Statut[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -62,7 +63,7 @@ export function ColisList() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [delivererFilter, setDelivererFilter] = useState('all');
-  const [sortBy, setSortBy] = useState<'recent' | 'oldest' | 'status'>('recent');
+  const [entrepriseFilter, setEntrepriseFilter] = useState('all');
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -95,7 +96,8 @@ export function ColisList() {
         search: debouncedSearchTerm,
         status: statusFilter,
         livreurId: delivererFilter,
-        sortBy: sortBy,
+        entrepriseId: entrepriseFilter,
+        sortBy: 'recent',
         _refresh
       });
 
@@ -128,7 +130,7 @@ export function ColisList() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [currentPage, debouncedSearchTerm, statusFilter, delivererFilter, sortBy, itemsPerPage]);
+  }, [currentPage, debouncedSearchTerm, statusFilter, delivererFilter, entrepriseFilter, itemsPerPage]);
 
   // Fetch livreurs for filter dropdown
   const fetchLivreurs = useCallback(async () => {
@@ -156,11 +158,25 @@ export function ColisList() {
     }
   }, []);
 
+  // Fetch entreprises for filter dropdown
+  const fetchEntreprises = useCallback(async () => {
+    try {
+      const result = await api.getEntreprises();
+
+      if (result?.data) {
+        setEntreprises(result.data);
+      }
+    } catch (error) {
+      console.error('Error fetching entreprises:', error);
+    }
+  }, []);
+
   // Initial data fetch
   useEffect(() => {
     fetchLivreurs();
     fetchStatuts();
-  }, [fetchLivreurs, fetchStatuts]);
+    fetchEntreprises();
+  }, [fetchLivreurs, fetchStatuts, fetchEntreprises]);
 
   // Fetch colis when filters or pagination change
   useEffect(() => {
@@ -172,14 +188,14 @@ export function ColisList() {
     if (currentPage !== 1) {
       setCurrentPage(1);
     }
-  }, [debouncedSearchTerm, statusFilter, delivererFilter, sortBy]);
+  }, [debouncedSearchTerm, statusFilter, delivererFilter, entrepriseFilter]);
 
   // Auto-close mobile filter sidebar when filters change
   useEffect(() => {
     if (isMobile && isFilterOpen) {
       setIsFilterOpen(false);
     }
-  }, [debouncedSearchTerm, statusFilter, delivererFilter, sortBy, isMobile]);
+  }, [debouncedSearchTerm, statusFilter, delivererFilter, entrepriseFilter, isMobile]);
 
   const getLivreurInfo = (colis: Colis) => {
     if (!colis.livreur_id || !colis.livreur) {
@@ -204,13 +220,13 @@ export function ColisList() {
     setSearchTerm('');
     setStatusFilter('all');
     setDelivererFilter('all');
-    setSortBy('recent');
+    setEntrepriseFilter('all');
     setCurrentPage(1);
     setSelectedColisIds([]); // Clear selected colis when resetting filters
   };
 
   // Check if any filters are active
-  const hasActiveFilters = searchTerm || statusFilter !== 'all' || delivererFilter !== 'all' || sortBy !== 'recent';
+  const hasActiveFilters = searchTerm || statusFilter !== 'all' || delivererFilter !== 'all' || entrepriseFilter !== 'all';
 
   // Bulk operations functions
   const handleSelectAll = (checked: boolean) => {
@@ -756,14 +772,17 @@ export function ColisList() {
                       ))}
                     </SelectContent>
                   </Select>
-                  <Select value={sortBy} onValueChange={(value) => setSortBy(value as 'recent' | 'oldest' | 'status')}>
+                  <Select value={entrepriseFilter} onValueChange={setEntrepriseFilter}>
                     <SelectTrigger className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
-                      <SelectValue placeholder="Plus récent" />
+                      <SelectValue placeholder="Sélectionner une entreprise" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="recent">Plus récent</SelectItem>
-                      <SelectItem value="oldest">Plus ancien</SelectItem>
-                      <SelectItem value="status">Par statut</SelectItem>
+                      <SelectItem value="all">Toutes les entreprises</SelectItem>
+                      {entreprises.map((entreprise) => (
+                        <SelectItem key={entreprise.id} value={entreprise.id}>
+                          {entreprise.nom}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   {hasActiveFilters && (
@@ -819,6 +838,18 @@ export function ColisList() {
               <span className="font-medium text-gray-700 dark:text-gray-300">Filtres</span>
             </div>
             <div className="flex items-center gap-2">
+              {/* Reset filters button - shown when filters are active */}
+              {hasActiveFilters && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={resetFilters}
+                  className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                >
+                  <X className="mr-2 h-4 w-4" />
+                  Réinitialiser
+                </Button>
+              )}
               <Button
                 variant="outline"
                 onClick={handleRefresh}
@@ -832,18 +863,6 @@ export function ColisList() {
                 )}
                 Actualiser
               </Button>
-              {/* Reset filters button - shown when filters are active */}
-              {hasActiveFilters && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={resetFilters}
-                  className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-                >
-                  <X className="mr-2 h-4 w-4" />
-                  Réinitialiser
-                </Button>
-              )}
             </div>
           </div>
 
@@ -888,14 +907,17 @@ export function ColisList() {
               </SelectContent>
             </Select>
 
-            <Select value={sortBy} onValueChange={(value) => setSortBy(value as 'recent' | 'oldest' | 'status')}>
+            <Select value={entrepriseFilter} onValueChange={setEntrepriseFilter}>
               <SelectTrigger>
-                <SelectValue placeholder="Plus récent" />
+                <SelectValue placeholder="Sélectionner une entreprise" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="recent">Plus récent</SelectItem>
-                <SelectItem value="oldest">Plus ancien</SelectItem>
-                <SelectItem value="status">Par statut</SelectItem>
+                <SelectItem value="all">Toutes les entreprises</SelectItem>
+                {entreprises.map((entreprise) => (
+                  <SelectItem key={entreprise.id} value={entreprise.id}>
+                    {entreprise.nom}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
