@@ -72,7 +72,7 @@ export function ColisQRCode({ colisId, colisNumber }: ColisQRCodeProps) {
         <img
           src={qrCodeUrl}
           alt={`QR Code for ${colisId}`}
-          className="w-48 h-48 object-contain"
+          className="w-32 h-32 sm:w-48 sm:h-48 object-contain"
         />
       </div>
 

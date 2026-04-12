@@ -1,12 +1,13 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { AlertCircle, Loader2, Camera, ArrowLeft, Package, MapPin, DollarSign, CheckCircle2 } from 'lucide-react';
+import { AlertCircle, Loader2, Camera, ArrowLeft, Package, MapPin, DollarSign, CheckCircle2, RefreshCcw, Link, X } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { api } from '@/lib/supabase';
 import { Colis } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
+import { Close } from '@radix-ui/react-toast';
 
 interface ColisQRScannerProps {
   isOpen: boolean;
@@ -533,13 +534,18 @@ export function ColisQRScanner({
                 <Button
                   onClick={handleAssociate}
                   disabled={associating || scannedColis.livreur_id === authState.user?.id}
-                  className="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white font-semibold py-3 sm:py-6 text-sm sm:text-base rounded-lg transition-all"
+                  className="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white text-sm rounded-lg transition-all"
                 >
                   {scannedColis.livreur_id === authState.user?.id
                     ? '✓ Déjà associé'
                     : associating
                     ? 'Assignation...'
-                    : '🔗 Associer'}
+                    : (
+                        <>
+                          <Link className="w-4 h-4 mr-2" />
+                          Associer
+                        </>
+                      )}
                 </Button>
 
                 {/* Secondary Actions - Side by Side on Mobile */}
@@ -547,16 +553,16 @@ export function ColisQRScanner({
                   <Button
                     onClick={handleBack}
                     variant="outline"
-                    className="w-full text-sm sm:text-base"
+                    className="w-full text-sm bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-900/40 transition-colors"
                   >
-                    ↺ Scanner
+                    <RefreshCcw className="w-4 h-4 mr-2" /> Scanner
                   </Button>
                   <Button
                     onClick={onClose}
                     variant="outline"
-                    className="w-full text-sm sm:text-base"
+                    className="w-full text-sm bg-orange-100 dark:bg-orange-900/20 text-orange-700 dark:text-orange-300 hover:bg-orange-200 dark:hover:bg-orange-900/40 transition-colors"
                   >
-                    Fermer
+                    <X className="w-4 h-4 mr-2" /> Fermer
                   </Button>
                 </div>
               </div>

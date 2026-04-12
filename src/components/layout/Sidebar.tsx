@@ -642,13 +642,13 @@ export function AppSidebar() {
       </SidebarContent>
 
       {/* Bottom Buttons - QR Scanner (for livreurs) and Theme Toggle */}
-      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex flex-col items-center gap-2">
+      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex items-center gap-2">
         {/* QR Scanner Button - Only show for livreurs */}
         {authState.user?.role === 'Livreur' && (
           <Button
             variant="ghost"
             size="icon"
-            className="h-10 w-10 bg-black dark:bg-blue-900 hover:bg-gray-700 dark:hover:bg-blue-900 dark:hover:text-blue-100 rounded-md transition-colors"
+            className="h-10 w-10 bg-black dark:bg-blue-900 hover:bg-gray-700 dark:hover:bg-blue-800 dark:hover:text-blue-100 rounded-md transition-colors"
             onClick={openScanner}
             title="Scanner un colis"
           >
@@ -660,7 +660,11 @@ export function AppSidebar() {
         <Button
           variant="ghost"
           size="icon"
-          className="h-10 w-10 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
+          className={`h-10 w-10 rounded-md ${
+                      isDarkMode
+                        ? "bg-gray-800 hover:bg-gray-700"
+                        : "bg-gray-400 hover:bg-gray-300"
+                    }`}  
           onClick={toggleDarkMode}
           title={isDarkMode ? 'Mode clair' : 'Mode sombre'}
         >

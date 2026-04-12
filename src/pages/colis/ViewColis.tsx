@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Edit, Package, User, Building, Truck, Calendar, MapPin, Phone, Mail, Clock, DollarSign, Trash2 } from 'lucide-react';
+import { ArrowLeft, Edit, Package, User, Building, Truck, Calendar, MapPin, Phone, Mail, Clock, DollarSign, Trash2, QrCode } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   Select,
   SelectContent,
@@ -38,6 +39,7 @@ export function ViewColis() {
   const [updating, setUpdating] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [showQRModal, setShowQRModal] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -293,7 +295,7 @@ export function ViewColis() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
+    <div className="max-w-7xl mx-auto space-y-4">
       {/* Header */}
       <div className="mb-2">
         <Button
@@ -307,7 +309,7 @@ export function ViewColis() {
       </div>
 
       {/* Title Section */}
-      <div className="mb-8">
+      <div className="mb-2">
         {/* Mobile Layout - Title and Buttons Separated */}
         <div className="md:hidden">
           {/* Title Row */}
@@ -316,8 +318,8 @@ export function ViewColis() {
               <Package className="h-6 w-6 text-blue-600 dark:text-blue-400" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{colis.id}</h1>
-              <p className="text-gray-500 dark:text-gray-400">
+              <h1 className="text-lg font-bold text-gray-900 dark:text-white">{colis.id}</h1>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
                 Créé le {new Intl.DateTimeFormat('fr-FR', {
                   day: 'numeric',
                   month: 'long',
@@ -329,7 +331,68 @@ export function ViewColis() {
             </div>
           </div>
           {/* Buttons Row - 2x2 Grid */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-6 gap-3">
+            {/* Row 1 - each takes 2 cols (2 + 2 + 2 = 6) */}
+            <Button
+              variant="outline"
+              onClick={() => navigate(`/colis/${id}/modifier`)}
+              className="col-span-2 flex items-center justify-center gap-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
+            >
+              <Edit className="h-4 w-4" />
+              Modifier
+            </Button>
+
+            <Button
+              variant="outline"
+              onClick={() => setShowQRModal(true)}
+              className="col-span-2 flex items-center justify-center gap-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
+            >
+              <QrCode className="h-4 w-4" />
+              QR Code
+            </Button>
+
+            <Button
+              variant="destructive"
+              onClick={() => setShowDeleteModal(true)}
+              className="col-span-2 flex items-center justify-center gap-2 bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700"
+            >
+              <Trash2 className="h-4 w-4" />
+              Supprimer
+            </Button>
+
+            {/* Row 2 - each takes half (3 + 3 = 6) */}
+            <div className="col-span-3">
+              <Select
+                value={selectedStatus}
+                onValueChange={setSelectedStatus}
+              >
+                <SelectTrigger className="w-full border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+                  <SelectValue />
+                </SelectTrigger>
+
+                <SelectContent className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
+                  {statuses.map((status) => (
+                    <SelectItem
+                      key={status.id}
+                      value={status.nom}
+                      className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700"
+                    >
+                      {status.nom}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <Button
+              onClick={handleStatusUpdate}
+              disabled={updating || selectedStatus === colis.statut}
+              className="col-span-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {updating ? 'Mise à jour...' : 'Mettre à jour'}
+            </Button>
+          </div>
+          {/* <div className="grid grid-cols-3 gap-3">
             <Button
               variant="outline"
               onClick={() => navigate(`/colis/${id}/modifier`)}
@@ -339,9 +402,17 @@ export function ViewColis() {
               Modifier
             </Button>
             <Button
+              variant="outline"
+              onClick={() => setShowQRModal(true)}
+              className="flex items-center justify-center gap-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
+            >
+              <QrCode className="h-4 w-4" />
+              QR Code
+            </Button>
+            <Button
               variant="destructive"
               onClick={() => setShowDeleteModal(true)}
-              className="flex items-center justify-center gap-2 bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700"
+              className="flex items-center justify-center gap-2 bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700 col-span-2"
             >
               <Trash2 className="h-4 w-4" />
               Supprimer
@@ -365,18 +436,18 @@ export function ViewColis() {
             >
               {updating ? 'Mise à jour...' : 'Mettre à jour'}
             </Button>
-          </div>
+          </div> */}
         </div>
 
         {/* Desktop Layout - Title and Buttons on Same Line */}
         <div className="hidden md:flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
-              <Package className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+            <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
+              <Package className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600 dark:text-blue-400" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{colis.id}</h1>
-              <p className="text-gray-500 dark:text-gray-400">
+              <h1 className="text-lg font-bold text-gray-900 dark:text-white">{colis.id}</h1>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
                 Créé le {new Intl.DateTimeFormat('fr-FR', {
                   day: 'numeric',
                   month: 'long',
@@ -395,6 +466,14 @@ export function ViewColis() {
             >
               <Edit className="h-4 w-4" />
               Modifier
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setShowQRModal(true)}
+              className="flex items-center gap-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
+            >
+              <QrCode className="h-4 w-4" />
+              QR Code
             </Button>
             <Button
               variant="destructive"
@@ -429,7 +508,7 @@ export function ViewColis() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Left Column - Main Info */}
-        <div className="lg:col-span-2 space-y-8">
+        <div className="lg:col-span-2 space-y-3 sm:space-y-4">
           {/* Informations du colis */}
           <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 md:p-6">
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Informations du colis</h2>
@@ -488,9 +567,9 @@ export function ViewColis() {
 
           {/* Historique des statuts */}
           <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 md:p-6">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">Historique des statuts</h2>
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">Historique des statuts</h2>
             {historique.length > 0 ? (
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {historique.map((item) => (
                   <div key={item.id} className="flex items-center gap-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
                     <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
@@ -520,7 +599,7 @@ export function ViewColis() {
         </div>
 
         {/* Right Column - Client, Entreprise, Livreur */}
-        <div className="space-y-6">
+        <div className="space-y-3 sm:space-y-4">
           {/* Client */}
           <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 md:p-6">
             <div className="flex items-center gap-3 mb-4">
@@ -561,9 +640,6 @@ export function ViewColis() {
               </Button>
             </div>
           </div>
-
-          {/* QR Code */}
-          <ColisQRCode colisId={colis.id} colisNumber={colis.id} />
 
           {/* Entreprise */}
           <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 md:p-6">
@@ -663,6 +739,17 @@ export function ViewColis() {
         onConfirm={handleDelete}
         variant="destructive"
       />
+
+      {/* QR Code Display Modal */}
+      <Dialog open={showQRModal} onOpenChange={setShowQRModal}>
+        <DialogContent className="w-auto max-w-[95%] sm:max-w-[500px] gap-2 p-6 max-h-[85vh] overflow-y-auto">
+          {colis && (
+            <div className="flex justify-center items-center py-4">
+              <ColisQRCode colisId={colis.id} colisNumber={colis.id} />
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
