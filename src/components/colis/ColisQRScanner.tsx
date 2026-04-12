@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { AlertCircle, Loader2, Camera, ArrowLeft } from 'lucide-react';
+import { AlertCircle, Loader2, Camera, ArrowLeft, Package, MapPin, DollarSign, CheckCircle2 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { api } from '@/lib/supabase';
@@ -35,23 +35,52 @@ export function ColisQRScanner({
   const [loading, setLoading] = useState(false);
   const [scannedColis, setScannedColis] = useState<Colis | null>(null);
   const [associating, setAssociating] = useState(false);
+  const [restartTrigger, setRestartTrigger] = useState(0);
   const scanningRef = useRef(false);
   const lastScannedRef = useRef<string | null>(null);
+  const frameCountRef = useRef(0);
+  const hasStartedRef = useRef(false);
+  const initializingRef = useRef(false);
+  const scanStartTimeRef = useRef<number | null>(null);
 
   // Initialize camera and start scanning
   useEffect(() => {
-    if (!isOpen) return;
+    // Reset everything when modal closes
+    if (!isOpen) {
+      hasStartedRef.current = false;
+      initializingRef.current = false;
+      setScannedColis(null);
+      setError(null);
+      setScanning(false);
+      return;
+    }
+
+    // Guard against double initialization (StrictMode or reruns)
+    if (hasStartedRef.current) return;
+    hasStartedRef.current = true;
 
     let timeoutId: NodeJS.Timeout | null = null;
     let animationFrameId: number | null = null;
+    let scanStarted = false;
 
     const startCamera = async () => {
       try {
-        setError(null);
-        setScannedColis(null);
-        lastScannedRef.current = null;
+        // ✅ SYNCHRONOUS LOCK: Check if already initializing (blocks concurrent calls)
+        if (initializingRef.current) {
+          return;
+        }
         
-        console.log('Starting camera...');
+        // ✅ SET LOCK IMMEDIATELY before any async operations
+        initializingRef.current = true;
+
+        // Guard: don't allow concurrent calls
+        if (streamRef.current?.active) {
+          initializingRef.current = false;
+          if (!scanningRef.current) {
+            startQRScan();
+          }
+          return;
+        }
         const stream = await navigator.mediaDevices.getUserMedia({
           video: { 
             facingMode: 'environment',
@@ -60,11 +89,13 @@ export function ColisQRScanner({
           }
         });
         
-        console.log('Stream obtained:', stream);
+
         
         if (!videoRef.current) {
           console.error('Video element not found');
           setError('Erreur: Élément vidéo non trouvé');
+          stream.getTracks().forEach(track => track.stop());
+          initializingRef.current = false;
           return;
         }
         
@@ -74,10 +105,10 @@ export function ColisQRScanner({
         // Wait for video to be ready
         const videoElement = videoRef.current;
         const onLoadedMetadata = async () => {
-          console.log('Video loaded, starting QR scan');
           setScanning(true);
           scanningRef.current = true;
           startQRScan();
+          initializingRef.current = false;  // ✅ Release lock after scan started
           videoElement.removeEventListener('loadedmetadata', onLoadedMetadata);
         };
         
@@ -87,19 +118,19 @@ export function ColisQRScanner({
         try {
           await videoElement.play();
         } catch (err) {
-          console.log('Autoplay blocked, but will try scanning anyway');
           setScanning(true);
           scanningRef.current = true;
           startQRScan();
+          initializingRef.current = false;  // ✅ Release lock
         }
         
         // Fallback: Start scanning even if video doesn't load
         timeoutId = setTimeout(() => {
           if (!scanningRef.current) {
-            console.log('Starting scan anyway after timeout');
             setScanning(true);
             scanningRef.current = true;
             startQRScan();
+            initializingRef.current = false;  // ✅ Release lock
           }
         }, 1000);
       } catch (err: any) {
@@ -112,76 +143,110 @@ export function ColisQRScanner({
           setError('Erreur lors de l\'accès à la caméra: ' + err.message);
         }
         setScanning(false);
+        initializingRef.current = false;
       }
     };
 
     const startQRScan = () => {
-      const scan = async () => {
-        if (!scanningRef.current || !videoRef.current || !canvasRef.current) return;
-        if (scannedColis) return; // Don't scan if already found one
-        
-        try {
-          const canvas = canvasRef.current;
-          const video = videoRef.current;
-          const context = canvas.getContext('2d');
-          
-          if (!context || video.videoWidth === 0) {
-            animationFrameId = requestAnimationFrame(scan);
-            return;
-          }
-          
-          canvas.width = video.videoWidth;
-          canvas.height = video.videoHeight;
-          context.drawImage(video, 0, 0);
-          
-          // Try to decode QR code using jsQR if available
-          const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-          
-          // Simple QR detection: look for the black and white pattern
-          // This is a basic implementation - for production, use jsQR library
-          const qrData = await detectQRCode(imageData.data, canvas.width, canvas.height);
-          
-          if (qrData && qrData !== lastScannedRef.current) {
-            console.log('QR Code detected:', qrData);
-            lastScannedRef.current = qrData;
-            
-            // Fetch colis details
-            try {
-              const result = await api.getColisById(qrData.trim());
-              const { data: colisData, error: colisError } = result;
-              
-              if (!colisError && colisData) {
-                console.log('Colis found:', colisData.id);
-                setScannedColis(colisData);
-                scanningRef.current = false;
-                
-                // Call onScan callback if provided
-                if (onScan) {
-                  onScan(qrData.trim());
-                }
-              } else {
-                console.log('Colis not found:', qrData);
-                lastScannedRef.current = null;
-              }
-            } catch (err) {
-              console.error('Error fetching colis:', err);
-              lastScannedRef.current = null;
-            }
-          }
-        } catch (err) {
-          console.error('Scan error:', err);
+      frameCountRef.current = 0;
+      
+      // Ensure jsQR is loaded
+      const ensureJsQRLoaded = async (): Promise<boolean> => {
+        let retries = 10;
+        while (retries > 0 && !((window as any).jsQR)) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+          retries--;
         }
-        
-        animationFrameId = requestAnimationFrame(scan);
+        if ((window as any).jsQR) {
+          return true;
+        }
+        console.error('jsQR library failed to load after retries');
+        return false;
       };
       
-      animationFrameId = requestAnimationFrame(scan);
+      ensureJsQRLoaded().then(loaded => {
+        if (!loaded) {
+          setError('Impossible de charger la librarie de scan QR');
+          return;
+        }
+        
+        const scan = async () => {
+          if (!scanningRef.current || !videoRef.current || !canvasRef.current) return;
+          if (!scanStarted) {
+            scanStartTimeRef.current = performance.now();
+            scanStarted = true;
+          }
+          
+          try {
+            frameCountRef.current++;
+            // Process every frame for fast detection (no frame skipping)
+            
+            const canvas = canvasRef.current;
+            const video = videoRef.current;
+            const context = canvas.getContext('2d', { willReadFrequently: true });
+            
+            if (!context || video.videoWidth === 0) {
+              animationFrameId = requestAnimationFrame(scan);
+              return;
+            }
+            
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0);
+            
+            // Try to decode QR code using jsQR
+            const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+            
+            const qrData = await detectQRCode(imageData.data, canvas.width, canvas.height);
+            
+            if (qrData && qrData !== lastScannedRef.current) {
+              lastScannedRef.current = qrData;
+              
+              // Stop scanning immediately
+              scanningRef.current = false;
+              setScanning(false);
+              
+              // ✅ STOP CAMERA HERE - stop all tracks
+              if (streamRef.current) {
+                streamRef.current.getTracks().forEach(track => track.stop());
+                streamRef.current = null;
+              }
+              
+              // Fetch colis details
+              try {
+                const result = await api.getColisById(qrData.trim());
+                const { data: colisData, error: colisError } = result;
+                
+                if (!colisError && colisData) {
+                  setScannedColis(colisData);
+                  
+                  // Call onScan callback if provided
+                  if (onScan) {
+                    onScan(qrData.trim());
+                  }
+                } else {
+                  lastScannedRef.current = null;
+                }
+              } catch (err) {
+                console.error('Error fetching colis:', err);
+                lastScannedRef.current = null;
+              }
+            }
+          } catch (err) {
+            console.error('Scan error:', err);
+          }
+          
+          animationFrameId = requestAnimationFrame(scan);
+        };
+        
+        animationFrameId = requestAnimationFrame(scan);
+      });
     };
 
     startCamera();
 
     return () => {
-      // Cleanup
+      initializingRef.current = false;
       scanningRef.current = false;
       if (animationFrameId !== null) {
         cancelAnimationFrame(animationFrameId);
@@ -193,21 +258,32 @@ export function ColisQRScanner({
       }
       setScanning(false);
     };
-  }, [isOpen, onScan, scannedColis]);
+  }, [isOpen, restartTrigger]);
 
   // QR code detection helper
   const detectQRCode = async (imageData: Uint8ClampedArray, width: number, height: number): Promise<string | null> => {
     try {
       const jsQR = (window as any).jsQR;
       if (!jsQR) {
-        console.warn('jsQR library not loaded yet');
-        return null;
+        console.warn('jsQR library not loaded yet, retrying...');
+        // Wait a bit and retry
+        await new Promise(resolve => setTimeout(resolve, 100));
+        const jsQRRetry = (window as any).jsQR;
+        if (!jsQRRetry) {
+          console.error('jsQR library still not available');
+          return null;
+        }
+        return detectQRCode(imageData, width, height);
       }
       
-      const result = jsQR(imageData, width, height, {
-        inversionAttempts: 'dontInvert'
-      });
+      // Try normal detection first (fast)
+      let result = jsQR(imageData, width, height);
+      if (result && result.data) {
+        return result.data;  // ✅ Fast path - found on first try
+      }
       
+      // Only try inverted if normal failed (inversion is slower)
+      result = jsQR(imageData, width, height, { inversionAttempts: 'attemptBoth' });
       if (result && result.data) {
         return result.data;
       }
@@ -216,12 +292,6 @@ export function ColisQRScanner({
     }
     return null;
   };
-
-  const handleCapture = useCallback(async () => {
-    // This button now just retriggers manual scan if automatic fails
-    // The automatic scanning is handled by the continuous scan loop
-    setError('Scannez un code QR valide avec la caméra');
-  }, []);
 
   const handleAssociate = async () => {
     if (!scannedColis || !authState.user?.id) return;
@@ -259,26 +329,20 @@ export function ColisQRScanner({
   };
 
   const handleBack = () => {
+    // Reset state to show scanner again
     setScannedColis(null);
     setError(null);
-    // Restart camera
-    const startCamera = async () => {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: 'environment' }
-        });
-        
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          streamRef.current = stream;
-          setScanning(true);
-        }
-      } catch (err) {
-        console.error('Camera error:', err);
-        setError('Erreur lors de l\'accès à la caméra');
-      }
-    };
-    startCamera();
+    lastScannedRef.current = null;
+    frameCountRef.current = 0;
+    scanningRef.current = false;
+    scanStartTimeRef.current = null;
+    
+    // Reset flags to allow camera to restart
+    hasStartedRef.current = false;
+    initializingRef.current = false;
+    
+    // Trigger effect to restart camera
+    setRestartTrigger(t => t + 1);
   };
 
   const stopScanning = () => {
@@ -291,7 +355,7 @@ export function ColisQRScanner({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[500px]" onOpenAutoFocus={(e) => e.preventDefault()}>
         <DialogHeader>
           <DialogTitle>
             {scannedColis ? 'Détails du colis' : title}
@@ -302,7 +366,8 @@ export function ColisQRScanner({
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Main container - video or loading placeholder */}
+          {/* Main container - video or loading placeholder - only show when scanning, not when showing details */}
+          {!scannedColis && (
           <div className={`relative w-full rounded-lg overflow-hidden aspect-square ${
             scanning ? 'bg-black' : 'bg-gray-100 dark:bg-gray-700'
           }`}>
@@ -357,6 +422,7 @@ export function ColisQRScanner({
               </>
             )}
           </div>
+          )}
           
           {/* Error State - Show alert below if there's an error */}
           {error && !scannedColis && (
@@ -376,14 +442,14 @@ export function ColisQRScanner({
           {/* Instructions for Camera - show when actively scanning */}
           {scanning && !scannedColis && (
             <>
-              <div className="text-sm text-gray-600 dark:text-gray-400 space-y-2 bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-200 dark:border-blue-800">
+              {/* <div className="text-sm text-gray-600 dark:text-gray-400 space-y-2 bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-200 dark:border-blue-800">
                 <p className="font-semibold text-blue-900 dark:text-blue-100">En cours de scan...</p>
                 <ul className="list-disc list-inside space-y-1 text-xs text-blue-800 dark:text-blue-200">
                   <li>Pointez le QR code du colis vers la caméra</li>
                   <li>Le code sera détecté automatiquement</li>
                   <li>Les détails s'afficheront immédiatement</li>
                 </ul>
-              </div>
+              </div> */}
 
               {/* Action Buttons for Camera */}
               <div className="flex gap-2 pt-2">
@@ -402,39 +468,51 @@ export function ColisQRScanner({
           {scannedColis && !scanning && (
             <>
               {/* Main Details Card */}
-              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg p-4 sm:p-6 border border-blue-200 dark:border-blue-800 space-y-3 sm:space-y-4">
+              <div className="rounded-lg p-4 sm:p-6 border border-gray-200 dark:border-gray-700 space-y-4">
                 {/* ID Section - Prominent */}
-                <div className="pb-3 sm:pb-4 border-b border-blue-200 dark:border-blue-700">
-                  <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider mb-1">ID du colis</p>
-                  <p className="font-mono font-bold text-lg sm:text-2xl text-blue-600 dark:text-blue-400 break-all line-clamp-2">{scannedColis.id}</p>
+                <div className="pb-4 border-b border-gray-200 dark:border-gray-700">
+                  <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider mb-2">ID du colis</p>
+                  <p className="font-mono font-bold text-lg sm:text-2xl text-gray-900 dark:text-white break-all line-clamp-2">{scannedColis.id}</p>
                 </div>
 
                 {/* Client Info */}
-                <div className="space-y-3">
+                <div className="space-y-4">
                   {/* Client Name */}
-                  <div className="space-y-1">
-                    <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">📦 Client</p>
-                    <p className="text-base sm:text-lg font-bold text-gray-900 dark:text-white line-clamp-2">{scannedColis.client?.nom || 'Non défini'}</p>
+                  <div className="flex items-start gap-3">
+                    <Package className="h-5 w-5 text-gray-500 dark:text-gray-400 flex-shrink-0 mt-0.5" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider mb-1">Client</p>
+                      <p className="text-sm font-medium text-gray-900 dark:text-white line-clamp-2">{scannedColis.client?.nom || 'Non défini'}</p>
+                    </div>
                   </div>
 
                   {/* Address */}
-                  <div className="space-y-1">
-                    <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">📍 Adresse</p>
-                    <p className="text-sm text-gray-700 dark:text-gray-300 line-clamp-2">{scannedColis.client?.adresse || 'Non défini'}</p>
+                  <div className="flex items-start gap-3">
+                    <MapPin className="h-5 w-5 text-gray-500 dark:text-gray-400 flex-shrink-0 mt-0.5" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider mb-1">Adresse</p>
+                      <p className="text-sm text-gray-700 dark:text-gray-300 line-clamp-2">{scannedColis.client?.adresse || 'Non défini'}</p>
+                    </div>
                   </div>
 
                   {/* Status and Price Row */}
-                  <div className="grid grid-cols-2 gap-3 pt-2">
-                    <div>
-                      <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider mb-1">Statut</p>
-                      <Badge className="bg-blue-100 dark:bg-blue-900 text-blue-900 dark:text-blue-100 text-xs sm:text-sm py-1 px-2 sm:px-3 font-semibold inline-block">
-                        {scannedColis.statut}
-                      </Badge>
+                  <div className="grid grid-cols-2 gap-4 pt-2">
+                    <div className="flex items-start gap-3">
+                      <CheckCircle2 className="h-5 w-5 text-gray-500 dark:text-gray-400 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider mb-1">Statut</p>
+                        <Badge className="bg-blue-100 dark:bg-blue-900 text-blue-900 dark:text-blue-100 text-xs sm:text-sm py-1 px-2 sm:px-3 font-semibold">
+                          {scannedColis.statut}
+                        </Badge>
+                      </div>
                     </div>
                     {scannedColis.prix && (
-                      <div className="text-right">
-                        <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider mb-1">Montant</p>
-                        <p className="text-base sm:text-lg font-bold text-green-600 dark:text-green-400">{scannedColis.prix} DH</p>
+                      <div className="flex items-start gap-3">
+                        <DollarSign className="h-5 w-5 text-gray-500 dark:text-gray-400 flex-shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider mb-1">Montant</p>
+                          <p className="text-sm font-semibold text-green-600 dark:text-green-400">{scannedColis.prix} DH</p>
+                        </div>
                       </div>
                     )}
                   </div>
