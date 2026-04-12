@@ -339,7 +339,7 @@ export function ViewColis() {
               className="col-span-2 flex items-center justify-center gap-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
             >
               <Edit className="h-4 w-4" />
-              Modifier
+              <span className="hidden sm:inline">Modifier</span>
             </Button>
 
             <Button
@@ -348,7 +348,7 @@ export function ViewColis() {
               className="col-span-2 flex items-center justify-center gap-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
             >
               <QrCode className="h-4 w-4" />
-              QR Code
+              <span className="hidden sm:inline">QR Code</span>
             </Button>
 
             <Button
@@ -357,7 +357,7 @@ export function ViewColis() {
               className="col-span-2 flex items-center justify-center gap-2 bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700"
             >
               <Trash2 className="h-4 w-4" />
-              Supprimer
+              <span className="hidden sm:inline">Supprimer</span>
             </Button>
 
             {/* Row 2 - each takes half (3 + 3 = 6) */}
@@ -392,51 +392,6 @@ export function ViewColis() {
               {updating ? 'Mise à jour...' : 'Mettre à jour'}
             </Button>
           </div>
-          {/* <div className="grid grid-cols-3 gap-3">
-            <Button
-              variant="outline"
-              onClick={() => navigate(`/colis/${id}/modifier`)}
-              className="flex items-center justify-center gap-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
-            >
-              <Edit className="h-4 w-4" />
-              Modifier
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => setShowQRModal(true)}
-              className="flex items-center justify-center gap-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
-            >
-              <QrCode className="h-4 w-4" />
-              QR Code
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={() => setShowDeleteModal(true)}
-              className="flex items-center justify-center gap-2 bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700 col-span-2"
-            >
-              <Trash2 className="h-4 w-4" />
-              Supprimer
-            </Button>
-            <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-              <SelectTrigger className="border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
-                {statuses.map((status) => (
-                  <SelectItem key={status.id} value={status.nom} className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">
-                    {status.nom}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Button
-              onClick={handleStatusUpdate}
-              disabled={updating || selectedStatus === colis.statut}
-              className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {updating ? 'Mise à jour...' : 'Mettre à jour'}
-            </Button>
-          </div> */}
         </div>
 
         {/* Desktop Layout - Title and Buttons on Same Line */}
@@ -742,9 +697,9 @@ export function ViewColis() {
 
       {/* QR Code Display Modal */}
       <Dialog open={showQRModal} onOpenChange={setShowQRModal}>
-        <DialogContent className="w-auto max-w-[95%] sm:max-w-[500px] gap-2 p-6 max-h-[85vh] overflow-y-auto">
+        <DialogContent className="w-auto max-w-[95%] sm:max-w-[500px] gap-2 p-3 sm:p-6 max-h-[85vh] overflow-y-auto overflow-x-hidden">
           {colis && (
-            <div className="flex justify-center items-center py-4">
+            <div className="flex justify-center items-center py-4 w-full">
               <ColisQRCode colisId={colis.id} colisNumber={colis.id} />
             </div>
           )}

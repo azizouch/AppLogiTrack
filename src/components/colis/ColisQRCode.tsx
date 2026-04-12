@@ -58,28 +58,28 @@ export function ColisQRCode({ colisId, colisNumber }: ColisQRCodeProps) {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center space-y-4 p-6 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+    <div className="flex flex-col items-center justify-center space-y-2 sm:space-y-4 p-2 sm:p-6 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 w-full">
       {/* Title */}
-      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+      <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
         Code QR du Colis
       </h3>
 
       {/* QR Code Container */}
       <div
         ref={qrRef}
-        className="p-4 bg-white rounded-lg border border-gray-200 dark:border-gray-600"
+        className="p-2 sm:p-4 bg-white rounded-lg border border-gray-200 dark:border-gray-600"
       >
         <img
           src={qrCodeUrl}
           alt={`QR Code for ${colisId}`}
-          className="w-32 h-32 sm:w-48 sm:h-48 object-contain"
+          className="w-24 h-24 sm:w-48 sm:h-48 object-contain"
         />
       </div>
 
       {/* Colis ID Display */}
       <div className="text-center">
-        <p className="text-sm text-gray-600 dark:text-gray-400">ID du Colis</p>
-        <p className="text-lg font-mono font-bold text-gray-900 dark:text-white">
+        <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">ID du Colis</p>
+        <p className="text-sm sm:text-lg font-mono font-bold text-gray-900 dark:text-white break-all">
           {colisNumber || colisId}
         </p>
       </div>
@@ -89,17 +89,18 @@ export function ColisQRCode({ colisId, colisNumber }: ColisQRCodeProps) {
         <Button
           onClick={handleDownload}
           variant="outline"
-          className="flex-1 flex items-center justify-center gap-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+          className="flex-1 flex items-center justify-center gap-1 sm:gap-2 text-xs sm:text-sm border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 px-2 sm:px-4"
         >
-          <Download className="h-4 w-4" />
-          Télécharger
+          <Download className="h-3 w-3 sm:h-4 sm:w-4" />
+          Télécharger 
+        
         </Button>
         <Button
           onClick={handleCopyToClipboard}
           variant="outline"
-          className="flex-1 flex items-center justify-center gap-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+          className="flex-1 flex items-center justify-center gap-1 sm:gap-2 text-xs sm:text-sm border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 px-2 sm:px-4"
         >
-          <Copy className="h-4 w-4" />
+          <Copy className="h-3 w-3 sm:h-4 sm:w-4" />
           Copier
         </Button>
       </div>
