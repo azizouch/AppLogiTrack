@@ -43,6 +43,13 @@ body[style*="margin-right"] {
   margin-right: 0 !important;
 }
 
+@media (max-width: 639px) {
+  [data-radix-popper-content-wrapper]:has(.notification-popover) {
+    left: 50% !important;
+    transform: translate(-50%, 49.5px) !important;
+  }
+}
+
 /* Center notification dropdown for all small screens */
 /* @media (max-width: 639px) {
   [data-radix-popper-content-wrapper] {
