@@ -1471,7 +1471,7 @@ export const api = {
   },
 
   // CRUD operations for Colis
-  createColis: async (colis: Omit<Colis, 'id' | 'date_creation'>) => {
+  createColis: async (colis: (Omit<Colis, 'date_creation' | 'id'> & { id?: string })) => {
     const { data, error } = await supabase
       .from('colis')
       .insert(colis)
@@ -1551,7 +1551,7 @@ export const api = {
   },
 
   // CRUD operations for Clients
-  createClient: async (client: Omit<Client, 'created_at'>) => {
+  createClient: async (client: (Omit<Client, 'created_at' | 'id'> & { id?: string })) => {
     const { data, error } = await supabase
       .from('clients')
       .insert(client)
