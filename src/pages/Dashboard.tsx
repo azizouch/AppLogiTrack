@@ -7,6 +7,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { LivreurDashboard } from './livreur/LivreurDashboard';
 import { CircularStats } from '@/components/ui/circular-stats';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { TooltipProps } from 'recharts';
 
 import { api } from '@/lib/supabase';
 
@@ -31,6 +33,7 @@ export function Dashboard() {
   const [loading, setLoading] = useState(false);
   const [bonStatsLoading, setBonStatsLoading] = useState(false);
   const [recentActivity, setRecentActivity] = useState<any[]>([]);
+  const [monthlyStats, setMonthlyStats] = useState<{month: string, livres: number, retournes: number, annules: number}[]>([]);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -38,15 +41,14 @@ export function Dashboard() {
         setLoading(true);
         setBonStatsLoading(true);
 
-        // Fetch dashboard stats, recent activity, and bon statistics
-        const [statsResult, activityResult, bonStatsResult] = await Promise.all([
+        const [statsResult, activityResult, bonStatsResult, allColisResult] = await Promise.all([
           api.getDashboardStats(),
           api.getRecentActivity(3),
-          api.getBonStats()
+          api.getBonStats(),
+          api.getColis({ limit: 1000 })
         ]);
 
         if (statsResult.data && !statsResult.error) {
-          // Use all real data from the API
           setStats({
             enAttente: statsResult.data.enAttente,
             enTraitement: statsResult.data.enTraitement,
@@ -66,6 +68,52 @@ export function Dashboard() {
         if (bonStatsResult.data && !bonStatsResult.error) {
           setBonStats(bonStatsResult.data);
         }
+
+        if (allColisResult.data && !allColisResult.error) {
+          const { data: colisData } = allColisResult;
+          
+          const monthlyData: {[key: string]: {livres: number, retournes: number, annules: number}} = {};
+          const months = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'];
+          
+          for (let i = 0; i < 12; i++) {
+            monthlyData[months[i]] = { livres: 0, retournes: 0, annules: 0 };
+          }
+
+          const today = new Date();
+          for (let i = 0; i < 12; i++) {
+            const monthIndex = (today.getMonth() - 11 + i + 12) % 12;
+            const monthName = months[monthIndex];
+            const year = monthIndex > today.getMonth() ? today.getFullYear() - 1 : today.getFullYear();
+            
+            const monthStart = new Date(year, monthIndex, 1);
+            const monthEnd = new Date(year, monthIndex + 1, 0, 23, 59, 59);
+
+            const monthColis = colisData.filter((colis: any) => {
+              const colisDate = colis.date_mise_a_jour ? new Date(colis.date_mise_a_jour) : null;
+              if (!colisDate) return false;
+              return colisDate >= monthStart && colisDate <= monthEnd;
+            });
+
+            const isDelivered = (s: string) => (s || '').toLowerCase().trim() === 'livré' || s === 'livre';
+            const isReturned = (s: string) => (s || '').toLowerCase().trim() === 'retourné' || (s || '').toLowerCase().trim() === 'retourne';
+            const isCancelled = (s: string) => (s || '').toLowerCase().trim() === 'annulé' || (s || '').toLowerCase().trim() === 'annule';
+
+            monthlyData[monthName] = {
+              livres: monthColis.filter((c: any) => isDelivered(c.statut)).length,
+              retournes: monthColis.filter((c: any) => isReturned(c.statut)).length,
+              annules: monthColis.filter((c: any) => isCancelled(c.statut)).length
+            };
+          }
+
+          const monthlyStatsArray = months.map(month => ({
+            month,
+            livres: monthlyData[month].livres,
+            retournes: monthlyData[month].retournes,
+            annules: monthlyData[month].annules
+          }));
+
+          setMonthlyStats(monthlyStatsArray);
+        }
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
       } finally {
@@ -80,6 +128,21 @@ export function Dashboard() {
   // Handle card click navigation
   const handleCardClick = (status: string) => {
     navigate(`/colis/filtered?status=${status}`);
+  };
+
+  const CustomTooltip = ({ active, payload, label }: TooltipProps<any, any>) => {
+    if (!active || !payload || payload.length === 0) return null;
+
+    return (
+      <div className="bg-white border border-gray-200 rounded-md px-2 py-1 text-xs sm:text-sm">
+        <p className="font-semibold text-gray-700 mb-1">{label}</p>
+        {payload.map((entry, index) => (
+          <p key={index} style={{ color: entry.color }}>
+            {entry.name} : {entry.value}
+          </p>
+        ))}
+      </div>
+    );
   };
 
   const statsCards = [
@@ -182,16 +245,16 @@ export function Dashboard() {
         {statsCards.map((stat) => (
           <Card
             key={stat.title}
-            className={`${stat.bgColor} border-l border-t-4 border-r border-b ${stat.borderColor} shadow-[-4px_0_6px_rgba(0,0,0,0.1)] cursor-pointer hover:shadow-xl transition-shadow duration-200`}
+            className={`${stat.bgColor} border-l border-t-4 border-r border-b ${stat.borderColor} shadow-sm cursor-pointer hover:shadow-xl transition-shadow duration-200`}
             onClick={() => handleCardClick(stat.status)}
           >
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 p-5 pb-2">
               <CardTitle className={`text-sm font-medium ${stat.titleColor}`}>
                 {stat.title}
               </CardTitle>
               <stat.icon className={`h-5 w-5 ${stat.iconColor}`} />
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-5 pt-0">
               <div className={`text-3xl font-bold ${stat.valueColor}`}>{stat.value}</div>
               <p className={`text-xs ${stat.descColor} mt-1`}>{stat.description}</p>
             </CardContent>
@@ -378,6 +441,44 @@ export function Dashboard() {
         </Card>
       </div>
 
+      {/* Monthly Statistics Chart */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-lg">Statistiques mensuelles</CardTitle>
+        </CardHeader>
+        <CardContent className="pt-0">
+          <div className="flex justify-center gap-4 mb-3">
+            <div className="flex items-center gap-1">
+              <span className="w-3 h-3 rounded-full bg-green-500"></span>
+              <span className="text-sm">Livrés</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="w-3 h-3 rounded-full bg-red-500"></span>
+              <span className="text-sm">Retournés</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="w-3 h-3 rounded-full bg-gray-500"></span>
+              <span className="text-sm">Annulés</span>
+            </div>
+          </div>
+          <div className="w-full overflow-x-auto">
+            <div className="h-[250px]" style={{ minWidth: '600px' }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={monthlyStats} margin={{ top: 10, right: 20, left: 0, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
+                  <XAxis dataKey="month" tick={{ fontSize: 12 }} stroke="#6b7280" />
+                  <YAxis tick={{ fontSize: 12 }} stroke="#6b7280" allowDecimals={false} width={25} />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Bar dataKey="livres" name="Livrés" fill="#22c55e" radius={[6, 6, 0, 0]} />
+                  <Bar dataKey="retournes" name="Retournés" fill="#ef4444" radius={[6, 6, 0, 0]} />
+                  <Bar dataKey="annules" name="Annulés" fill="#6b7280" radius={[6, 6, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Bon Statistics */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
         <CircularStats
@@ -393,6 +494,7 @@ export function Dashboard() {
           loading={bonStatsLoading}
         />
       </div>
+
     </div>
   );
 }

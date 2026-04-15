@@ -68,7 +68,7 @@ export function CircularStats({ title, type, data, loading = false }: CircularSt
         </CardTitle>
       </CardHeader>
       <CardContent className="flex items-center justify-center relative">
-        <div className="relative w-48 h-48">
+        <div className="relative w-40 h-40 sm:w-48 sm:h-48">
           {/* SVG Circular Progress */}
           <svg className="w-full h-full transform -rotate-90" viewBox="0 0 160 160">
             {/* Background circle */}
@@ -97,7 +97,7 @@ export function CircularStats({ title, type, data, loading = false }: CircularSt
 
           {/* Center content */}
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <div className="text-2xl font-bold text-gray-900 dark:text-white">
+            <div className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
               {mainLabel}
             </div>
             <div className="text-3xl font-bold text-gray-900 dark:text-white">

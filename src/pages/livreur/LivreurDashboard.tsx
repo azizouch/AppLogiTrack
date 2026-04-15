@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Package, Clock, CheckCircle, RotateCcw, User, MapPin, Truck, Calendar, Award, LucideIcon } from 'lucide-react';
+import { Package, Clock, CheckCircle, RotateCcw, User, MapPin, Truck, Calendar, Award, LucideIcon, Ban } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,7 @@ import { isDateTodayLocal, isDateThisMonthLocal } from '@/lib/utils';
 import { CircularStats } from '@/components/ui/circular-stats';
 import { Colis } from '@/types';
 import { useToast } from '@/hooks/use-toast';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, TooltipProps } from 'recharts';
 
 // StatItem component for profile card
 interface StatItemProps {
@@ -131,6 +132,7 @@ export function LivreurDashboard() {
   const [loading, setLoading] = useState(false);
   const [bonStatsLoading, setBonStatsLoading] = useState(false);
   const [todayColisItems, setTodayColisItems] = useState<any[]>([]);
+  const [monthlyStats, setMonthlyStats] = useState<{month: string, livres: number, retournes: number, annules: number}[]>([]);
 
   // Performance metrics
   const completedDeliveries = stats.livresAujourdhui;
@@ -203,8 +205,50 @@ export function LivreurDashboard() {
               isDeliveredStatus(colis.statut) && isDateThisMonthLocal(colis.date_mise_a_jour)
             ).length
           });
+
+          const monthlyData: {[key: string]: {livres: number, retournes: number, annules: number}} = {};
+          const months = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'];
+          
+          for (let i = 0; i < 12; i++) {
+            monthlyData[months[i]] = { livres: 0, retournes: 0, annules: 0 };
+          }
+
+          const today = new Date();
+          for (let i = 0; i < 12; i++) {
+            const monthIndex = (today.getMonth() - 11 + i + 12) % 12;
+            const monthName = months[monthIndex];
+            const year = monthIndex > today.getMonth() ? today.getFullYear() - 1 : today.getFullYear();
+            
+            const monthStart = new Date(year, monthIndex, 1);
+            const monthEnd = new Date(year, monthIndex + 1, 0, 23, 59, 59);
+
+            const monthColis = colisData.filter(colis => {
+              const colisDate = colis.date_mise_a_jour ? new Date(colis.date_mise_a_jour) : null;
+              if (!colisDate) return false;
+              return colisDate >= monthStart && colisDate <= monthEnd;
+            });
+
+            monthlyData[monthName] = {
+              livres: monthColis.filter(c => isDeliveredStatus(c.statut)).length,
+              retournes: monthColis.filter(c => isReturnedStatus(c.statut)).length,
+              annules: monthColis.filter(c => {
+                const s = (c.statut || '').toLowerCase().trim();
+                return s === 'annulé' || s === 'annule';
+              }).length
+            };
+          }
+
+          const monthlyStatsArray = months.map(month => ({
+            month,
+            livres: monthlyData[month].livres,
+            retournes: monthlyData[month].retournes,
+            annules: monthlyData[month].annules
+          }));
+
+          setMonthlyStats(monthlyStatsArray);
         } else {
           setTodayColisItems([]);
+          setMonthlyStats([]);
           setStats({
             aLivrerAujourdhui: 0,
             enCours: 0,
@@ -323,6 +367,21 @@ export function LivreurDashboard() {
     },
   ];
 
+  const CustomTooltip = ({ active, payload, label }: TooltipProps<any, any>) => {
+    if (!active || !payload || payload.length === 0) return null;
+
+    return (
+      <div className="bg-white border border-gray-200 rounded-md px-2 py-1 text-xs sm:text-sm">
+        <p className="font-semibold text-gray-700 mb-1">{label}</p>
+        {payload.map((entry, index) => (
+          <p key={index} style={{ color: entry.color }}>
+            {entry.name} : {entry.value}
+          </p>
+        ))}
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-3 sm:space-y-5">
       {/* Header with date */}
@@ -344,16 +403,16 @@ export function LivreurDashboard() {
         {statsCards.map((stat) => (
           <Card
             key={stat.title}
-            className={`${stat.bgColor} border-l border-t-4 border-r border-b ${stat.borderColor} shadow-lg cursor-pointer hover:shadow-xl transition-shadow duration-200`}
+            className={`${stat.bgColor} border-l border-t-4 border-r border-b ${stat.borderColor} shadow-sm cursor-pointer hover:shadow-xl transition-shadow duration-200`}
             onClick={() => handleCardClick(stat.status)}
           >
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 p-5 pb-2">
               <CardTitle className={`text-sm font-medium ${stat.titleColor}`}>
                 {stat.title}
               </CardTitle>
               <stat.icon className={`h-5 w-5 ${stat.iconColor}`} />
             </CardHeader>
-            <CardContent>
+            <CardContent className='p-5 pt-0'>
               <div className={`text-3xl font-bold ${stat.valueColor}`}>{stat.value}</div>
               <p className={`text-xs ${stat.descColor} mt-1`}>{stat.description}</p>
             </CardContent>
@@ -512,6 +571,46 @@ export function LivreurDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Monthly Statistics Chart */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-lg">Statistiques mensuelles</CardTitle>
+        </CardHeader>
+        <CardContent className="pt-0">
+          {/* Legend (always visible, centered) */}
+          <div className="flex justify-center gap-4 mb-3">
+            <div className="flex items-center gap-1">
+              <span className="w-3 h-3 rounded-full bg-green-500"></span>
+              <span className="text-sm">Livrés</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="w-3 h-3 rounded-full bg-red-500"></span>
+              <span className="text-sm">Retournés</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="w-3 h-3 rounded-full bg-gray-500"></span>
+              <span className="text-sm">Annulés</span>
+            </div>
+          </div>
+          <div className="w-full overflow-x-auto">
+            <div className="h-[250px]" style={{ minWidth: '600px' }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={monthlyStats} margin={{ top: 10, right: 20, left: 0, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
+                  <XAxis dataKey="month" tick={{ fontSize: 12 }} stroke="#6b7280" />
+                  <YAxis tick={{ fontSize: 12 }} stroke="#6b7280" allowDecimals={false} width={25} />
+                  <Tooltip content={<CustomTooltip />} />
+                  {/* <Legend content={renderLegend} /> */}
+                  <Bar dataKey="livres" name="Livrés" fill="#22c55e" radius={[6, 6, 0, 0]} />
+                  <Bar dataKey="retournes" name="Retournés" fill="#ef4444" radius={[6, 6, 0, 0]} />
+                  <Bar dataKey="annules" name="Annulés" fill="#6b7280" radius={[6, 6, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Bon Statistics */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">

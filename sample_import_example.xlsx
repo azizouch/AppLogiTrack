@@ -1,0 +1,16 @@
+numero_suivi,client_id,client_nom,adresse_livraison,entreprise_id,telephone_destinataire,prix,frais,statut,notes,poids
+DZ-2024-0001,CLT-001,Ahmed Ben Ali,123 Rue de la Paix Alger 16000,ENT-001,+213661234567,500,50,nouveau,Livraison urgente,2.5
+DZ-2024-0002,CLT-002,Fatima Medjahed,456 Avenue des Fleurs Oran 31000,ENT-002,+213661234568,750,75,nouveau,Fragile - manier avec soin,1.8
+DZ-2024-0003,CLT-003,Mohammed Djebbar,789 Boulevard Central Constantine 25000,ENT-001,+213661234569,1000,100,nouveau,En haut étage - appeler avant,5.0
+DZ-2024-0004,CLT-004,Sophia Zahra,321 Rue du Commerce Annaba 23000,ENT-003,+213661234570,600,60,nouveau,,3.2
+DZ-2024-0005,CLT-005,Omar Hassan,654 Avenue Mohamed Blida 9000,ENT-002,+213661234571,850,85,nouveau,Laisser à la réception si absent,2.1
+DZ-2024-0006,CLT-001,Ahmed Ben Ali,987 Boulevard Tlemcen Tlemcen 13000,ENT-001,+213661234567,450,45,nouveau,Client habituel,1.5
+DZ-2024-0007,CLT-006,Layla Noueddine,147 Rue Sétif Batna 05000,ENT-003,+213661234572,920,92,nouveau,Paiement à la livraison,4.0
+DZ-2024-0008,CLT-002,Fatima Medjahed,258 Avenue Béjaïa Béjaïa 06000,ENT-002,+213661234568,700,70,nouveau,Contacter avant livraison,2.3
+DZ-2024-0009,CLT-004,Sophia Zahra,369 Rue Msila Msila 28000,ENT-001,+213661234570,550,55,nouveau,,1.9
+DZ-2024-0010,CLT-005,Omar Hassan,741 Boulevard Laghouat Laghouat 03000,ENT-003,+213661234571,800,80,nouveau,Demander signature,3.5
+DZ-2024-0011,,Carla Rossi,888 Rue Boudiaf Souk Ahras 41000,ENT-001,+213661234573,620,62,nouveau,Premier colis pour ce client,2.7
+DZ-2024-0012,CLT-007,Hassan Malik,999 Boulevard Hassan II Fes 30000,ENT-002,+213661234574,875,87,nouveau,Important - envoyer SMS avant,3.8
+DZ-2024-0013,CLT-008,Noor Al-Adawi,321 Rue Agha Mansourah 43000,ENT-003,+213661234575,525,52,nouveau,,2.0
+DZ-2024-0014,CLT-003,Mohammed Djebbar,654 Avenue Krim Belkacem Tizi Ouzou 15000,ENT-001,+213661234569,700,70,nouveau,Client VIP,4.5
+DZ-2024-0015,CLT-009,Rima Saidi,147 Rue Abane Ramdane Tipaza 42000,ENT-002,+213661234576,950,95,nouveau,Livraison avant 16h,3.3
