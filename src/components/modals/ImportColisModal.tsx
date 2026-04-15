@@ -252,223 +252,223 @@ export function ImportColisModal({ open, onOpenChange, onImportSuccess }: Import
   return (
     <>
       <Dialog open={open} onOpenChange={handleOpenChange}>
-        <DialogContent className="import-colis-modal max-w-4xl max-h-[80vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Importer des colis</DialogTitle>
-          <DialogDescription>
-            {step === 'upload' && 'Sélectionnez un fichier Excel contenant les colis à importer'}
-            {step === 'preview' && 'Vérifiez les données avant d\'importer'}
-            {step === 'importing' && 'Importation en cours...'}
-          </DialogDescription>
-        </DialogHeader>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto import-colis-modal">
+          <DialogHeader>
+            <DialogTitle>Importer des colis</DialogTitle>
+            <DialogDescription>
+              {step === 'upload' && 'Sélectionnez un fichier Excel contenant les colis à importer'}
+              {step === 'preview' && 'Vérifiez les données avant d\'importer'}
+              {step === 'importing' && 'Importation en cours...'}
+            </DialogDescription>
+          </DialogHeader>
 
-        {/* Upload Step */}
-        {step === 'upload' && (
-          <div className="space-y-4">
-            <div 
-              className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center hover:border-blue-500 transition-colors cursor-pointer"
-              onClick={() => fileInputRef.current?.click()}
-              onDragOver={handleDragOver}
-              onDragEnter={handleDragEnter}
-              onDrop={handleDrop}
-            >
-              <Upload className="h-8 w-8 mx-auto text-gray-400 mb-2" />
-              <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Cliquez pour sélectionner un fichier Excel
-              </p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                ou glissez-déposez un fichier .xlsx ou .xls
-              </p>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".xlsx,.xls"
-                onChange={handleFileSelect}
-                className="hidden"
-              />
-            </div>
-
-            <div className="text-sm text-gray-600 dark:text-gray-400 bg-blue-50 dark:bg-blue-900/20 p-3 rounded">
-              <p className="font-medium mb-2">Colonnes requises dans votre Excel:</p>
-              <ul className="list-disc list-inside space-y-1">
-                <li>client_id (ou client_nom)</li>
-                <li>adresse_livraison</li>
-              </ul>
-              <p className="font-medium mt-3 mb-2">Colonnes optionnelles:</p>
-              <ul className="list-disc list-inside space-y-1">
-                <li>numero_suivi (auto-généré si absent)</li>
-                <li>entreprise_id</li>
-                <li>poids</li>
-                <li>prix</li>
-                <li>frais</li>
-                <li>statut</li>
-                <li>notes</li>
-              </ul>
-            </div>
-          </div>
-        )}
-
-        {/* Preview Step */}
-        {step === 'preview' && (
-          <div className="space-y-4">
-            {/* Summary Stats */}
-            <div className="grid grid-cols-3 gap-4">
-              <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg">
-                <p className="text-xs text-gray-600 dark:text-gray-400">Valides</p>
-                <p className="text-2xl font-bold text-green-600">{previewData.length}</p>
-              </div>
-              <div className="bg-red-50 dark:bg-red-900/20 p-3 rounded-lg">
-                <p className="text-xs text-gray-600 dark:text-gray-400">Erreurs</p>
-                <p className="text-2xl font-bold text-red-600">{errors.length}</p>
-              </div>
-              <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
-                <p className="text-xs text-gray-600 dark:text-gray-400">Total</p>
-                <p className="text-2xl font-bold text-blue-600">{previewData.length + errors.length}</p>
-              </div>
-            </div>
-
-            {/* Errors */}
-            {errors.length > 0 && (
-              <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>
-                  <p className="font-medium mb-2">Erreurs détectées:</p>
-                  <ul className="text-sm space-y-1">
-                    {errors.slice(0, 5).map((error, idx) => (
-                      <li key={idx}>• {error}</li>
-                    ))}
-                    {errors.length > 5 && <li>• ... et {errors.length - 5} autres erreurs</li>}
-                  </ul>
-                </AlertDescription>
-              </Alert>
-            )}
-
-            {/* Data Preview Table */}
-            {previewData.length > 0 && (
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-medium text-sm">Aperçu des colis valides ({previewData.length})</h3>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowPreview(!showPreview)}
-                    className="h-8"
-                  >
-                    {showPreview ? (
-                      <>
-                        <EyeOff className="h-4 w-4 mr-1" />
-                        Masquer
-                      </>
-                    ) : (
-                      <>
-                        <Eye className="h-4 w-4 mr-1" />
-                        Afficher
-                      </>
-                    )}
-                  </Button>
-                </div>
-
-                {showPreview && (
-                  <div className="border rounded-lg overflow-x-auto max-h-80 table-preview-scroll" ref={tableContainerRef}>
-                    <Table>
-                      <TableHeader className="bg-gray-50 dark:bg-gray-800 sticky top-0">
-                        <TableRow>
-                          <TableHead className="text-xs">N° Suivi</TableHead>
-                          <TableHead className="text-xs">Client</TableHead>
-                          <TableHead className="text-xs">Adresse</TableHead>
-                          <TableHead className="text-xs">Téléphone</TableHead>
-                          <TableHead className="text-xs">Prix</TableHead>
-                          <TableHead className="text-xs">Statut</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {previewData.slice(0, 10).map((colis, idx) => (
-                          <TableRow key={idx}>
-                            <TableCell className="text-xs font-mono">
-                              {colis.numero_suivi || colis.id}
-                            </TableCell>
-                            <TableCell className="text-xs">
-                              {colis.client_nom || colis.client_id}
-                            </TableCell>
-                            <TableCell className="text-xs truncate max-w-xs">
-                              {colis.adresse_livraison}
-                            </TableCell>
-                            <TableCell className="text-xs">
-                              {colis.telephone_destinataire}
-                            </TableCell>
-                            <TableCell className="text-xs">
-                              {colis.prix ? `${colis.prix} DZD` : '-'}
-                            </TableCell>
-                            <TableCell className="text-xs">
-                              <Badge variant="outline" className="text-xs">
-                                {colis.statut || 'nouveau'}
-                              </Badge>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                )}
-
-                {previewData.length > 10 && (
-                  <p className="text-xs text-gray-500 text-center py-2">
-                    +{previewData.length - 10} autres colis...
-                  </p>
-                )}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Importing Step */}
-        {step === 'importing' && (
-          <div className="flex flex-col items-center justify-center py-8">
-            <Loader2 className="h-8 w-8 animate-spin text-blue-600 mb-4" />
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              Importation de {previewData.length} colis en cours...
-            </p>
-          </div>
-        )}
-
-        <DialogFooter>
+          {/* Upload Step */}
           {step === 'upload' && (
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
-              Fermer
-            </Button>
+            <div className="space-y-4">
+              <div 
+                className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center hover:border-blue-500 transition-colors cursor-pointer"
+                onClick={() => fileInputRef.current?.click()}
+                onDragOver={handleDragOver}
+                onDragEnter={handleDragEnter}
+                onDrop={handleDrop}
+              >
+                <Upload className="h-8 w-8 mx-auto text-gray-400 mb-2" />
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Cliquez pour sélectionner un fichier Excel
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  ou glissez-déposez un fichier .xlsx ou .xls
+                </p>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".xlsx,.xls"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                />
+              </div>
+
+              <div className="text-sm text-gray-600 dark:text-gray-400 bg-blue-50 dark:bg-blue-900/20 p-3 rounded">
+                <p className="font-medium mb-2">Colonnes requises dans votre Excel:</p>
+                <ul className="list-disc list-inside space-y-1">
+                  <li>client_id (ou client_nom)</li>
+                  <li>adresse_livraison</li>
+                </ul>
+                <p className="font-medium mt-3 mb-2">Colonnes optionnelles:</p>
+                <ul className="list-disc list-inside space-y-1">
+                  <li>numero_suivi (auto-généré si absent)</li>
+                  <li>entreprise_id</li>
+                  <li>poids</li>
+                  <li>prix</li>
+                  <li>frais</li>
+                  <li>statut</li>
+                  <li>notes</li>
+                </ul>
+              </div>
+            </div>
           )}
 
+          {/* Preview Step */}
           {step === 'preview' && (
-            <>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setStep('upload');
-                  setFile(null);
-                  setPreviewData([]);
-                  setErrors([]);
-                }}
-              >
-                Retour
-              </Button>
-              <Button
-                onClick={handleImport}
-                disabled={previewData.length === 0}
-              >
-                Importer {previewData.length} colis
-              </Button>
-            </>
+            <div className="space-y-4 min-w-0">
+              {/* Summary Stats */}
+              <div className="grid grid-cols-3 gap-4">
+                <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg">
+                  <p className="text-xs text-gray-600 dark:text-gray-400">Valides</p>
+                  <p className="text-2xl font-bold text-green-600">{previewData.length}</p>
+                </div>
+                <div className="bg-red-50 dark:bg-red-900/20 p-3 rounded-lg">
+                  <p className="text-xs text-gray-600 dark:text-gray-400">Erreurs</p>
+                  <p className="text-2xl font-bold text-red-600">{errors.length}</p>
+                </div>
+                <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
+                  <p className="text-xs text-gray-600 dark:text-gray-400">Total</p>
+                  <p className="text-2xl font-bold text-blue-600">{previewData.length + errors.length}</p>
+                </div>
+              </div>
+
+              {/* Errors */}
+              {errors.length > 0 && (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    <p className="font-medium mb-2">Erreurs détectées:</p>
+                    <ul className="text-sm space-y-1">
+                      {errors.slice(0, 5).map((error, idx) => (
+                        <li key={idx}>• {error}</li>
+                      ))}
+                      {errors.length > 5 && <li>• ... et {errors.length - 5} autres erreurs</li>}
+                    </ul>
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {/* Data Preview Table */}
+              {previewData.length > 0 && (
+                <div className="space-y-2 min-w-0">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-medium text-xs sm:text-sm">Aperçu des colis valides ({previewData.length})</h3>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowPreview(!showPreview)}
+                      className="h-8"
+                    >
+                      {showPreview ? (
+                        <>
+                          <EyeOff className="h-4 w-4 mr-1" />
+                          Masquer
+                        </>
+                      ) : (
+                        <>
+                          <Eye className="h-4 w-4 mr-1" />
+                          Afficher
+                        </>
+                      )}
+                    </Button>
+                  </div>
+
+                  {showPreview && (
+                    <div className="border rounded-lg overflow-x-auto w-full" ref={tableContainerRef}>
+                      <Table className="min-w-max">
+                        <TableHeader className="bg-gray-50 dark:bg-gray-800 sticky top-0 z-10">
+                          <TableRow>
+                            <TableHead className="text-xs">N° Suivi</TableHead>
+                            <TableHead className="text-xs">Client</TableHead>
+                            <TableHead className="text-xs">Adresse</TableHead>
+                            <TableHead className="text-xs">Téléphone</TableHead>
+                            <TableHead className="text-xs">Prix</TableHead>
+                            <TableHead className="text-xs">Statut</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {previewData.slice(0, 10).map((colis, idx) => (
+                            <TableRow key={idx}>
+                              <TableCell className="text-xs font-mono">
+                                {colis.numero_suivi || colis.id}
+                              </TableCell>
+                              <TableCell className="text-xs">
+                                {colis.client_nom || colis.client_id}
+                              </TableCell>
+                              <TableCell className="text-xs max-w-xs">
+                                {colis.adresse_livraison}
+                              </TableCell>
+                              <TableCell className="text-xs">
+                                {colis.telephone_destinataire}
+                              </TableCell>
+                              <TableCell className="text-xs">
+                                {colis.prix ? `${colis.prix} DZD` : '-'}
+                              </TableCell>
+                              <TableCell className="text-xs">
+                                <Badge variant="outline" className="text-xs">
+                                  {colis.statut || 'nouveau'}
+                                </Badge>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  )}
+
+                  {previewData.length > 10 && (
+                    <p className="text-xs text-gray-500 text-center py-2">
+                      +{previewData.length - 10} autres colis...
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
           )}
 
+          {/* Importing Step */}
           {step === 'importing' && (
-            <Button disabled>
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              Importation...
-            </Button>
+            <div className="flex flex-col items-center justify-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-blue-600 mb-4" />
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Importation de {previewData.length} colis en cours...
+              </p>
+            </div>
           )}
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            {step === 'upload' && (
+              <Button variant="outline" onClick={() => onOpenChange(false)}>
+                Fermer
+              </Button>
+            )}
+
+            {step === 'preview' && (
+              <>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setStep('upload');
+                    setFile(null);
+                    setPreviewData([]);
+                    setErrors([]);
+                  }}
+                >
+                  Retour
+                </Button>
+                <Button
+                  onClick={handleImport}
+                  disabled={previewData.length === 0}
+                >
+                  Importer {previewData.length} colis
+                </Button>
+              </>
+            )}
+
+            {step === 'importing' && (
+              <Button disabled>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Importation...
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
     <ImportSuccessModal
       open={showSuccessModal}
