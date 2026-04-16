@@ -460,7 +460,7 @@ export function ClientDetails() {
         open={showDeleteDialog}
         onOpenChange={setShowDeleteDialog}
         title="Supprimer le client"
-        description={`Êtes-vous sûr de vouloir supprimer le client "${client?.nom}" ? Cette action est irréversible et supprimera également tous les colis associés.`}
+        description={`Êtes-vous sûr de vouloir supprimer le client "${client?.nom}" ? \n\nCette action supprimera :\n• Le client et tous ses colis\n• L'historique complet de tous les colis du client\n\nCette action est irréversible.`}
         confirmText="Supprimer"
         cancelText="Annuler"
         variant="destructive"

@@ -23,6 +23,7 @@ import { Colis, Statut, User as UserType } from '@/types';
 import { api, supabase } from '@/lib/supabase';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 import { AddColisModal } from './AddColisModal';
 
 interface AssignColisModalProps {
@@ -38,6 +39,7 @@ export function AssignColisModal({
   onOpenChange,
   onColisAssigned
 }: AssignColisModalProps) {
+  const { state: authState } = useAuth();
   const { toast } = useToast();
 
   // Modal state
@@ -128,9 +130,32 @@ export function AssignColisModal({
 
     try {
       // Assign all selected colis to the livreur
-      const updatePromises = selectedColisIds.map(colisId =>
-        api.updateColis(colisId, { livreur_id: livreur.id })
-      );
+      const updatePromises = selectedColisIds.map(async (colisId) => {
+        // Update colis with new livreur and status
+        const { error: updateError } = await api.updateColis(colisId, { 
+          livreur_id: livreur.id,
+          statut: 'Mise en distribution'
+        });
+
+        if (updateError) {
+          throw new Error(updateError.message);
+        }
+
+        // Add historique entry for the assignment
+        const { error: historiqueError } = await supabase
+          .from('historique_colis')
+          .insert({
+            colis_id: colisId,
+            date: new Date().toISOString(),
+            statut: 'Mise en distribution',
+            utilisateur: authState.user?.id,
+            informations: `Assigné à ${livreur.prenom} ${livreur.nom}`,
+          });
+
+        if (historiqueError) {
+          console.error('Error creating historique entry:', historiqueError);
+        }
+      });
 
       const results = await Promise.allSettled(updatePromises);
 
@@ -150,19 +175,17 @@ export function AssignColisModal({
         });
       }
 
-      // Remove assigned colis from the list
-      setUnassignedColis(prev => prev.filter(c => !selectedColisIds.includes(c.id)));
       setSelectedColisIds([]);
-
-      // Call callback if provided
+      onOpenChange(false);
       onColisAssigned?.();
     } catch (error) {
-      console.error('Error assigning colis:', error);
       toast({
         title: 'Erreur',
-        description: 'Une erreur est survenue',
+        description: 'Impossible d\'assigner les colis',
         variant: 'destructive',
       });
+    } finally {
+      setLoadingColis(false);
     }
   };
 

@@ -1120,7 +1120,7 @@ export function ColisList() {
         open={deleteConfirmationOpen}
         onOpenChange={setDeleteConfirmationOpen}
         title="Supprimer les colis"
-        description={`Êtes-vous sûr de vouloir supprimer ${selectedColisIds.length} colis ? Cette action est irréversible.`}
+        description={`Êtes-vous sûr de vouloir supprimer ${selectedColisIds.length} colis ? \n\nCette action supprimera :\n• ${selectedColisIds.length} colis sélectionnés\n• L'historique complet de chaque colis\n\nCette action est irréversible.`}
         confirmText="Supprimer"
         cancelText="Annuler"
         onConfirm={confirmDelete}

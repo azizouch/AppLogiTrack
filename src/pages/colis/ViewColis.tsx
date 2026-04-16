@@ -688,7 +688,7 @@ export function ViewColis() {
         open={showDeleteModal}
         onOpenChange={setShowDeleteModal}
         title="Confirmer la suppression"
-        description={`Êtes-vous sûr de vouloir supprimer le colis ${colis.id} ? Cette action est irréversible et supprimera également tout l'historique associé.`}
+        description={`Êtes-vous sûr de vouloir supprimer le colis ${colis.id} ? \n\nCette action supprimera :\n• Le colis\n• L'historique complet du colis\n\nCette action est irréversible.`}
         confirmText={deleting ? 'Suppression...' : 'Supprimer'}
         cancelText="Annuler"
         onConfirm={handleDelete}

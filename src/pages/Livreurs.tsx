@@ -40,7 +40,7 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet';
 import { User as UserType, Colis } from '@/types';
-import { api } from '@/lib/supabase';
+import { api, supabase } from '@/lib/supabase';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useNavigate } from 'react-router-dom';
@@ -58,12 +58,12 @@ export function Livreurs() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [activityCounts, setActivityCounts] = useState<Record<string, { colis: number; bons: number }>>({});
 
   // Filter state
   const [searchTerm, setSearchTerm] = useState('');
   const [zoneFilter, setZoneFilter] = useState('all');
   const [vehiculeFilter, setVehiculeFilter] = useState('all');
-  const [nombreFilter, setNombreFilter] = useState('all');
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
   // Mobile state
@@ -87,6 +87,37 @@ export function Livreurs() {
   const [hasNextPage, setHasNextPage] = useState(false);
   const [hasPrevPage, setHasPrevPage] = useState(false);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+
+  // Fetch activity counts for livreurs
+  const fetchActivityCounts = useCallback(async (livreursList: UserType[]) => {
+    try {
+      const counts: Record<string, { colis: number; bons: number }> = {};
+      
+      for (const livreur of livreursList) {
+        // Get colis count for this livreur
+        const { count: colisCount } = await supabase
+          .from('colis')
+          .select('id', { count: 'exact', head: true })
+          .eq('livreur_id', livreur.id);
+
+        // Get bons count for this livreur
+        const { count: bonsCount } = await supabase
+          .from('bons')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', livreur.id);
+
+        counts[livreur.id] = { 
+          colis: colisCount || 0, 
+          bons: bonsCount || 0 
+        };
+      }
+
+      setActivityCounts(counts);
+    } catch (error) {
+      console.error('Error fetching activity counts:', error);
+      // Continue without counts if fetch fails
+    }
+  }, []);
 
   // Fetch livreurs data
   const fetchLivreurs = useCallback(async (isRefresh = false) => {
@@ -145,14 +176,6 @@ export function Livreurs() {
           filteredLivreurs = filteredLivreurs.filter(livreur => livreur.vehicule === vehiculeFilter);
         }
 
-        // Nombre filter (based on assigned colis count - we'll implement this later)
-        // For now, we'll just sort by name
-        if (nombreFilter === 'plus') {
-          filteredLivreurs.sort((a, b) => b.nom.localeCompare(a.nom));
-        } else if (nombreFilter === 'moins') {
-          filteredLivreurs.sort((a, b) => a.nom.localeCompare(b.nom));
-        }
-
         // Apply pagination
         const startIndex = (currentPage - 1) * itemsPerPage;
         const endIndex = startIndex + itemsPerPage;
@@ -163,6 +186,9 @@ export function Livreurs() {
         setTotalPages(Math.ceil(filteredLivreurs.length / itemsPerPage));
         setHasNextPage(endIndex < filteredLivreurs.length);
         setHasPrevPage(currentPage > 1);
+
+        // Fetch activity counts for displayed livreurs
+        await fetchActivityCounts(paginatedLivreurs);
       }
     } catch (error) {
       console.error('Error fetching livreurs:', error);
@@ -177,7 +203,7 @@ export function Livreurs() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [currentPage, debouncedSearchTerm, zoneFilter, vehiculeFilter, nombreFilter, itemsPerPage, toast]);
+  }, [currentPage, debouncedSearchTerm, zoneFilter, vehiculeFilter, itemsPerPage, toast, fetchActivityCounts]);
 
   // Delete livreur
   const handleDelete = async (livreurId: string) => {
@@ -276,7 +302,7 @@ export function Livreurs() {
     if (isMobile && isFilterOpen) {
       setIsFilterOpen(false);
     }
-  }, [searchTerm, zoneFilter, vehiculeFilter, nombreFilter, isMobile]);
+  }, [searchTerm, zoneFilter, vehiculeFilter, isMobile]);
 
   return (
     <div className="space-y-3">
@@ -346,24 +372,13 @@ export function Livreurs() {
                       ))}
                     </SelectContent>
                   </Select>
-                  <Select value={nombreFilter} onValueChange={setNombreFilter}>
-                    <SelectTrigger className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
-                      <SelectValue placeholder="Tous les nombres" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Tous les nombres</SelectItem>
-                      <SelectItem value="plus">Plus de colis</SelectItem>
-                      <SelectItem value="moins">Moins de colis</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {(searchTerm || zoneFilter !== 'all' || vehiculeFilter !== 'all' || nombreFilter !== 'all') && (
+                  {(searchTerm || zoneFilter !== 'all' || vehiculeFilter !== 'all') && (
                     <Button
                       variant="outline"
                       onClick={() => {
                         setSearchTerm('');
                         setZoneFilter('all');
                         setVehiculeFilter('all');
-                        setNombreFilter('all');
                       }}
                       className="w-full text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                     >
@@ -423,7 +438,7 @@ export function Livreurs() {
                 )}
                 Actualiser
               </Button>
-              {(searchTerm || zoneFilter !== 'all' || vehiculeFilter !== 'all' || nombreFilter !== 'all') && (
+              {(searchTerm || zoneFilter !== 'all' || vehiculeFilter !== 'all') && (
                 <Button
                   variant="outline"
                   size="sm"
@@ -431,7 +446,6 @@ export function Livreurs() {
                     setSearchTerm('');
                     setZoneFilter('all');
                     setVehiculeFilter('all');
-                    setNombreFilter('all');
                   }}
                   className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                 >
@@ -482,16 +496,7 @@ export function Livreurs() {
               </SelectContent>
             </Select>
 
-            <Select value={nombreFilter} onValueChange={setNombreFilter}>
-              <SelectTrigger className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
-                <SelectValue placeholder="Tous les nombres" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tous les nombres</SelectItem>
-                <SelectItem value="plus">Plus de colis</SelectItem>
-                <SelectItem value="moins">Moins de colis</SelectItem>
-              </SelectContent>
-            </Select>
+
           </div>
         </div>
       )}
@@ -612,14 +617,14 @@ export function Livreurs() {
                           <svg className="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
                             <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
                           </svg>
-                          <span className="text-sm font-medium text-gray-900 dark:text-white">3</span>
+                          <span className="text-sm font-medium text-gray-900 dark:text-white">{activityCounts[livreur.id]?.colis || 0}</span>
                           <span className="text-sm text-gray-500 dark:text-gray-400">colis</span>
                         </div>
                         <div className="flex items-center gap-1">
                           <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                           </svg>
-                          <span className="text-sm font-medium text-gray-900 dark:text-white">2</span>
+                          <span className="text-sm font-medium text-gray-900 dark:text-white">{activityCounts[livreur.id]?.bons || 0}</span>
                           <span className="text-sm text-gray-500 dark:text-gray-400">bons</span>
                         </div>
                       </div>

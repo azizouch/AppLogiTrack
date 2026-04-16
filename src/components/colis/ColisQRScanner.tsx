@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { AlertCircle, Loader2, Camera, ArrowLeft, Package, MapPin, DollarSign, CheckCircle2, RefreshCcw, Link, X } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { api } from '@/lib/supabase';
+import { api, supabase } from '@/lib/supabase';
 import { Colis } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { Close } from '@radix-ui/react-toast';
@@ -307,11 +307,26 @@ export function ColisQRScanner({
         // Default association logic
         const { error } = await api.updateColis(scannedColis.id, {
           livreur_id: authState.user.id,
-          statut: scannedColis.statut === 'en_attente' ? 'pris_en_charge' : scannedColis.statut
+          statut: 'Mise en distribution'
         });
 
         if (error) {
           throw new Error(error.message);
+        }
+
+        // Add historique entry for the scan and assignment
+        const { error: historiqueError } = await supabase
+          .from('historique_colis')
+          .insert({
+            colis_id: scannedColis.id,
+            date: new Date().toISOString(),
+            statut: 'Mise en distribution',
+            utilisateur: authState.user.id,
+            informations: 'Colis scanné et assigné au livreur',
+          });
+
+        if (historiqueError) {
+          console.error('Error creating historique entry:', historiqueError);
         }
       }
 

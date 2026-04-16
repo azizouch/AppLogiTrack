@@ -34,6 +34,15 @@ import { useAuth } from '@/contexts/AuthContext';
 import { ImportSuccessModal } from './ImportSuccessModal';
 import './ImportColisModal.css';
 
+// UUID generator utility function
+const generateUUID = (): string => {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+};
+
 interface ImportColisModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -61,10 +70,11 @@ interface PreviewColis {
   commentaire: string;
 }
 
-type StepType = 'upload' | 'preview' | 'select-entreprise' | 'importing' | 'success';
+type StepType = 'upload' | 'preview' | 'importing' | 'success';
 
 export function ImportColisModal({ open, onOpenChange, onImportSuccess }: ImportColisModalProps) {
-  const { user } = useAuth();
+  const { state } = useAuth();
+  const user = state?.user;
   const [step, setStep] = useState<StepType>('upload');
   const [file, setFile] = useState<File | null>(null);
   const [previewData, setPreviewData] = useState<PreviewColis[]>([]);
@@ -223,6 +233,15 @@ export function ImportColisModal({ open, onOpenChange, onImportSuccess }: Import
       return;
     }
 
+    // Verify user is available before importing
+    if (!user || !user?.id) {
+      toast.error('Utilisateur non identifié. Veuillez vous reconnecter.');
+      console.error('User not available for import. User object:', user);
+      return;
+    }
+
+    console.log('✓ User authenticated:', { id: user.id, nom: user.nom, role: user.role });
+
     setImporting(true);
     setStep('importing');
 
@@ -231,6 +250,9 @@ export function ImportColisModal({ open, onOpenChange, onImportSuccess }: Import
 
       for (const colisData of previewData) {
         try {
+          console.log('Starting import for colis:', colisData.code_suivi);
+          console.log('✓ User ID for this import:', user?.id);
+          
           // Check if client already exists with same name
           let clientId: string;
           const { data: existingClients, error: searchError } = await supabase
@@ -238,19 +260,33 @@ export function ImportColisModal({ open, onOpenChange, onImportSuccess }: Import
             .select('id, nom, telephone')
             .eq('nom', colisData.destinataire);
           
+          if (searchError) {
+            console.error('Error searching for existing client:', searchError);
+          }
+          
           if (existingClients && existingClients.length > 0) {
             // Use existing client
             clientId = existingClients[0].id;
+            console.log('Found existing client:', clientId, existingClients[0].nom);
           } else {
             // Create new client only if it doesn't exist
-            clientId = crypto.randomUUID();
+            clientId = generateUUID();
+            console.log('Creating new client with ID:', clientId);
+            
+            // Get entreprise name
+            const selectedEntreprise = entreprises.find(e => e.id === selectedEntrepriseId);
+            const entrepriseName = selectedEntreprise?.nom || '';
+
             const { data: clientResult, error: clientError } = await api.createClient({
               id: clientId,
               nom: colisData.destinataire,
               telephone: colisData.telephone,
               adresse: colisData.adresse,
               ville: colisData.ville,
+              entreprise: entrepriseName,
             });
+
+            console.log('Create client response:', { data: clientResult, error: clientError });
 
             if (clientError || !clientResult) {
               throw new Error(`Impossible de créer le client: ${colisData.destinataire} - ${clientError?.message || 'Erreur inconnue'}`);
@@ -258,7 +294,8 @@ export function ImportColisModal({ open, onOpenChange, onImportSuccess }: Import
           }
 
           // Generate UUID for colis
-          const colisId = crypto.randomUUID();
+          const colisId = generateUUID();
+          console.log('Creating colis with ID:', colisId, 'for client:', clientId);
 
           // Create colis with generated ID
           const { data: colisResult, error: colisError } = await api.createColis({
@@ -272,25 +309,29 @@ export function ImportColisModal({ open, onOpenChange, onImportSuccess }: Import
             notes: `Code suivi: ${colisData.code_suivi}${colisData.commentaire ? ` - ${colisData.commentaire}` : ''}`,
           });
 
+          console.log('Create colis response:', { data: colisResult, error: colisError });
+
           if (colisError) {
             throw new Error(`Impossible de créer le colis: ${colisError.message}`);
           }
 
           // Create historique_colis entry for the new colis
-          const historiqueId = crypto.randomUUID();
+          const historiqueData = {
+            colis_id: colisId,
+            date: new Date().toISOString(),
+            statut: 'Nouveau Colis',
+            utilisateur: user.id, // Use user.id directly (already verified it exists)
+            informations: 'creation du colis',
+          };
+          console.log('📝 Inserting historique with user ID:', user.id, 'Full data:', historiqueData);
           const { error: historiqueError } = await supabase
             .from('historique_colis')
-            .insert({
-              id: historiqueId,
-              colis_id: colisId,
-              date: new Date().toISOString(),
-              statut: 'Nouveau Colis',
-              utilisateur: user?.id,
-              informations: 'creation du colis',
-            });
+            .insert(historiqueData);
 
           if (historiqueError) {
             console.error(`Erreur lors de la création de l'historique du colis ${colisData.code_suivi}:`, historiqueError);
+          } else {
+            console.log('✓ Historique created successfully with user ID:', user.id);
           }
 
           successfulImports++;
@@ -350,13 +391,12 @@ export function ImportColisModal({ open, onOpenChange, onImportSuccess }: Import
   return (
     <>
       <Dialog open={open} onOpenChange={handleOpenChange}>
-        <DialogContent className="import-colis-modal max-w-4xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="import-colis-modal max-w-5xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Importer des colis</DialogTitle>
             <DialogDescription>
               {step === 'upload' && 'Sélectionnez un fichier Excel contenant les colis à importer'}
-              {step === 'preview' && 'Vérifiez les données'}
-              {step === 'select-entreprise' && 'Sélectionnez une entreprise pour les colis'}
+              {step === 'preview' && 'Vérifiez les données et sélectionnez une entreprise'}
               {step === 'importing' && 'Importation en cours...'}
             </DialogDescription>
           </DialogHeader>
@@ -424,21 +464,41 @@ export function ImportColisModal({ open, onOpenChange, onImportSuccess }: Import
                 </div>
               </div>
 
-              {/* Filter Select */}
-              <div className="flex items-center gap-3">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Affichage:
-                </label>
-                <Select value={filterErrors} onValueChange={(value: any) => setFilterErrors(value)}>
-                  <SelectTrigger className="w-48 bg-white dark:bg-gray-800">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white dark:bg-gray-800">
-                    <SelectItem value="all">Tous les éléments</SelectItem>
-                    <SelectItem value="valid">Valides uniquement</SelectItem>
-                    <SelectItem value="errors">Erreurs uniquement</SelectItem>
-                  </SelectContent>
-                </Select>
+              {/* Filter & Entreprise Select */}
+              <div className="flex items-center gap-4 flex-wrap">
+                <div className="flex items-center gap-3">
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Affichage:
+                  </label>
+                  <Select value={filterErrors} onValueChange={(value: any) => setFilterErrors(value)}>
+                    <SelectTrigger className="w-48 bg-white dark:bg-gray-800">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white dark:bg-gray-800">
+                      <SelectItem value="all">Tous les éléments</SelectItem>
+                      <SelectItem value="valid">Valides uniquement</SelectItem>
+                      <SelectItem value="errors">Erreurs uniquement</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Entreprise:
+                  </label>
+                  <Select value={selectedEntrepriseId} onValueChange={setSelectedEntrepriseId}>
+                    <SelectTrigger className="w-56 bg-white dark:bg-gray-800">
+                      <SelectValue placeholder="Choisir une entreprise..." />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white dark:bg-gray-800">
+                      {entreprises.map((ent) => (
+                        <SelectItem key={ent.id} value={ent.id}>
+                          {ent.nom}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
               {/* Errors Section */}
@@ -523,66 +583,6 @@ export function ImportColisModal({ open, onOpenChange, onImportSuccess }: Import
             </div>
           )}
 
-          {/* Select Entreprise Step */}
-          {step === 'select-entreprise' && (
-            <div className="space-y-4">
-              <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
-                <p className="text-sm font-medium mb-4">Sélectionnez une entreprise pour tous les colis ({previewData.length}):</p>
-                <Select value={selectedEntrepriseId} onValueChange={setSelectedEntrepriseId}>
-                  <SelectTrigger className="w-full bg-white dark:bg-gray-800">
-                    <SelectValue placeholder="Choisir une entreprise..." />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white dark:bg-gray-800">
-                    {entreprises.map((ent) => (
-                      <SelectItem key={ent.id} value={ent.id}>
-                        {ent.nom}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {selectedEntrepriseId && (
-                <div className="space-y-2 min-w-0">
-                  <h3 className="font-medium text-xs sm:text-sm">Aperçu des colis à importer ({previewData.length})</h3>
-                  <div className="border rounded-lg overflow-x-auto w-full" ref={tableContainerRef}>
-                    <Table className="min-w-max">
-                      <TableHeader className="bg-gray-50 dark:bg-gray-800 sticky top-0 z-10">
-                        <TableRow>
-                          <TableHead className="text-xs">N° Suivi</TableHead>
-                          <TableHead className="text-xs">Client</TableHead>
-                          <TableHead className="text-xs">Adresse</TableHead>
-                          <TableHead className="text-xs">Téléphone</TableHead>
-                          <TableHead className="text-xs">Prix</TableHead>
-                          <TableHead className="text-xs">Statut</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {previewData.slice(0, 10).map((colis, idx) => (
-                          <TableRow key={idx}>
-                            <TableCell className="text-xs font-mono">{colis.code_suivi}</TableCell>
-                            <TableCell className="text-xs">{colis.destinataire}</TableCell>
-                            <TableCell className="text-xs max-w-xs">{colis.adresse}</TableCell>
-                            <TableCell className="text-xs">{colis.telephone || '-'}</TableCell>
-                            <TableCell className="text-xs">{colis.prix ? `${colis.prix} DH` : '-'}</TableCell>
-                            <TableCell className="text-xs">
-                              <Badge variant="outline" className="text-xs">Nouveau Colis</Badge>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                  {previewData.length > 10 && (
-                    <p className="text-xs text-gray-500 text-center py-2">
-                      +{previewData.length - 10} autres colis...
-                    </p>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-
           {/* Importing Step */}
           {step === 'importing' && (
             <div className="flex flex-col items-center justify-center py-8">
@@ -593,7 +593,7 @@ export function ImportColisModal({ open, onOpenChange, onImportSuccess }: Import
             </div>
           )}
 
-          <DialogFooter>
+          <DialogFooter className="gap-2 sm:gap-0">
             {step === 'upload' && (
               <Button variant="outline" onClick={() => onOpenChange(false)}>
                 Fermer
@@ -606,21 +606,10 @@ export function ImportColisModal({ open, onOpenChange, onImportSuccess }: Import
                   Retour
                 </Button>
                 {errors.length === 0 && (
-                  <Button onClick={() => setStep('select-entreprise')} disabled={previewData.length === 0}>
-                    Continuer ({previewData.length} colis)
+                  <Button onClick={handleImport} disabled={!selectedEntrepriseId || previewData.length === 0}>
+                    Importer {previewData.length} colis
                   </Button>
                 )}
-              </>
-            )}
-
-            {step === 'select-entreprise' && (
-              <>
-                <Button variant="outline" onClick={() => setStep('preview')}>
-                  Retour
-                </Button>
-                <Button onClick={handleImport} disabled={!selectedEntrepriseId || previewData.length === 0}>
-                  Importer {previewData.length} colis
-                </Button>
               </>
             )}
 

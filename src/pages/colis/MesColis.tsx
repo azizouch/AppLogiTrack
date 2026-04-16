@@ -685,12 +685,12 @@ export function MesColis({
 
                         <div className="flex items-center text-sm text-muted-foreground">
                           <House className="h-3 w-3 mr-1 inline" />
-                          <span>{colisItem.adresse_livraison || 'Adresse non spécifiée'}</span>
+                          <span>{colisItem.client?.adresse || 'Adresse non spécifiée'}</span>
                         </div>
 
                         <div className="flex items-center text-sm text-muted-foreground">
                           <MapPin className="h-3 w-3 mr-1 inline" />
-                          <span>Casablanca</span>
+                          <span>{colisItem.client?.ville || 'Ville non spécifiée'}</span>
                         </div>
                       </div>
 

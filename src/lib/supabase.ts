@@ -1504,11 +1504,27 @@ export const api = {
   },
 
   deleteColis: async (id: string) => {
-    const { data, error } = await supabase
-      .from('colis')
-      .delete()
-      .eq('id', id)
-    return { data, error }
+    try {
+      // First, delete all historique_colis entries for this colis
+      const { error: historiqueError } = await supabase
+        .from('historique_colis')
+        .delete()
+        .eq('colis_id', id);
+
+      if (historiqueError) {
+        return { data: null, error: historiqueError };
+      }
+
+      // Then delete the colis
+      const { data, error } = await supabase
+        .from('colis')
+        .delete()
+        .eq('id', id);
+
+      return { data, error };
+    } catch (error: any) {
+      return { data: null, error };
+    }
   },
 
   // Get recent activity for dashboard

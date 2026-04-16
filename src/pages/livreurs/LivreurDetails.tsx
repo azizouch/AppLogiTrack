@@ -459,13 +459,23 @@ export function LivreurDetails() {
             </div>
 
             <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-              <div>
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Notes
-                </label>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                  Aucune note spécifiée
-                </p>
+              <div className="grid grid-cols-2 gap-6">
+                <div>
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Notes
+                  </label>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                    Aucune note spécifiée
+                  </p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Colis associés
+                  </label>
+                  <p className="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-1">
+                    {colis.length}
+                  </p>
+                </div>
               </div>
 
               <div className="mt-4">
