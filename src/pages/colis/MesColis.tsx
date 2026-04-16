@@ -665,7 +665,7 @@ export function MesColis({
                   {/* Header with ID and Date */}
                   <div className="flex justify-between items-center p-3 bg-muted/30">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium">{colisItem.id}</span>
+                      <span className="text-sm font-medium truncate w-[150px] block">{colisItem.id}</span>
                     </div>
                     <div className="text-sm text-muted-foreground">
                       {new Date(colisItem.date_creation).toLocaleDateString('fr-FR')}
