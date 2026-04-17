@@ -1244,9 +1244,8 @@ export const api = {
 
       // Count colis by status
       const enAttente = colis.filter(c =>
-        c.statut === 'en_attente' ||
-        c.statut === 'En attente' ||
-        c.statut === 'nouveau'
+        c.statut === 'Nouveau Colis' ||
+        c.statut === 'nouveau colis'
       ).length;
 
       const livres = colis.filter(c =>
@@ -1260,13 +1259,11 @@ export const api = {
         c.statut === 'retour'
       ).length;
 
-      // En traitement = all colis EXCEPT En attente, Livrés, and Retournés
+      // En traitement = all colis EXCEPT Nouveau Colis, Livrés, and Retournés
       const enTraitement = colis.filter(c => {
         const statut = c.statut?.toLowerCase() || '';
         return !(
-          statut === 'en_attente' ||
-          statut === 'en attente' ||
-          statut === 'nouveau' ||
+          statut === 'nouveau colis' ||
           statut === 'livré' ||
           statut === 'retourné' ||
           statut === 'retour'
@@ -2101,7 +2098,6 @@ export const api = {
       .from('bons')
       .select(`
         *,
-        user:utilisateurs(id, nom, prenom, email),
         client:clients(id, nom, email, telephone),
         colis:colis(id, client:clients(nom))
       `)
@@ -2112,9 +2108,11 @@ export const api = {
   },
 
   createBon: async (bonData: {
+    id?: string;
     user_id: string;
     type: 'distribution' | 'paiement' | 'retour';
     statut: string;
+    date_creation?: string;
     nb_colis?: number;
     client_id?: string;
     montant?: number;
@@ -2128,7 +2126,6 @@ export const api = {
       .insert([bonData])
       .select(`
         *,
-        user:utilisateurs(id, nom, prenom, email),
         client:clients(id, nom, email, telephone),
         colis:colis(id, client:clients(nom))
       `)
@@ -2151,7 +2148,6 @@ export const api = {
       .eq('id', id)
       .select(`
         *,
-        user:utilisateurs(id, nom, prenom, email),
         client:clients(id, nom, email, telephone),
         colis:colis(id, client:clients(nom))
       `)

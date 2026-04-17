@@ -167,234 +167,236 @@ const App = () => (
             </ProtectedRoute>
           } />
           <Route path="/colis/relance" element={
-            <ProtectedRoute>
+            <ProtectedRoute roles={["Livreur"]}>
               <Layout>
                 <ColisRelance />
               </Layout>
             </ProtectedRoute>
           } />
           <Route path="/colis/relance-autre" element={
-            <ProtectedRoute>
+            <ProtectedRoute roles={["Livreur"]}>
               <Layout>
                 <RelanceAutreClient />
               </Layout>
             </ProtectedRoute>
           } />
 
-          {/* Bons Routes */}
+          {/* Bons Routes - Admin only */}
           <Route path="/bons/distribution" element={
-            <ProtectedRoute>
+            <ProtectedRoute roles={["Admin", "Gestionnaire"]}>
               <Layout>
                 <Distribution />
               </Layout>
             </ProtectedRoute>
           } />
           <Route path="/bons/distribution/:id" element={
-            <ProtectedRoute>
-              <Layout>
-                <BonDetails />
-              </Layout>
-            </ProtectedRoute>
-          } />
-          {/* Livreur-specific bons pages */}
-          <Route path="/bons/mes-distribution" element={
-            <ProtectedRoute>
-              <Layout>
-                <MesDistribution />
-              </Layout>
-            </ProtectedRoute>
-          } />
-          <Route path="/bons/mes-distribution/:id" element={
-            <ProtectedRoute>
+            <ProtectedRoute roles={["Admin", "Gestionnaire"]}>
               <Layout>
                 <BonDetails />
               </Layout>
             </ProtectedRoute>
           } />
           <Route path="/bons/paiement" element={
-            <ProtectedRoute>
+            <ProtectedRoute roles={["Admin", "Gestionnaire"]}>
               <Layout>
                 <Paiement />
               </Layout>
             </ProtectedRoute>
           } />
+          <Route path="/bons/retour" element={
+            <ProtectedRoute roles={["Admin", "Gestionnaire"]}>
+              <Layout>
+                <Retour />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          {/* Livreur-specific bons pages */}
+          <Route path="/bons/mes-distribution" element={
+            <ProtectedRoute roles={["Livreur"]}>
+              <Layout>
+                <MesDistribution />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/bons/mes-distribution/:id" element={
+            <ProtectedRoute roles={["Livreur"]}>
+              <Layout>
+                <BonDetails />
+              </Layout>
+            </ProtectedRoute>
+          } />
           <Route path="/bons/mes-paiement" element={
-            <ProtectedRoute>
+            <ProtectedRoute roles={["Livreur"]}>
               <Layout>
                 <MesPaiement />
               </Layout>
             </ProtectedRoute>
           } />
           <Route path="/bons/mes-paiement/:id" element={
-            <ProtectedRoute>
+            <ProtectedRoute roles={["Livreur"]}>
               <Layout>
                 <BonDetails />
               </Layout>
             </ProtectedRoute>
           } />
-          <Route path="/bons/retour" element={
-            <ProtectedRoute>
-              <Layout>
-                <Retour />
-              </Layout>
-            </ProtectedRoute>
-          } />
-          <Route path="/admin/bons/admin/distribution" element={
-            <ProtectedRoute>
-              <Layout>
-                <Distribution />
-              </Layout>
-            </ProtectedRoute>
-          } />
-          <Route path="/admin/bons/admin/paiement" element={
-            <ProtectedRoute>
-              <Layout>
-                <Paiement />
-              </Layout>
-            </ProtectedRoute>
-          } />
-          <Route path="/admin/bons/admin/retour" element={
-            <ProtectedRoute>
-              <Layout>
-                <Retour />
-              </Layout>
-            </ProtectedRoute>
-          } />
-          <Route path="/admin/bons/livreurs/distribution" element={
-            <ProtectedRoute>
-              <Layout>
-                <MesDistribution />
-              </Layout>
-            </ProtectedRoute>
-          } />
-          <Route path="/admin/bons/livreurs/paiement" element={
-            <ProtectedRoute>
-              <Layout>
-                <MesPaiement />
-              </Layout>
-            </ProtectedRoute>
-          } />
-          <Route path="/admin/bons/livreurs/retour" element={
-            <ProtectedRoute>
+          <Route path="/bons/mes-retour" element={
+            <ProtectedRoute roles={["Livreur"]}>
               <Layout>
                 <MesRetour />
               </Layout>
             </ProtectedRoute>
           } />
           <Route path="/livreur/bons/distribution" element={
-            <ProtectedRoute>
+            <ProtectedRoute roles={["Livreur"]}>
               <Layout>
                 <MesDistribution />
               </Layout>
             </ProtectedRoute>
           } />
           <Route path="/livreur/bons/paiement" element={
-            <ProtectedRoute>
+            <ProtectedRoute roles={["Livreur"]}>
               <Layout>
                 <MesPaiement />
               </Layout>
             </ProtectedRoute>
           } />
           <Route path="/livreur/bons/retour" element={
-            <ProtectedRoute>
+            <ProtectedRoute roles={["Livreur"]}>
               <Layout>
                 <MesRetour />
               </Layout>
             </ProtectedRoute>
           } />
-          <Route path="/bons/mes-retour" element={
-            <ProtectedRoute>
+          <Route path="/admin/bons/admin/distribution" element={
+            <ProtectedRoute roles={["Admin", "Gestionnaire"]}>
               <Layout>
-                <BonDetails />
+                <Distribution />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/bons/admin/paiement" element={
+            <ProtectedRoute roles={["Admin", "Gestionnaire"]}>
+              <Layout>
+                <Paiement />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/bons/admin/retour" element={
+            <ProtectedRoute roles={["Admin", "Gestionnaire"]}>
+              <Layout>
+                <Retour />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/bons/livreurs/distribution" element={
+            <ProtectedRoute roles={["Admin", "Gestionnaire"]}>
+              <Layout>
+                <MesDistribution />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/bons/livreurs/paiement" element={
+            <ProtectedRoute roles={["Admin", "Gestionnaire"]}>
+              <Layout>
+                <MesPaiement />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/bons/livreurs/retour" element={
+            <ProtectedRoute roles={["Admin", "Gestionnaire"]}>
+              <Layout>
+                <MesRetour />
               </Layout>
             </ProtectedRoute>
           } />
 
-          {/* Other Routes */}
+          {/* Other Routes - Admin/Gestionnaire Only */}
           <Route path="/clients" element={
-            <ProtectedRoute>
+            <ProtectedRoute roles={["Admin", "Gestionnaire"]}>
               <Layout>
                 <Clients />
               </Layout>
             </ProtectedRoute>
           } />
           <Route path="/clients/nouveau" element={
-            <ProtectedRoute>
+            <ProtectedRoute roles={["Admin", "Gestionnaire"]}>
               <Layout>
                 <AddClient />
               </Layout>
             </ProtectedRoute>
           } />
           <Route path="/clients/:id" element={
-            <ProtectedRoute>
+            <ProtectedRoute roles={["Admin", "Gestionnaire"]}>
               <Layout>
                 <ClientDetails />
               </Layout>
             </ProtectedRoute>
           } />
           <Route path="/clients/:id/modifier" element={
-            <ProtectedRoute>
+            <ProtectedRoute roles={["Admin", "Gestionnaire"]}>
               <Layout>
                 <EditClient />
               </Layout>
             </ProtectedRoute>
           } />
           <Route path="/entreprises" element={
-            <ProtectedRoute>
+            <ProtectedRoute roles={["Admin", "Gestionnaire"]}>
               <Layout>
                 <Entreprises />
               </Layout>
             </ProtectedRoute>
           } />
           <Route path="/entreprises/ajouter" element={
-            <ProtectedRoute>
+            <ProtectedRoute roles={["Admin", "Gestionnaire"]}>
               <Layout>
                 <AddEntreprise />
               </Layout>
             </ProtectedRoute>
           } />
           <Route path="/entreprises/:id" element={
-            <ProtectedRoute>
+            <ProtectedRoute roles={["Admin", "Gestionnaire"]}>
               <Layout>
                 <EntrepriseDetails />
               </Layout>
             </ProtectedRoute>
           } />
           <Route path="/entreprises/:id/modifier" element={
-            <ProtectedRoute>
+            <ProtectedRoute roles={["Admin", "Gestionnaire"]}>
               <Layout>
                 <EditEntreprise />
               </Layout>
             </ProtectedRoute>
           } />
           <Route path="/livreurs" element={
-            <ProtectedRoute>
+            <ProtectedRoute roles={["Admin", "Gestionnaire"]}>
               <Layout>
                 <Livreurs />
               </Layout>
             </ProtectedRoute>
           } />
           <Route path="/livreurs/ajouter" element={
-            <ProtectedRoute>
+            <ProtectedRoute roles={["Admin", "Gestionnaire"]}>
               <Layout>
                 <AddLivreur />
               </Layout>
             </ProtectedRoute>
           } />
           <Route path="/livreurs/:id" element={
-            <ProtectedRoute>
+            <ProtectedRoute roles={["Admin", "Gestionnaire"]}>
               <Layout>
                 <LivreurDetails />
               </Layout>
             </ProtectedRoute>
           } />
           <Route path="/livreurs/:id/modifier" element={
-            <ProtectedRoute>
+            <ProtectedRoute roles={["Admin", "Gestionnaire"]}>
               <Layout>
                 <EditLivreur />
               </Layout>
             </ProtectedRoute>
           } />
+          
+          {/* Shared Routes - All authenticated users */}
           <Route path="/notifications" element={
             <ProtectedRoute>
               <Layout>
@@ -403,39 +405,39 @@ const App = () => (
             </ProtectedRoute>
           } />
 
-          {/* Utilisateurs Routes */}
+          {/* Admin Only Routes */}
           <Route path="/utilisateurs" element={
-            <ProtectedRoute>
+            <ProtectedRoute roles={["Admin"]}>
               <Layout>
                 <Gestion />
               </Layout>
             </ProtectedRoute>
           } />
           <Route path="/utilisateurs/suivi" element={
-            <ProtectedRoute>
+            <ProtectedRoute roles={["Admin"]}>
               <Layout>
                 <Suivi />
               </Layout>
             </ProtectedRoute>
           } />
 
-          {/* Paramètres Routes */}
+          {/* Paramètres Routes - Admin Only */}
           <Route path="/parametres" element={
-            <ProtectedRoute>
+            <ProtectedRoute roles={["Admin"]}>
               <Layout>
                 <General />
               </Layout>
             </ProtectedRoute>
           } />
           <Route path="/parametres/statuts" element={
-            <ProtectedRoute>
+            <ProtectedRoute roles={["Admin"]}>
               <Layout>
                 <Statuts />
               </Layout>
             </ProtectedRoute>
           } />
 
-          {/* Profile Routes */}
+          {/* Profile Routes - All authenticated users */}
           <Route path="/profil" element={
             <ProtectedRoute>
               <Layout>

@@ -44,7 +44,7 @@ body[style*="margin-right"] {
 }
 
 @media (max-width: 639px) {
-  [data-radix-popper-content-wrapper]:has(.notification-popover) {
+  [data-radix-popper-content-wrapper]:has(.centred-popover) {
     left: 50% !important;
     transform: translate(-50%, 49.5px) !important;
   }

@@ -234,7 +234,7 @@ export function ColisStatusModal({
               <SelectTrigger id="newStatus">
                 <SelectValue placeholder="Sélectionner un statut" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="centred-popover">
                 {statuts && statuts.length > 0 ? (
                   statuts.map((status) => (
                     <SelectItem key={status.id} value={status.nom}>

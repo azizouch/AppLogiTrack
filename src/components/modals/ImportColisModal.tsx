@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Upload, AlertCircle, CheckCircle, Loader2, Eye, EyeOff } from 'lucide-react';
+import { Upload, AlertCircle, CheckCircle, Loader2, Eye, EyeOff, ChevronLeft, ChevronRight } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -87,6 +87,8 @@ export function ImportColisModal({ open, onOpenChange, onImportSuccess }: Import
   const [selectedEntrepriseId, setSelectedEntrepriseId] = useState<string>('');
   const [entreprises, setEntreprises] = useState<Entreprise[]>([]);
   const [filterErrors, setFilterErrors] = useState<'all' | 'valid' | 'errors'>('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const tableContainerRef = useRef<HTMLDivElement>(null);
 
@@ -115,6 +117,7 @@ export function ImportColisModal({ open, onOpenChange, onImportSuccess }: Import
       setShowPreview(true);
       setSelectedEntrepriseId('');
       setFilterErrors('all');
+      setCurrentPage(1);
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
@@ -137,18 +140,70 @@ export function ImportColisModal({ open, onOpenChange, onImportSuccess }: Import
 
       const { validRows, validationErrors } = validateColisData(data);
       
+      // Check for duplicate colis in database
+      const duplicateErrors = await checkForDuplicateColisCodes(validRows);
+      
+      // Filter out colis that already exist in database
+      const uniqueRows = validRows.filter(row => 
+        !duplicateErrors.some(err => err.includes(row.code_suivi))
+      );
+      
+      const allErrors = [...validationErrors, ...duplicateErrors];
+
       setFile(selectedFile);
-      setPreviewData(validRows);
-      setErrors(validationErrors);
+      setPreviewData(uniqueRows);
+      setErrors(allErrors);
       setStep('preview');
 
-      toast.success(`${validRows.length} colis trouvés dans le fichier`, {
-        description: validationErrors.length > 0 ? `${validationErrors.length} erreurs détectées` : 'Prêt à importer'
+      toast.success(`${uniqueRows.length} colis trouvés dans le fichier`, {
+        description: allErrors.length > 0 ? `${allErrors.length} erreurs détectées` : 'Prêt à importer'
       });
     } catch (error: any) {
       toast.error('Erreur lors de la lecture du fichier');
       setErrors([error.message || 'Erreur inconnue']);
     }
+  };
+
+  const checkForDuplicateColisCodes = async (rows: PreviewColis[]): Promise<string[]> => {
+    const duplicateErrors: string[] = [];
+    
+    try {
+      // Get all existing colis to check for duplicates
+      const { data: existingColis, error } = await supabase
+        .from('colis')
+        .select('id, notes');
+      
+      if (error) {
+        console.error('Error checking for duplicate codes:', error);
+        return [];
+      }
+
+      // Extract code_suivi from notes field (stored as "Code suivi: XXX...")
+      const existingCodes = new Set<string>();
+      if (existingColis) {
+        existingColis.forEach(colis => {
+          if (colis.notes) {
+            const match = colis.notes.match(/Code suivi:\s*([^\s-]+)/);
+            if (match) {
+              existingCodes.add(match[1].trim());
+            }
+          }
+        });
+      }
+
+      // Check each row for duplicates
+      rows.forEach((row, index) => {
+        if (existingCodes.has(row.code_suivi)) {
+          duplicateErrors.push(
+            `Colis avec CODE SUIVI "${row.code_suivi}" existe déjà en base de données`
+          );
+        }
+      });
+    } catch (error) {
+      console.error('Error during duplicate check:', error);
+    }
+
+    return duplicateErrors;
   };
 
   const readExcelFile = async (file: File): Promise<ExcelRow[]> => {
@@ -177,6 +232,7 @@ export function ImportColisModal({ open, onOpenChange, onImportSuccess }: Import
   const validateColisData = (data: ExcelRow[]): { validRows: PreviewColis[], validationErrors: string[] } => {
     const validRows: PreviewColis[] = [];
     const errors: string[] = [];
+    const codesSuiviSeen = new Set<string>();
 
     data.forEach((row, index) => {
       const rowNum = index + 2;
@@ -202,6 +258,15 @@ export function ImportColisModal({ open, onOpenChange, onImportSuccess }: Import
       // Validate prix is a number
       if (row['PRIX'] && isNaN(Number(row['PRIX']))) {
         rowErrors.push(`Ligne ${rowNum}: PRIX invalide`);
+      }
+
+      // Check for duplicate code_suivi in the same file
+      const codeSuivi = String(row['CODE SUIVI']).trim();
+      if (codeSuivi && codesSuiviSeen.has(codeSuivi)) {
+        rowErrors.push(`Ligne ${rowNum}: CODE SUIVI "${codeSuivi}" est en doublon dans le fichier`);
+      }
+      if (codeSuivi) {
+        codesSuiviSeen.add(codeSuivi);
       }
 
       if (rowErrors.length === 0) {
@@ -247,6 +312,8 @@ export function ImportColisModal({ open, onOpenChange, onImportSuccess }: Import
 
     try {
       let successfulImports = 0;
+      let totalMontant = 0;
+      const importedColisIds: string[] = [];
 
       for (const colisData of previewData) {
         try {
@@ -334,10 +401,51 @@ export function ImportColisModal({ open, onOpenChange, onImportSuccess }: Import
             console.log('✓ Historique created successfully with user ID:', user.id);
           }
 
+          // Collect colis data for the single bon
+          importedColisIds.push(colisId);
+          totalMontant += colisData.prix;
           successfulImports++;
         } catch (error: any) {
           console.error(`Erreur lors de l'import du colis ${colisData.code_suivi}:`, error);
           toast.error(`Erreur: ${colisData.code_suivi} - ${error.message}`);
+        }
+      }
+
+      // Create ONE bon distribution for all imported colis
+      if (successfulImports > 0) {
+        try {
+          const bonId = generateUUID();
+          console.log('Creating single bon distribution for all colis with ID:', bonId);
+          const colisCodesString = previewData
+            .slice(0, 5)
+            .map(c => c.code_suivi)
+            .join(', ');
+          const notesText = successfulImports > 5 
+            ? `Bon créé automatiquement lors de l'import de ${successfulImports} colis (${colisCodesString}...)`
+            : `Bon créé automatiquement lors de l'import de ${successfulImports} colis (${colisCodesString})`;
+
+          const bonResult = await api.createBon({
+            id: bonId,
+            user_id: user.id,
+            type: 'distribution',
+            statut: 'En cours',
+            colis_id: importedColisIds[0], // Reference the first colis
+            montant: totalMontant,
+            nb_colis: successfulImports,
+            date_creation: new Date().toISOString(),
+            notes: notesText,
+          });
+
+          if (bonResult.error) {
+            console.error('Erreur lors de la création du bon distribution:', bonResult.error);
+            toast.warning('Colis importés mais bon non généré');
+          } else {
+            console.log('✓ Bon distribution created successfully:', bonResult.data?.id);
+            toast.success(`Bon distribution #${bonResult.data?.id?.slice(0, 8)} créé pour ${successfulImports} colis`);
+          }
+        } catch (bonError: any) {
+          console.error('Erreur lors de la création du bon distribution:', bonError);
+          toast.warning('Colis importés mais bon non généré');
         }
       }
 
@@ -506,13 +614,46 @@ export function ImportColisModal({ open, onOpenChange, onImportSuccess }: Import
                 <Alert variant="destructive">
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
-                    <p className="font-medium mb-2">Erreurs détectées:</p>
-                    <ul className="text-sm space-y-1">
-                      {errors.slice(0, 5).map((error, idx) => (
-                        <li key={idx}>• {error}</li>
-                      ))}
-                      {errors.length > 5 && <li>• ... et {errors.length - 5} autres erreurs</li>}
-                    </ul>
+                    <p className="font-medium mb-2">Erreurs détectées ({errors.length}):</p>
+                    <div className="space-y-3">
+                      {/* Separate duplicate errors from other errors */}
+                      {(() => {
+                        const duplicateErrors = errors.filter(e => e.includes('existe déjà') || e.includes('en doublon'));
+                        const validationErrors = errors.filter(e => !e.includes('existe déjà') && !e.includes('en doublon'));
+                        
+                        return (
+                          <>
+                            {duplicateErrors.length > 0 && (
+                              <div>
+                                <p className="text-xs font-semibold text-red-700 dark:text-red-400 mb-1">
+                                  🔄 CODE SUIVI en doublon ou existant:
+                                </p>
+                                <ul className="text-sm space-y-1 ml-4">
+                                  {duplicateErrors.slice(0, 5).map((error, idx) => (
+                                    <li key={idx}>• {error}</li>
+                                  ))}
+                                  {duplicateErrors.length > 5 && <li>• ... et {duplicateErrors.length - 5} autres</li>}
+                                </ul>
+                              </div>
+                            )}
+                            
+                            {validationErrors.length > 0 && (
+                              <div>
+                                <p className="text-xs font-semibold text-red-700 dark:text-red-400 mb-1">
+                                  ⚠️ Données manquantes ou invalides:
+                                </p>
+                                <ul className="text-sm space-y-1 ml-4">
+                                  {validationErrors.slice(0, 5).map((error, idx) => (
+                                    <li key={idx}>• {error}</li>
+                                  ))}
+                                  {validationErrors.length > 5 && <li>• ... et {validationErrors.length - 5} autres</li>}
+                                </ul>
+                              </div>
+                            )}
+                          </>
+                        );
+                      })()}
+                    </div>
                   </AlertDescription>
                 </Alert>
               )}
@@ -543,40 +684,106 @@ export function ImportColisModal({ open, onOpenChange, onImportSuccess }: Import
                   </div>
 
                   {showPreview && (
-                    <div className="border rounded-lg overflow-x-auto w-full" ref={tableContainerRef}>
-                      <Table className="min-w-max">
-                        <TableHeader className="bg-gray-50 dark:bg-gray-800 sticky top-0 z-10">
-                          <TableRow>
-                            <TableHead className="text-xs">N° Suivi</TableHead>
-                            <TableHead className="text-xs">Client</TableHead>
-                            <TableHead className="text-xs">Adresse</TableHead>
-                            <TableHead className="text-xs">Téléphone</TableHead>
-                            <TableHead className="text-xs">Prix</TableHead>
-                            <TableHead className="text-xs">Statut</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {previewData.slice(0, 10).map((colis, idx) => (
-                            <TableRow key={idx}>
-                              <TableCell className="text-xs font-mono">{colis.code_suivi}</TableCell>
-                              <TableCell className="text-xs">{colis.destinataire}</TableCell>
-                              <TableCell className="text-xs max-w-xs">{colis.adresse}</TableCell>
-                              <TableCell className="text-xs">{colis.telephone || '-'}</TableCell>
-                              <TableCell className="text-xs">{colis.prix ? `${colis.prix} DH` : '-'}</TableCell>
-                              <TableCell className="text-xs">
-                                <Badge variant="outline" className="text-xs">Nouveau Colis</Badge>
-                              </TableCell>
+                    <div className="space-y-4">
+                      <div className="border rounded-lg overflow-x-auto w-full" ref={tableContainerRef}>
+                        <Table className="min-w-max">
+                          <TableHeader className="bg-gray-50 dark:bg-gray-800 sticky top-0 z-10">
+                            <TableRow>
+                              <TableHead className="text-xs">N° Suivi</TableHead>
+                              <TableHead className="text-xs">Client</TableHead>
+                              <TableHead className="text-xs">Adresse</TableHead>
+                              <TableHead className="text-xs">Téléphone</TableHead>
+                              <TableHead className="text-xs">Prix</TableHead>
+                              <TableHead className="text-xs">Statut</TableHead>
                             </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  )}
+                          </TableHeader>
+                          <TableBody>
+                            {(() => {
+                              const totalPages = Math.ceil(previewData.length / itemsPerPage);
+                              const startIdx = (currentPage - 1) * itemsPerPage;
+                              const endIdx = startIdx + itemsPerPage;
+                              const paginatedData = previewData.slice(startIdx, endIdx);
+                              
+                              return paginatedData.map((colis, idx) => (
+                                <TableRow key={idx}>
+                                  <TableCell className="text-xs font-mono">{colis.code_suivi}</TableCell>
+                                  <TableCell className="text-xs">{colis.destinataire}</TableCell>
+                                  <TableCell className="text-xs max-w-xs">{colis.adresse}</TableCell>
+                                  <TableCell className="text-xs">{colis.telephone || '-'}</TableCell>
+                                  <TableCell className="text-xs">{colis.prix ? `${colis.prix} DH` : '-'}</TableCell>
+                                  <TableCell className="text-xs">
+                                    <Badge variant="outline" className="text-xs">Nouveau Colis</Badge>
+                                  </TableCell>
+                                </TableRow>
+                              ));
+                            })()}
+                          </TableBody>
+                        </Table>
+                      </div>
 
-                  {previewData.length > 10 && (
-                    <p className="text-xs text-gray-500 text-center py-2">
-                      +{previewData.length - 10} autres colis...
-                    </p>
+                      {/* Pagination Controls */}
+                      {previewData.length > itemsPerPage && (
+                        <div className="flex items-center justify-between gap-4 px-2">
+                          <div className="text-xs text-gray-600 dark:text-gray-400">
+                            Affichage {((currentPage - 1) * itemsPerPage) + 1} à {Math.min(currentPage * itemsPerPage, previewData.length)} sur {previewData.length} colis
+                          </div>
+                          
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                              disabled={currentPage === 1}
+                              className="h-8 w-8 p-0"
+                            >
+                              <ChevronLeft className="h-4 w-4" />
+                            </Button>
+
+                            {(() => {
+                              const totalPages = Math.ceil(previewData.length / itemsPerPage);
+                              const pageButtons = [];
+                              const maxVisiblePages = 5;
+                              
+                              let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+                              let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+                              
+                              if (endPage - startPage < maxVisiblePages - 1) {
+                                startPage = Math.max(1, endPage - maxVisiblePages + 1);
+                              }
+
+                              for (let i = startPage; i <= endPage; i++) {
+                                pageButtons.push(
+                                  <Button
+                                    key={i}
+                                    variant={currentPage === i ? 'default' : 'outline'}
+                                    size="sm"
+                                    onClick={() => setCurrentPage(i)}
+                                    className="h-8 w-8 p-0"
+                                  >
+                                    {i}
+                                  </Button>
+                                );
+                              }
+
+                              return pageButtons;
+                            })()}
+
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setCurrentPage(prev => {
+                                const totalPages = Math.ceil(previewData.length / itemsPerPage);
+                                return Math.min(totalPages, prev + 1);
+                              })}
+                              disabled={currentPage === Math.ceil(previewData.length / itemsPerPage)}
+                              className="h-8 w-8 p-0"
+                            >
+                              <ChevronRight className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
               )}
@@ -605,9 +812,9 @@ export function ImportColisModal({ open, onOpenChange, onImportSuccess }: Import
                 <Button variant="outline" onClick={() => setStep('upload')}>
                   Retour
                 </Button>
-                {errors.length === 0 && (
-                  <Button onClick={handleImport} disabled={!selectedEntrepriseId || previewData.length === 0}>
-                    Importer {previewData.length} colis
+                {previewData.length > 0 && (
+                  <Button onClick={handleImport} disabled={!selectedEntrepriseId}>
+                    Importer {previewData.length} colis valides
                   </Button>
                 )}
               </>
