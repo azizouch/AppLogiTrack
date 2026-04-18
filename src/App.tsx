@@ -31,6 +31,9 @@ import { Retour } from "@/pages/bons/Retour";
 import { MesDistribution } from "@/pages/bons/MesDistribution";
 import { MesPaiement } from "@/pages/bons/MesPaiement";
 import { MesRetour } from "@/pages/bons/MesRetour";
+import { AllLivreurDistribution } from "@/pages/bons/AllLivreurDistribution";
+import { AllLivreurPaiement } from "@/pages/bons/AllLivreurPaiement";
+import { AllLivreurRetour } from "@/pages/bons/AllLivreurRetour";
 import { Clients } from "@/pages/Clients";
 import { AddClient } from "@/pages/clients/AddClient";
 import { ClientDetails } from "@/pages/clients/ClientDetails";
@@ -49,6 +52,7 @@ import { Suivi } from "@/pages/utilisateurs/Suivi";
 import { General } from "@/pages/parametres/General";
 import { Statuts } from "@/pages/parametres/Statuts";
 import { ResetPassword } from "@/pages/auth/ResetPassword";
+import { BonRedirector } from "@/components/BonRedirector";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -181,32 +185,40 @@ const App = () => (
             </ProtectedRoute>
           } />
 
-          {/* Bons Routes - Admin only */}
+          {/* Bons Routes - Smart Redirector (role-based) */}
           <Route path="/bons/distribution" element={
-            <ProtectedRoute roles={["Admin", "Gestionnaire"]}>
-              <Layout>
-                <Distribution />
-              </Layout>
+            <ProtectedRoute>
+              <BonRedirector bonType="distribution" />
             </ProtectedRoute>
           } />
           <Route path="/bons/distribution/:id" element={
-            <ProtectedRoute roles={["Admin", "Gestionnaire"]}>
+            <ProtectedRoute>
               <Layout>
                 <BonDetails />
               </Layout>
             </ProtectedRoute>
           } />
           <Route path="/bons/paiement" element={
-            <ProtectedRoute roles={["Admin", "Gestionnaire"]}>
+            <ProtectedRoute>
+              <BonRedirector bonType="paiement" />
+            </ProtectedRoute>
+          } />
+          <Route path="/bons/paiement/:id" element={
+            <ProtectedRoute>
               <Layout>
-                <Paiement />
+                <BonDetails />
               </Layout>
             </ProtectedRoute>
           } />
           <Route path="/bons/retour" element={
-            <ProtectedRoute roles={["Admin", "Gestionnaire"]}>
+            <ProtectedRoute>
+              <BonRedirector bonType="retour" />
+            </ProtectedRoute>
+          } />
+          <Route path="/bons/retour/:id" element={
+            <ProtectedRoute>
               <Layout>
-                <Retour />
+                <BonDetails />
               </Layout>
             </ProtectedRoute>
           } />
@@ -291,21 +303,21 @@ const App = () => (
           <Route path="/admin/bons/livreurs/distribution" element={
             <ProtectedRoute roles={["Admin", "Gestionnaire"]}>
               <Layout>
-                <MesDistribution />
+                <AllLivreurDistribution />
               </Layout>
             </ProtectedRoute>
           } />
           <Route path="/admin/bons/livreurs/paiement" element={
             <ProtectedRoute roles={["Admin", "Gestionnaire"]}>
               <Layout>
-                <MesPaiement />
+                <AllLivreurPaiement />
               </Layout>
             </ProtectedRoute>
           } />
           <Route path="/admin/bons/livreurs/retour" element={
             <ProtectedRoute roles={["Admin", "Gestionnaire"]}>
               <Layout>
-                <MesRetour />
+                <AllLivreurRetour />
               </Layout>
             </ProtectedRoute>
           } />

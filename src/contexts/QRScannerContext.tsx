@@ -6,12 +6,17 @@ interface QRScannerContextType {
   setIsQRScannerOpen: (open: boolean) => void;
   scannedColis: Colis | null;
   setScannedColis: (colis: Colis | null) => void;
-  isScannedColisModalOpen: boolean;
-  setIsScannedColisModalOpen: (open: boolean) => void;
-  scannedColisLoading: boolean;
-  setScannedColisLoading: (loading: boolean) => void;
+  isScannedColisDetailsOpen: boolean;
+  setIsScannedColisDetailsOpen: (open: boolean) => void;
+  scannedColisList: Colis[];
+  setScannedColisList: (list: Colis[]) => void;
+  isScannedColisTableOpen: boolean;
+  setIsScannedColisTableOpen: (open: boolean) => void;
   openScanner: () => void;
   closeScanner: () => void;
+  addScannedColis: (colis: Colis) => void;
+  removeScannedColis: (colisId: string) => void;
+  clearScannedColisList: () => void;
 }
 
 const QRScannerContext = createContext<QRScannerContextType | undefined>(undefined);
@@ -19,11 +24,29 @@ const QRScannerContext = createContext<QRScannerContextType | undefined>(undefin
 export function QRScannerProvider({ children }: { children: React.ReactNode }) {
   const [isQRScannerOpen, setIsQRScannerOpen] = useState(false);
   const [scannedColis, setScannedColis] = useState<Colis | null>(null);
-  const [isScannedColisModalOpen, setIsScannedColisModalOpen] = useState(false);
-  const [scannedColisLoading, setScannedColisLoading] = useState(false);
+  const [isScannedColisDetailsOpen, setIsScannedColisDetailsOpen] = useState(false);
+  const [scannedColisList, setScannedColisList] = useState<Colis[]>([]);
+  const [isScannedColisTableOpen, setIsScannedColisTableOpen] = useState(false);
 
   const openScanner = () => setIsQRScannerOpen(true);
   const closeScanner = () => setIsQRScannerOpen(false);
+
+  const addScannedColis = (colis: Colis) => {
+    setScannedColisList(prev => {
+      if (prev.some(item => item.id === colis.id)) {
+        return prev;
+      }
+      return [...prev, colis];
+    });
+  };
+
+  const removeScannedColis = (colisId: string) => {
+    setScannedColisList(prev => prev.filter(item => item.id !== colisId));
+  };
+
+  const clearScannedColisList = () => {
+    setScannedColisList([]);
+  };
 
   return (
     <QRScannerContext.Provider value={{
@@ -31,12 +54,17 @@ export function QRScannerProvider({ children }: { children: React.ReactNode }) {
       setIsQRScannerOpen,
       scannedColis,
       setScannedColis,
-      isScannedColisModalOpen,
-      setIsScannedColisModalOpen,
-      scannedColisLoading,
-      setScannedColisLoading,
+      isScannedColisDetailsOpen,
+      setIsScannedColisDetailsOpen,
+      scannedColisList,
+      setScannedColisList,
+      isScannedColisTableOpen,
+      setIsScannedColisTableOpen,
       openScanner,
       closeScanner,
+      addScannedColis,
+      removeScannedColis,
+      clearScannedColisList,
     }}>
       {children}
     </QRScannerContext.Provider>

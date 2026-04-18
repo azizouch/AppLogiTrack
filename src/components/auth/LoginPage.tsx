@@ -112,12 +112,12 @@ export function LoginPage() {
           </div>
         </div>
 
-        <Card className="bg-white dark:bg-gray-800 shadow-lg border border-gray-200 dark:border-gray-700">
+        <Card className="bg-white dark:bg-gray-800 shadow-xl border border-gray-200 dark:border-gray-700">
           <CardHeader className="text-center space-y-4 pb-6">
             {/* LogiTrack title inside card */}
-            <h1 className="text-3xl font-bold text-blue-600 dark:text-blue-400 mb-2">LogiTrack</h1>
+            <h1 className="text-3xl font-bold text-blue-600 dark:text-blue-400">LogiTrack</h1>
             <div>
-              <CardTitle className="text-2xl font-bold text-gray-900 dark:text-white">
+              <CardTitle className="text-2xl font-bold text-gray-900 dark:text-white mb-3">
                 Connexion
               </CardTitle>
               <CardDescription className="text-gray-600 dark:text-gray-400 mt-2">

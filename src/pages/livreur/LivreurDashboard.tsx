@@ -2,8 +2,6 @@ import { useState, useEffect } from 'react';
 import { Package, Clock, CheckCircle, RotateCcw, User, MapPin, Truck, Calendar, Award, LucideIcon, Ban } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { ColisQRScanner } from '@/components/colis';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQRScanner } from '@/contexts/QRScannerContext';
 import { useNavigate } from 'react-router-dom';
@@ -13,6 +11,7 @@ import { CircularStats } from '@/components/ui/circular-stats';
 import { Colis } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, TooltipProps } from 'recharts';
+import { toast } from 'sonner';
 
 // StatItem component for profile card
 interface StatItemProps {
@@ -106,11 +105,13 @@ const isReturnedStatus = (statut?: string) => {
 
 export function LivreurDashboard() {
   const { state } = useAuth();
-  const { toast } = useToast();
+  const { toast: toastHook } = useToast();
   const navigate = useNavigate();
   const { 
-    isQRScannerOpen, 
-    setIsQRScannerOpen
+    scannedColisList,
+    isScannedColisTableOpen,
+    setIsScannedColisTableOpen,
+    clearScannedColisList,
   } = useQRScanner();
 
   const [stats, setStats] = useState<LivreurStats>({
@@ -305,13 +306,6 @@ export function LivreurDashboard() {
     navigate(`/colis/mes-filtered?status=${status}`);
   };
 
-  // Handle QR scan - ColisQRScanner handles everything internally
-  const handleQRScan = (colisId: string) => {
-    // Keep scanner open to display colis details
-    // User can close manually with "Fermer" button
-    console.log('QR scanned:', colisId);
-  };
-
   const statsCards = [
     {
       title: 'À livrer aujourd\'hui',
@@ -421,14 +415,14 @@ export function LivreurDashboard() {
       </div>
 
       {/* Quick links to livreur bons pages */}
-      <div className="mt-4">
+      {/* <div className="mt-4">
           <CardHeader className="p-0 pb-2">
             <CardTitle className="text-lg">Mes bons</CardTitle>
           </CardHeader>
 
           <CardContent className='p-0'>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-              {/* BLUE */}
+              
               <button
                 className="flex justify-between items-center w-full sm:w-auto
                           text-black px-3 py-2 pt-4 pb-4 rounded-lg border border-l-4 border-blue-700 dark:text-white"
@@ -439,7 +433,7 @@ export function LivreurDashboard() {
                   {bonStats.distribution?.total ?? 0}
                 </Badge>
               </button>
-              {/* GREEN */}
+          
               <button
                 className="flex justify-between items-center w-full sm:w-auto
                           text-black px-3 py-2 pt-4 pb-4 rounded-lg border border-l-4 border-green-700 dark:text-white"
@@ -450,7 +444,7 @@ export function LivreurDashboard() {
                   {bonStats.paiement?.total ?? 0}
                 </Badge>
               </button>
-              {/* RED */}
+             
               <button
                 className="flex justify-between items-center w-full sm:w-auto
                           text-black px-3 py-2 pt-4 pb-4 rounded-lg border border-l-4 border-red-700 dark:text-white"
@@ -463,7 +457,7 @@ export function LivreurDashboard() {
               </button>
             </div>
           </CardContent>
-      </div>
+      </div> */}
 
       {/* Three Column Layout */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
@@ -627,15 +621,6 @@ export function LivreurDashboard() {
           loading={bonStatsLoading}
         />
       </div>
-
-      {/* QR Scanner Modal */}
-      <ColisQRScanner
-        isOpen={isQRScannerOpen}
-        onClose={() => setIsQRScannerOpen(false)}
-        onScan={handleQRScan}
-        title="Scanner un colis"
-        description="Scannez le code QR du colis pour afficher ses détails"
-      />
     </div>
   );
 }

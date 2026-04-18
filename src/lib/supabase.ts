@@ -1087,6 +1087,89 @@ export const api = {
     return { data, error }
   },
 
+  getColisByBonId: async (bonId: string) => {
+    try {
+      // Get the bon_colis relationships
+      const { data: bonColisData, error: bonColisError } = await supabase
+        .from('bon_colis')
+        .select('colis_id')
+        .eq('bon_id', bonId)
+        .order('date_assigned', { ascending: false });
+
+      if (bonColisError || !bonColisData) {
+        console.error('Error fetching bon_colis:', bonColisError);
+        return { data: [], error: bonColisError };
+      }
+
+      // Extract colis IDs
+      const colisIds = bonColisData.map((item: any) => item.colis_id);
+      
+      if (colisIds.length === 0) {
+        return { data: [], error: null };
+      }
+
+      // Fetch all colis in one query - ONLY columns that exist in colis table
+      const { data: colisData, error: colisError } = await supabase
+        .from('colis')
+        .select(`
+          id,
+          client_id,
+          entreprise_id,
+          livreur_id,
+          statut,
+          date_creation,
+          date_mise_a_jour,
+          notes,
+          prix,
+          frais
+        `)
+        .in('id', colisIds);
+
+      if (colisError) {
+        console.error('Error fetching colis:', colisError);
+        return { data: null, error: colisError };
+      }
+
+      // Fetch related data (client, entreprise, livreur) separately
+      if (colisData && colisData.length > 0) {
+        const clientIds = [...new Set(colisData.map((c: any) => c.client_id).filter(Boolean))];
+        const entrepriseIds = [...new Set(colisData.map((c: any) => c.entreprise_id).filter(Boolean))];
+        const livreurIds = [...new Set(colisData.map((c: any) => c.livreur_id).filter(Boolean))];
+
+        const [clientsResult, entreprisesResult, livreursResult] = await Promise.all([
+          clientIds.length > 0 
+            ? supabase.from('clients').select('*').in('id', clientIds)
+            : Promise.resolve({ data: [], error: null }),
+          entrepriseIds.length > 0
+            ? supabase.from('entreprises').select('*').in('id', entrepriseIds)
+            : Promise.resolve({ data: [], error: null }),
+          livreurIds.length > 0
+            ? supabase.from('utilisateurs').select('*').in('id', livreurIds)
+            : Promise.resolve({ data: [], error: null })
+        ]);
+
+        // Map the related data back to colis
+        const clientsMap = (clientsResult.data || []).reduce((acc: any, c: any) => { acc[c.id] = c; return acc; }, {});
+        const entreprisesMap = (entreprisesResult.data || []).reduce((acc: any, e: any) => { acc[e.id] = e; return acc; }, {});
+        const livreursMap = (livreursResult.data || []).reduce((acc: any, l: any) => { acc[l.id] = l; return acc; }, {});
+
+        const enrichedColis = colisData.map((c: any) => ({
+          ...c,
+          client: clientsMap[c.client_id] || null,
+          entreprise: entreprisesMap[c.entreprise_id] || null,
+          livreur: livreursMap[c.livreur_id] || null,
+        }));
+
+        return { data: enrichedColis, error: null };
+      }
+
+      return { data: colisData || [], error: null };
+    } catch (error) {
+      console.error('Error in getColisByBonId:', error);
+      return { data: null, error };
+    }
+  },
+
   // Clients
   getClients: async () => {
     const { data, error } = await supabase
@@ -2011,6 +2094,7 @@ export const api = {
     userId?: string;
     assignedTo?: string;
     statut?: string;
+    entrepriseId?: string;
     sortBy?: 'recent' | 'oldest';
   }) => {
     const {
@@ -2022,6 +2106,7 @@ export const api = {
       userId,
       assignedTo,
       statut,
+      entrepriseId,
       sortBy = 'recent'
     } = params || {};
 
@@ -2068,6 +2153,10 @@ export const api = {
       query = query.eq('statut', statut);
     }
 
+    if (entrepriseId) {
+      query = query.eq('entreprise_id', entrepriseId);
+    }
+
     // Apply sorting
     const sortOrder = sortBy === 'recent' ? { ascending: false } : { ascending: true };
     query = query.order('date_creation', sortOrder);
@@ -2094,17 +2183,58 @@ export const api = {
   },
 
   getBonById: async (id: string) => {
-    const { data, error } = await supabase
-      .from('bons')
-      .select(`
-        *,
-        client:clients(id, nom, email, telephone),
-        colis:colis(id, client:clients(nom))
-      `)
-      .eq('id', id)
-      .single();
+    try {
+      // Get the bon without relationships (due to ambiguous user_id foreign keys)
+      const { data: bonData, error: bonError } = await supabase
+        .from('bons')
+        .select('*')
+        .eq('id', id)
+        .single();
 
-    return { data, error };
+      if (bonError || !bonData) {
+        console.error('Error fetching bon:', bonError);
+        return { data: null, error: bonError };
+      }
+
+      // Fetch user data separately
+      if (bonData.user_id) {
+        try {
+          const { data: userData, error: userError } = await supabase
+            .from('utilisateurs')
+            .select('id, nom, prenom, email, telephone, role, vehicule, zone')
+            .eq('id', bonData.user_id)
+            .single();
+
+          if (userData && !userError) {
+            bonData.user = userData;
+          }
+        } catch (userErr) {
+          console.warn('Could not fetch user data:', userErr);
+        }
+      }
+
+      // Fetch client data separately if needed
+      if (bonData.client_id) {
+        try {
+          const { data: clientData, error: clientError } = await supabase
+            .from('clients')
+            .select('id, nom, email, telephone')
+            .match({ id: bonData.client_id })
+            .single();
+
+          if (clientData && !clientError) {
+            bonData.client = clientData;
+          }
+        } catch (clientErr) {
+          console.warn('Could not fetch client data:', clientErr);
+        }
+      }
+
+      return { data: bonData, error: null };
+    } catch (error) {
+      console.error('Error in getBonById:', error);
+      return { data: null, error };
+    }
   },
 
   createBon: async (bonData: {
@@ -2120,6 +2250,8 @@ export const api = {
     colis_id?: string;
     motif?: string;
     notes?: string;
+    source_type?: 'admin' | 'livreur';
+    entreprise_id?: string;
   }) => {
     const { data, error } = await supabase
       .from('bons')
@@ -2132,6 +2264,76 @@ export const api = {
       .single();
 
     return { data, error };
+  },
+
+  createBonWithColis: async (bonData: {
+    id?: string;
+    user_id: string;
+    type: 'distribution' | 'paiement' | 'retour';
+    statut: string;
+    date_creation?: string;
+    nb_colis?: number;
+    client_id?: string;
+    montant?: number;
+    date_echeance?: string;
+    motif?: string;
+    notes?: string;
+    source_type?: 'admin' | 'livreur';
+    entreprise_id?: string;
+  }, colisIds: string[]) => {
+    try {
+      // Create the bon
+      const { data: bon, error: bonError } = await supabase
+        .from('bons')
+        .insert([bonData])
+        .select(`
+          *,
+          client:clients(id, nom, email, telephone),
+          colis:colis(id, client:clients(nom))
+        `)
+        .single();
+
+      if (bonError) {
+        return { data: null, error: bonError };
+      }
+
+      if (!bon) {
+        return { data: null, error: new Error('Failed to create bon') };
+      }
+
+      // Link colis to bon
+      if (colisIds && colisIds.length > 0) {
+        const bonColisRecords = colisIds.map(colisId => ({
+          bon_id: bon.id,
+          colis_id: colisId,
+          date_assigned: new Date().toISOString(),
+        }));
+
+        const { error: bonColisError } = await supabase
+          .from('bon_colis')
+          .insert(bonColisRecords);
+
+        if (bonColisError) {
+          console.error('Error linking colis to bon:', bonColisError);
+          // Still return the bon even if linking fails
+        }
+
+        if (colisIds && colisIds.length > 0 && bonData.user_id) {
+          const { error: colisUpdateError } = await supabase
+            .from('colis')
+            .update({ livreur_id: bonData.user_id })
+            .in('id', colisIds);
+
+          if (colisUpdateError) {
+            console.error('Error updating colis livreur_id:', colisUpdateError);
+          }
+        }
+      }
+
+      return { data: bon, error: null };
+    } catch (err: any) {
+      return { data: null, error: err };
+    }
   },
 
   updateBon: async (id: string, updates: {

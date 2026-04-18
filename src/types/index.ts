@@ -128,6 +128,10 @@ export interface Bon {
   // Common fields
   notes?: string; // Additional notes
 
+  // Relations
+  user?: User;
+}
+
   // Relations (populated by joins)
   user?: User; // The user who created/owns the bon
   client?: Client; // For paiement/retour bons

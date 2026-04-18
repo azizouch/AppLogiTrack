@@ -360,11 +360,11 @@ export function ImportColisModal({ open, onOpenChange, onImportSuccess }: Import
             }
           }
 
-          // Generate UUID for colis
-          const colisId = generateUUID();
+          // Use the file tracking code as the colis ID
+          const colisId = String(colisData.code_suivi || '').trim() || generateUUID();
           console.log('Creating colis with ID:', colisId, 'for client:', clientId);
 
-          // Create colis with generated ID
+          // Create colis with the tracking code as ID
           const { data: colisResult, error: colisError } = await api.createColis({
             id: colisId,
             client_id: clientId,
@@ -429,11 +429,13 @@ export function ImportColisModal({ open, onOpenChange, onImportSuccess }: Import
             user_id: user.id,
             type: 'distribution',
             statut: 'En cours',
+            source_type: 'admin',
             colis_id: importedColisIds[0], // Reference the first colis
             montant: totalMontant,
             nb_colis: successfulImports,
             date_creation: new Date().toISOString(),
             notes: notesText,
+            entreprise_id: selectedEntrepriseId,
           });
 
           if (bonResult.error) {
@@ -441,7 +443,32 @@ export function ImportColisModal({ open, onOpenChange, onImportSuccess }: Import
             toast.warning('Colis importés mais bon non généré');
           } else {
             console.log('✓ Bon distribution created successfully:', bonResult.data?.id);
-            toast.success(`Bon distribution #${bonResult.data?.id?.slice(0, 8)} créé pour ${successfulImports} colis`);
+            
+            // Add all colis to bon_colis junction table
+            try {
+              const bonColisRecords = importedColisIds.map(colisId => ({
+                bon_id: bonId,
+                colis_id: colisId,
+                date_assigned: new Date().toISOString(),
+              }));
+
+              console.log('📌 Adding colis to bon_colis table:', bonColisRecords);
+              
+              const { error: bonColisError } = await supabase
+                .from('bon_colis')
+                .insert(bonColisRecords);
+
+              if (bonColisError) {
+                console.error('Erreur lors de l\'ajout des colis au bon:', bonColisError);
+                toast.warning('Bon créé mais erreur lors de la liaison avec les colis');
+              } else {
+                console.log('✓ Colis successfully linked to bon');
+                toast.success(`Bon distribution #${bonResult.data?.id?.slice(0, 8)} créé pour ${successfulImports} colis`);
+              }
+            } catch (linkError: any) {
+              console.error('Erreur lors de la liaison des colis:', linkError);
+              toast.warning('Bon créé mais erreur lors de la liaison avec les colis');
+            }
           }
         } catch (bonError: any) {
           console.error('Erreur lors de la création du bon distribution:', bonError);

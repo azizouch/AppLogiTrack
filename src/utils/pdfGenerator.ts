@@ -1,9 +1,18 @@
-import { Bon } from '@/types';
+import { Bon, Colis } from '@/types';
 import jsPDF from 'jspdf';
 import * as XLSX from 'xlsx';
 
+interface CompanySettings {
+  id?: string;
+  nom?: string;
+  adresse?: string;
+  ville?: string;
+  telephone?: string;
+  email?: string;
+}
+
 // Print bon - opens print dialog (like the screenshot)
-export const printBon = async (bon: Bon): Promise<void> => {
+export const printBon = async (bon: Bon, colis?: Colis[], companySettings?: CompanySettings): Promise<void> => {
   // Use the same content as PDF download for consistency
   const htmlContent = `
     <!DOCTYPE html>
@@ -50,8 +59,7 @@ export const printBon = async (bon: Bon): Promise<void> => {
       </style>
     </head>
     <body>
-      ${generatePDFContent(bon)}
-    </body>
+        ${generatePDFContent(bon, colis, companySettings)}
     </html>
   `;
 
@@ -109,7 +117,7 @@ export const printBon = async (bon: Bon): Promise<void> => {
 };
 
 // Generate simplified PDF content (optimized for PDF generation)
-const generatePDFContent = (bon: Bon): string => {
+const generatePDFContent = (bon: Bon, colisData?: Colis[], companySettings?: CompanySettings): string => {
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('fr-FR', {
       year: 'numeric',
@@ -135,8 +143,19 @@ const generatePDFContent = (bon: Bon): string => {
     }
   };
 
-  // Sample colis data
-  const sampleColis = [
+  const bonUser = bon.user || {} as any;
+  const hasBonUser = Boolean(bon.user && (bon.user.nom || bon.user.prenom || bon.user.email || bon.user.telephone));
+
+  // Use real colis data if provided, otherwise use sample data
+  const sampleColis = (colisData && colisData.length > 0 ? colisData.map(colis => ({
+    reference: colis.id || '',
+    client: colis.client?.nom || '',
+    entreprise: colis.entreprise?.nom || '',
+    adresse: colis.client?.adresse || '',
+    prix: colis.prix || 0,
+    frais: colis.frais || 0,
+    statut: colis.statut || 'En cours'
+  })) : [
     {
       reference: 'COL-2024-001',
       client: 'Ahmed Benali',
@@ -173,7 +192,7 @@ const generatePDFContent = (bon: Bon): string => {
       frais: 15.00,
       statut: 'En cours'
     }
-  ];
+  ]) as any;
 
   const totalPrix = sampleColis.reduce((sum, colis) => sum + colis.prix, 0);
   const totalFrais = sampleColis.reduce((sum, colis) => sum + colis.frais, 0);
@@ -218,34 +237,58 @@ const generatePDFContent = (bon: Bon): string => {
           ` : ''}
         </div>
 
-        ${bon.user ? `
+        ${(bon.source_type === 'livreur' || hasBonUser) ? `
         <div style="flex: 1; background: #f8fafc; padding: 15px; border-radius: 6px; border-left: 2px solid #2563eb;">
           <h3 style="color: #2563eb; margin-bottom: 12px; font-size: 16px; margin-top: 0; font-weight: bold;">Livreur assigné</h3>
           <div style="margin-bottom: 8px; font-size: 14px;">
-            <strong style="color: #475569;">Nom:</strong> <span style="color: #1e293b;">${bon.user.nom} ${bon.user.prenom || ''}</span>
+            <strong style="color: #475569;">Nom:</strong> <span style="color: #1e293b;">${(bonUser.nom || '') + ' ' + (bonUser.prenom || '')}</span>
           </div>
-          ${bon.user.email ? `
+          ${bonUser.email ? `
           <div style="margin-bottom: 8px; font-size: 14px;">
-            <strong style="color: #475569;">Email:</strong> <span style="color: #1e293b;">${bon.user.email}</span>
-          </div>
-          ` : ''}
-          ${bon.user.telephone ? `
-          <div style="margin-bottom: 8px; font-size: 14px;">
-            <strong style="color: #475569;">Téléphone:</strong> <span style="color: #1e293b;">${bon.user.telephone}</span>
+            <strong style="color: #475569;">Email:</strong> <span style="color: #1e293b;">${bonUser.email}</span>
           </div>
           ` : ''}
-          ${bon.user.vehicule ? `
+          ${bonUser.telephone ? `
           <div style="margin-bottom: 8px; font-size: 14px;">
-            <strong style="color: #475569;">Véhicule:</strong> <span style="color: #1e293b;">${bon.user.vehicule}</span>
+            <strong style="color: #475569;">Téléphone:</strong> <span style="color: #1e293b;">${bonUser.telephone}</span>
           </div>
           ` : ''}
-          ${bon.user.zone ? `
+          ${bonUser.vehicule ? `
           <div style="margin-bottom: 8px; font-size: 14px;">
-            <strong style="color: #475569;">Zone:</strong> <span style="color: #1e293b;">${bon.user.zone}</span>
+            <strong style="color: #475569;">Véhicule:</strong> <span style="color: #1e293b;">${bonUser.vehicule}</span>
+          </div>
+          ` : ''}
+          ${bonUser.zone ? `
+          <div style="margin-bottom: 8px; font-size: 14px;">
+            <strong style="color: #475569;">Zone:</strong> <span style="color: #1e293b;">${bonUser.zone}</span>
           </div>
           ` : ''}
         </div>
-        ` : ''}
+        ` : `
+        <div style="flex: 1; background: #f0f9ff; padding: 15px; border-radius: 6px; border-left: 2px solid #0284c7;">
+          <h3 style="color: #0284c7; margin-bottom: 12px; font-size: 16px; margin-top: 0; font-weight: bold;">Informations Entreprise</h3>
+          ${companySettings?.nom ? `
+          <div style="margin-bottom: 8px; font-size: 14px;">
+            <strong style="color: #475569;">Entreprise:</strong> <span style="color: #1e293b;">${companySettings.nom}</span>
+          </div>
+          ` : ''}
+          ${companySettings?.adresse ? `
+          <div style="margin-bottom: 8px; font-size: 14px;">
+            <strong style="color: #475569;">Adresse:</strong> <span style="color: #1e293b;">${companySettings.adresse}${companySettings.ville ? ', ' + companySettings.ville : ''}</span>
+          </div>
+          ` : ''}
+          ${companySettings?.telephone ? `
+          <div style="margin-bottom: 8px; font-size: 14px;">
+            <strong style="color: #475569;">Téléphone:</strong> <span style="color: #1e293b;">${companySettings.telephone}</span>
+          </div>
+          ` : ''}
+          ${companySettings?.email ? `
+          <div style="margin-bottom: 8px; font-size: 14px;">
+            <strong style="color: #475569;">Email:</strong> <span style="color: #1e293b;">${companySettings.email}</span>
+          </div>
+          ` : ''}
+        </div>
+        `}
       </div>
 
       <!-- Colis Table -->
@@ -343,7 +386,7 @@ const wrapText = (pdf: jsPDF, text: string, maxWidth: number): string[] => {
 };
 
 // Download bon as PDF file directly to Downloads folder (using same HTML content as print)
-export const downloadBonAsPDF = async (bon: Bon): Promise<void> => {
+export const downloadBonAsPDF = async (bon: Bon, colis?: Colis[], companySettings?: CompanySettings): Promise<void> => {
   try {
     // Use the exact same HTML content as printBon for consistency
     const htmlContent = `
@@ -392,7 +435,7 @@ export const downloadBonAsPDF = async (bon: Bon): Promise<void> => {
         </style>
       </head>
       <body>
-        ${generatePDFContent(bon)}
+        ${generatePDFContent(bon, colis, companySettings)}
       </body>
       </html>
     `;
@@ -654,39 +697,61 @@ const generateMobilePDFContent = (bon: Bon): string => {
           ` : ''}
         </div>
 
-        ${bon.user ? `
+        ${(bon.source_type === 'livreur' || hasBonUser) ? `
         <div style="background: #f8fafc; padding: 8px; border-radius: 3px; border-left: 2px solid #2563eb;">
           <h3 style="color: #2563eb; margin-bottom: 6px; font-size: 11px; margin-top: 0; font-weight: bold;">Livreur assigné</h3>
           <div style="margin-bottom: 4px; font-size: 9px;">
             <strong style="color: #475569;">Nom:</strong>
-            <span style="color: #1e293b; margin-left: 2px;">${bon.user.nom} ${bon.user.prenom || ''}</span>
+            <span style="color: #1e293b; margin-left: 2px;">${`${bonUser.nom || ''} ${bonUser.prenom || ''}`.trim()}</span>
           </div>
-          ${bon.user.email ? `
+          ${bonUser.email ? `
           <div style="margin-bottom: 4px; font-size: 9px;">
             <strong style="color: #475569;">Email:</strong>
-            <span style="color: #1e293b; margin-left: 2px;">${bon.user.email}</span>
+            <span style="color: #1e293b; margin-left: 2px;">${bonUser.email}</span>
           </div>
           ` : ''}
-          ${bon.user.telephone ? `
+          ${bonUser.telephone ? `
           <div style="margin-bottom: 4px; font-size: 9px;">
             <strong style="color: #475569;">Tél:</strong>
-            <span style="color: #1e293b; margin-left: 2px;">${bon.user.telephone}</span>
+            <span style="color: #1e293b; margin-left: 2px;">${bonUser.telephone}</span>
           </div>
           ` : ''}
-          ${bon.user.vehicule ? `
+          ${bonUser.vehicule ? `
           <div style="margin-bottom: 4px; font-size: 9px;">
             <strong style="color: #475569;">Véhicule:</strong>
-            <span style="color: #1e293b; margin-left: 2px;">${bon.user.vehicule}</span>
+            <span style="color: #1e293b; margin-left: 2px;">${bonUser.vehicule}</span>
           </div>
           ` : ''}
-          ${bon.user.zone ? `
+          ${bonUser.zone ? `
           <div style="font-size: 9px; margin-bottom: 2px;">
             <strong style="color: #475569;">Zone:</strong>
-            <span style="color: #1e293b; margin-left: 2px;">${bon.user.zone}</span>
+            <span style="color: #1e293b; margin-left: 2px;">${bonUser.zone}</span>
           </div>
           ` : ''}
         </div>
-        ` : ''}
+        ` : `
+        <div style="background: #eff6ff; padding: 8px; border-radius: 3px; border-left: 2px solid #0284c7;">
+          <h3 style="color: #0284c7; margin-bottom: 6px; font-size: 11px; margin-top: 0; font-weight: bold;">Infos Entreprise</h3>
+          ${companySettings?.nom ? `
+          <div style="margin-bottom: 4px; font-size: 9px;">
+            <strong style="color: #475569;">Entreprise:</strong>
+            <span style="color: #1e293b; margin-left: 2px;">${companySettings.nom}</span>
+          </div>
+          ` : ''}
+          ${companySettings?.telephone ? `
+          <div style="margin-bottom: 4px; font-size: 9px;">
+            <strong style="color: #475569;">Tél:</strong>
+            <span style="color: #1e293b; margin-left: 2px;">${companySettings.telephone}</span>
+          </div>
+          ` : ''}
+          ${companySettings?.email ? `
+          <div style="font-size: 9px;">
+            <strong style="color: #475569;">Email:</strong>
+            <span style="color: #1e293b; margin-left: 2px;">${companySettings.email}</span>
+          </div>
+          ` : ''}
+        </div>
+        `}
       </div>
 
         <!-- First Page Colis -->
@@ -802,7 +867,7 @@ const generateMobilePDFContent = (bon: Bon): string => {
 };
 
 // Download mobile-optimized PDF with proper page breaks (no html2canvas)
-export const downloadMobileBonAsPDF = async (bon: Bon): Promise<void> => {
+export const downloadMobileBonAsPDF = async (bon: Bon, colisData?: Colis[], companySettings?: CompanySettings): Promise<void> => {
   try {
     const pdf = new jsPDF('p', 'mm', 'a4');
     const pageWidth = 210; // A4 width in mm
@@ -835,8 +900,16 @@ export const downloadMobileBonAsPDF = async (bon: Bon): Promise<void> => {
       }
     };
 
-    // Sample colis data
-    const sampleColis = [
+    // Use real colis data if provided, otherwise use sample data
+    const sampleColis = (colisData && colisData.length > 0 ? colisData.map(colis => ({
+      reference: colis.id || '',
+      client: colis.client?.nom || '',
+      entreprise: colis.entreprise?.nom || '',
+      adresse: colis.client?.adresse || '',
+      prix: colis.prix || 0,
+      frais: colis.frais || 0,
+      statut: colis.statut || 'En cours'
+    })) : [
       {
         reference: 'COL-2024-001',
         client: 'Ahmed Benali',
@@ -882,7 +955,7 @@ export const downloadMobileBonAsPDF = async (bon: Bon): Promise<void> => {
         frais: 18.00,
         statut: 'En cours'
       }
-    ];
+    ]) as any;
 
     const totalPrix = sampleColis.reduce((sum, colis) => sum + colis.prix, 0);
     const totalFrais = sampleColis.reduce((sum, colis) => sum + colis.frais, 0);
@@ -1032,39 +1105,27 @@ export const downloadMobileBonAsPDF = async (bon: Bon): Promise<void> => {
       pdf.setFontSize(8);
       pdf.setTextColor(0, 0, 0);
       let livreurY = bonInfoStartY + 12;
-      pdf.text(`Nom: ${bon.user.nom} ${bon.user.prenom || ''}`, rightColumnX + 3, livreurY);
+      pdf.text(`Nom: ${bonUser.nom || ''} ${bonUser.prenom || ''}`.trim(), rightColumnX + 3, livreurY);
       livreurY += 5;
 
-      if (bon.user.email) {
-        pdf.text(`Email: ${bon.user.email}`, rightColumnX + 3, livreurY);
+      if (bonUser.email) {
+        pdf.text(`Email: ${bonUser.email}`, rightColumnX + 3, livreurY);
         livreurY += 5;
       }
-      if (bon.user.telephone) {
-        pdf.text(`Tél: ${bon.user.telephone}`, rightColumnX + 3, livreurY);
+      if (bonUser.telephone) {
+        pdf.text(`Tél: ${bonUser.telephone}`, rightColumnX + 3, livreurY);
         livreurY += 5;
       }
-      if (bon.user.vehicule) {
-        pdf.text(`Véhicule: ${bon.user.vehicule}`, rightColumnX + 3, livreurY);
+      if (bonUser.vehicule) {
+        pdf.text(`Véhicule: ${bonUser.vehicule}`, rightColumnX + 3, livreurY);
         livreurY += 5;
       }
-      if (bon.user.zone) {
-        pdf.text(`Zone: ${bon.user.zone}`, rightColumnX + 3, livreurY);
+      if (bonUser.zone) {
+        pdf.text(`Zone: ${bonUser.zone}`, rightColumnX + 3, livreurY);
         livreurY += 5;
       }
     }
 
-    currentY = bonInfoStartY + 50; // Move past both cards
-
-    // Colis List Header with spacing matching colis cards
-    currentY += 5; // Top spacing same as between colis cards
-    pdf.setFontSize(12);
-    pdf.setFont('helvetica', 'bold'); // Make title bold
-    pdf.setTextColor(37, 99, 235);
-    pdf.text(`Liste des Colis (${sampleColis.length} colis)`, margin, currentY);
-    pdf.setFont('helvetica', 'normal'); // Reset font weight
-    currentY += 5; // Bottom spacing same as between colis cards
-
-    // Process each colis individually to avoid page breaks
     sampleColis.forEach((colis) => {
       const colisHeight = 38; // Estimated height for each colis card
 
@@ -1207,7 +1268,7 @@ export const downloadMobileBonAsPDF = async (bon: Bon): Promise<void> => {
 };
 
 // Download bon as Excel file
-export const downloadBonAsExcel = async (bon: Bon): Promise<void> => {
+export const downloadBonAsExcel = async (bon: Bon, colisData?: Colis[], companySettings?: CompanySettings): Promise<void> => {
   try {
     // Helper function for date formatting
     const formatDate = (dateString: string) => {
@@ -1219,48 +1280,45 @@ export const downloadBonAsExcel = async (bon: Bon): Promise<void> => {
         minute: '2-digit'
       });
     };
-    // Sample colis data (same as used in PDF generation)
-    const sampleColis = [
+    
+    // Use real colis data if provided, otherwise use sample data
+    const sampleColis = colisData && colisData.length > 0 ? colisData : [
       {
         id: 'COL-2025-0001',
-        reference: 'REF-001',
-        nom: 'Smartphone Samsung Galaxy',
+        client_id: '1',
+        statut: 'en cours',
+        date_creation: new Date().toISOString(),
         prix: 2500.00,
         frais: 25.00,
-        statut: 'en cours',
-        client: { nom: 'Ahmed Benali', telephone: '+212 6 12 34 56 78' },
-        adresse_livraison: '123 Rue Mohammed V, Casablanca'
-      },
+        client: { nom: 'Ahmed Benali', telephone: '+212 6 12 34 56 78', adresse: '123 Rue Mohammed V, Casablanca' } as any,
+      } as Colis,
       {
         id: 'COL-2025-0002',
-        reference: 'REF-002',
-        nom: 'Ordinateur portable HP',
+        client_id: '2',
+        statut: 'en cours',
+        date_creation: new Date().toISOString(),
         prix: 4200.00,
         frais: 35.00,
-        statut: 'en cours',
-        client: { nom: 'Fatima Alaoui', telephone: '+212 6 98 76 54 32' },
-        adresse_livraison: '456 Avenue Hassan II, Rabat'
-      },
+        client: { nom: 'Fatima Alaoui', telephone: '+212 6 98 76 54 32', adresse: '456 Avenue Hassan II, Rabat' } as any,
+      } as Colis,
       {
         id: 'COL-2025-0003',
-        reference: 'REF-003',
-        nom: 'Tablette iPad Air',
+        client_id: '3',
+        statut: 'en cours',
+        date_creation: new Date().toISOString(),
         prix: 3200.00,
         frais: 30.00,
-        statut: 'en cours',
-        client: { nom: 'Omar Tazi', telephone: '+212 6 11 22 33 44' },
-        adresse_livraison: '789 Boulevard Zerktouni, Casablanca'
-      },
+        client: { nom: 'Omar Tazi', telephone: '+212 6 11 22 33 44', adresse: '789 Boulevard Zerktouni, Casablanca' } as any,
+      } as Colis,
       {
         id: 'COL-2025-0004',
-        reference: 'REF-004',
-        nom: 'Montre connectée Apple Watch',
+        client_id: '4',
+        statut: 'en cours',
+        date_creation: new Date().toISOString(),
         prix: 1800.00,
         frais: 20.00,
-        statut: 'en cours',
-        client: { nom: 'Aicha Bennani', telephone: '+212 6 55 66 77 88' },
-        adresse_livraison: '321 Rue Allal Ben Abdellah, Fès'
-      }
+        client: { nom: 'Aicha Bennani', telephone: '+212 6 55 66 77 88', adresse: '321 Rue Allal Ben Abdellah, Fès' } as any,
+      } as Colis,
     ];
 
     // Calculate totals
@@ -1283,9 +1341,9 @@ export const downloadBonAsExcel = async (bon: Bon): Promise<void> => {
     sheetData.push(['', '', '', '', '', '', '', '', '', '']);
     sheetData.push(['ID Bon:', bon.id, '', '', 'Type:', 'Distribution', '', '', '', '']);
     sheetData.push(['Date de création:', formatDate(bon.date_creation), '', '', 'Statut:', bon.statut, '', '', '', '']);
-    sheetData.push(['Livreur:', bon.user ? `${bon.user.nom} ${bon.user.prenom || ''}`.trim() : 'N/A', '', '', 'Zone:', bon.user?.zone || 'N/A', '', '', '', '']);
-    sheetData.push(['Email:', bon.user?.email || 'N/A', '', '', 'Téléphone:', bon.user?.telephone || 'N/A', '', '', '', '']);
-    sheetData.push(['Véhicule:', bon.user?.vehicule || 'N/A', '', '', 'Nombre de colis:', bon.nb_colis || sampleColis.length, '', '', '', '']);
+    sheetData.push(['Livreur:', (bon.source_type === 'livreur' || bon.user) ? (bon.user ? `${bon.user.nom} ${bon.user.prenom || ''}`.trim() : 'Non assigné') : (companySettings?.nom || 'Non assigné'), '', '', 'Zone:', (bon.source_type === 'livreur' || bon.user) ? (bon.user?.zone || 'Non assigné') : (companySettings?.ville || 'Non assigné'), '', '', '', '']);
+    sheetData.push(['Email:', (bon.source_type === 'livreur' || bon.user) ? (bon.user?.email || 'Non assigné') : (companySettings?.email || 'Non assigné'), '', '', 'Téléphone:', (bon.source_type === 'livreur' || bon.user) ? (bon.user?.telephone || 'Non assigné') : (companySettings?.telephone || 'Non assigné'), '', '', '', '']);
+    sheetData.push(['Véhicule:', (bon.source_type === 'livreur' || bon.user) ? (bon.user?.vehicule || 'Non assigné') : 'Non applicable', '', '', 'Nombre de colis:', bon.nb_colis || sampleColis.length, '', '', '', '']);
     sheetData.push(['', '', '', '', '', '', '', '', '', '']);
     sheetData.push(['Notes:', bon.notes || 'Aucune note', '', '', '', '', '', '', '', '']);
     sheetData.push(['', '', '', '', '', '', '', '', '', '']);
@@ -1298,10 +1356,9 @@ export const downloadBonAsExcel = async (bon: Bon): Promise<void> => {
     // Table headers
     sheetData.push([
       'Référence',
-      'Nom du produit',
       'Client',
       'Téléphone',
-      'Adresse de livraison',
+      'Adresse',
       'Frais (DH)',
       'Prix (DH)',
       'Total (DH)',
@@ -1312,15 +1369,14 @@ export const downloadBonAsExcel = async (bon: Bon): Promise<void> => {
     // Table data
     sampleColis.forEach(colis => {
       sheetData.push([
-        colis.reference,
-        colis.nom,
-        colis.client.nom,
-        colis.client.telephone,
-        colis.adresse_livraison,
-        colis.frais.toFixed(2),
-        colis.prix.toFixed(2),
-        (colis.prix + colis.frais).toFixed(2),
-        colis.statut,
+        colis.id || '',
+        colis.client?.nom || '',
+        colis.client?.telephone || '',
+        colis.client?.adresse || '',
+        (colis.frais || 0).toFixed(2),
+        (colis.prix || 0).toFixed(2),
+        ((colis.prix || 0) + (colis.frais || 0)).toFixed(2),
+        colis.statut || '',
         bon.user?.zone || 'N/A'
       ]);
     });

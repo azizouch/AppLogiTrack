@@ -7,14 +7,25 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { api } from '@/lib/supabase';
-import { Bon } from '@/types';
+import { Bon, Colis } from '@/types';
 import { downloadBonAsPDF, downloadMobileBonAsPDF, printBon, downloadBonAsExcel } from '@/utils/pdfGenerator';
+
+interface CompanySettings {
+  id?: string;
+  nom?: string;
+  adresse?: string;
+  ville?: string;
+  telephone?: string;
+  email?: string;
+}
 
 export function BonDetails() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [bon, setBon] = useState<Bon | null>(null);
+  const [colis, setColis] = useState<Colis[]>([]);
+  const [companySettings, setCompanySettings] = useState<CompanySettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
   const [downloadingMobilePdf, setDownloadingMobilePdf] = useState(false);
@@ -24,6 +35,7 @@ export function BonDetails() {
   useEffect(() => {
     if (id) {
       fetchBonDetails();
+      fetchCompanySettings();
     }
   }, [id]);
 
@@ -31,38 +43,20 @@ export function BonDetails() {
     try {
       setLoading(true);
 
-      // Try to fetch real data first
-      try {
-        const { data, error } = await api.getBonById(id!);
+      // Fetch bon data from API
+      const { data, error } = await api.getBonById(id!);
 
-        if (!error && data) {
-          setBon(data);
-          return;
-        }
-      } catch (apiError) {
-        console.log('API call failed, using sample data:', apiError);
+      if (error || !data) {
+        console.error('Error fetching bon:', error);
+        setBon(null);
+        setColis([]);
+        return;
       }
 
-      // Fallback to sample data for demonstration
-      const sampleBon: Bon = {
-        id: id || 'BD-2025-0001',
-        type: 'distribution',
-        statut: 'en cours',
-        date_creation: new Date().toISOString(),
-        nb_colis: 4,
-        notes: 'Livraison prioritaire - Contacter le client avant livraison',
-        user: {
-          id: 'user-1',
-          nom: 'Alami',
-          prenom: 'Mohammed',
-          email: 'mohammed.alami@logitrack.ma',
-          telephone: '+212 6 12 34 56 78',
-          vehicule: 'Renault Kangoo - AB-1234-CD',
-          zone: 'Casablanca Centre'
-        }
-      };
+      setBon(data);
 
-      setBon(sampleBon);
+      // Fetch related colis based on bon type
+      await fetchRelatedColis(data);
 
     } catch (error) {
       console.error('Error in fetchBonDetails:', error);
@@ -71,8 +65,39 @@ export function BonDetails() {
         description: 'Une erreur est survenue lors du chargement',
         variant: 'destructive',
       });
+      setBon(null);
+      setColis([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchRelatedColis = async (bon: Bon) => {
+    try {
+      let colisData: Colis[] = [];
+
+      // Fetch colis from bon_colis junction table
+      const { data, error } = await api.getColisByBonId(bon.id);
+
+      if (!error && data) {
+        colisData = data;
+      }
+
+      setColis(colisData);
+    } catch (error) {
+      console.error('Error fetching related colis:', error);
+      setColis([]);
+    }
+  };
+
+  const fetchCompanySettings = async () => {
+    try {
+      const { data, error } = await api.getCompanySettings();
+      if (!error && data) {
+        setCompanySettings(data);
+      }
+    } catch (error) {
+      console.error('Error fetching company settings:', error);
     }
   };
 
@@ -112,7 +137,7 @@ export function BonDetails() {
     try {
       setDownloadingPdf(true);
 
-      await downloadBonAsPDF(bon);
+      await downloadBonAsPDF(bon, colis, companySettings || undefined);
 
       toast({
         title: 'PDF téléchargé',
@@ -138,7 +163,7 @@ export function BonDetails() {
       setDownloadingMobilePdf(true);
 
       // Use the original mobile PDF generator
-      await downloadMobileBonAsPDF(bon);
+      await downloadMobileBonAsPDF(bon, colis, companySettings || undefined);
 
       toast({
         title: 'PDF Mobile téléchargé',
@@ -163,7 +188,7 @@ export function BonDetails() {
     try {
       setPrinting(true);
 
-      await printBon(bon);
+      await printBon(bon, colis, companySettings || undefined);
 
       toast({
         title: 'Impression',
@@ -188,7 +213,7 @@ export function BonDetails() {
     try {
       setDownloadingExcel(true);
 
-      await downloadBonAsExcel(bon);
+      await downloadBonAsExcel(bon, colis, companySettings || undefined);
 
       toast({
         title: 'Excel téléchargé',
@@ -219,7 +244,7 @@ export function BonDetails() {
 
   if (!bon) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-3">
         <div className="flex flex-col items-center justify-center py-12">
           <AlertCircle className="h-12 w-12 text-gray-400 mb-4" />
           <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Bon non trouvé</h3>
@@ -234,7 +259,7 @@ export function BonDetails() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div className="space-y-3 md:space-y-2">
@@ -251,20 +276,20 @@ export function BonDetails() {
           </div>
 
           {/* Title and status - single line on tablet (md+), stacked on mobile */}
-          <div className="flex items-center gap-2 md:gap-3">
+          <div className="flex items-center justify-between gap-2 md:gap-3">
             <Truck className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-            <h1 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">
+            <h1 className="text-lg md:text-xl sm:text-xl font-bold text-gray-900 dark:text-white truncate w-[200px] sm:w-[250px] block">
               Bon : {bon.id}
             </h1>
-            <div className="hidden md:block">
+            <div className="">
               {getStatusBadge(bon.statut)}
             </div>
           </div>
 
-          {/* Status badge for mobile and small tablet */}
+          {/* Status badge for mobile and small tablet
           <div className="block md:hidden -mt-1 ml-7">
             {getStatusBadge(bon.statut)}
-          </div>
+          </div> */}
         </div>
 
         <div className="flex gap-2 w-full lg:w-auto lg:gap-3">
@@ -347,7 +372,7 @@ export function BonDetails() {
       </div>
 
       {/* Main Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6">
         {/* Informations générales */}
         <Card>
           <CardHeader>
@@ -449,79 +474,71 @@ export function BonDetails() {
         )}
       </div>
 
-      {/* Sample Colis Section - for demonstration - Full Width */}
+      {/* Colis Section - Real Data */}
       <Card className="mt-6">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Package className="h-5 w-5" />
-            Liste des Colis ({bon?.nb_colis || 4} colis)
+            Liste des Colis ({colis.length} colis)
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-            <AlertCircle className="h-4 w-4 inline mr-2" />
-            Données d'exemple - En attente de l'implémentation de la relation colis
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm min-w-[800px]">
-              <thead>
-                <tr className="border-b border-gray-200 dark:border-gray-700">
-                  <th className="text-left py-2 px-3 font-medium text-gray-500 dark:text-gray-400">Référence</th>
-                  <th className="text-left py-2 px-3 font-medium text-gray-500 dark:text-gray-400">Client</th>
-                  <th className="text-left py-2 px-3 font-medium text-gray-500 dark:text-gray-400">Entreprise</th>
-                  <th className="text-left py-2 px-3 font-medium text-gray-500 dark:text-gray-400">Adresse</th>
-                  <th className="text-right py-2 px-3 font-medium text-gray-500 dark:text-gray-400">Prix</th>
-                  <th className="text-right py-2 px-3 font-medium text-gray-500 dark:text-gray-400">Frais</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr className="border-b border-gray-100 dark:border-gray-800">
-                  <td className="py-3 px-3 font-mono text-xs">COL-2024-001</td>
-                  <td className="py-3 px-3">Ahmed Benali</td>
-                  <td className="py-3 px-3">TechCorp SARL</td>
-                  <td className="py-3 px-3 text-xs">123 Rue Mohammed V, Casablanca</td>
-                  <td className="py-3 px-3 text-right font-medium text-green-600 whitespace-nowrap w-24">250.00 DH</td>
-                  <td className="py-3 px-3 text-right font-medium text-blue-600 whitespace-nowrap w-24">25.00 DH</td>
-                </tr>
-                <tr className="border-b border-gray-100 dark:border-gray-800">
-                  <td className="py-3 px-3 font-mono text-xs">COL-2024-002</td>
-                  <td className="py-3 px-3">Fatima Zahra</td>
-                  <td className="py-3 px-3">Digital Solutions</td>
-                  <td className="py-3 px-3 text-xs">456 Avenue Hassan II, Rabat</td>
-                  <td className="py-3 px-3 text-right font-medium text-green-600 whitespace-nowrap w-24">180.50 DH</td>
-                  <td className="py-3 px-3 text-right font-medium text-blue-600 whitespace-nowrap w-24">20.00 DH</td>
-                </tr>
-                <tr className="border-b border-gray-100 dark:border-gray-800">
-                  <td className="py-3 px-3 font-mono text-xs">COL-2024-003</td>
-                  <td className="py-3 px-3">Omar Alami</td>
-                  <td className="py-3 px-3">Import Export Co</td>
-                  <td className="py-3 px-3 text-xs">789 Boulevard Zerktouni, Marrakech</td>
-                  <td className="py-3 px-3 text-right font-medium text-green-600 whitespace-nowrap w-24">320.75 DH</td>
-                  <td className="py-3 px-3 text-right font-medium text-blue-600 whitespace-nowrap w-24">30.00 DH</td>
-                </tr>
-                <tr className="border-b border-gray-100 dark:border-gray-800">
-                  <td className="py-3 px-3 font-mono text-xs">COL-2024-004</td>
-                  <td className="py-3 px-3">Aicha Mansouri</td>
-                  <td className="py-3 px-3">Fashion Store</td>
-                  <td className="py-3 px-3 text-xs">321 Rue de la Liberté, Fès</td>
-                  <td className="py-3 px-3 text-right font-medium text-green-600 whitespace-nowrap w-24">95.25 DH</td>
-                  <td className="py-3 px-3 text-right font-medium text-blue-600 whitespace-nowrap w-24">15.00 DH</td>
-                </tr>
-              </tbody>
-              <tfoot>
-                <tr className="border-t-2 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800">
-                  <td colSpan={3} className="py-3 px-3 font-semibold">TOTAL</td>
-                  <td className="py-3 px-3 text-right font-bold text-green-700 whitespace-nowrap" colSpan={2}>846.50 DH</td>
-                  <td className="py-3 px-3 text-right font-bold text-blue-700 whitespace-nowrap">90.00 DH</td>
-                </tr>
-                <tr className="bg-gray-100 dark:bg-gray-700">
-                  <td colSpan={4} className="py-3 px-3 font-bold">TOTAL GÉNÉRAL</td>
-                  <td className="py-3 px-3 text-right font-bold text-gray-900 dark:text-white whitespace-nowrap" colSpan={2}>936.50 DH</td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
+          {colis.length === 0 ? (
+            <div className="text-center py-8">
+              <Package className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+              <p className="text-gray-500 dark:text-gray-400">Aucun colis associé à ce bon</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm min-w-[900px]">
+                <thead>
+                  <tr className="border-b border-gray-200 dark:border-gray-700">
+                    <th className="text-left py-2 px-3 font-medium text-gray-500 dark:text-gray-400">Référence</th>
+                    <th className="text-left py-2 px-3 font-medium text-gray-500 dark:text-gray-400">Client</th>
+                    <th className="text-left py-2 px-3 font-medium text-gray-500 dark:text-gray-400">Entreprise</th>
+                    <th className="text-left py-2 px-3 font-medium text-gray-500 dark:text-gray-400">Adresse</th>
+                    <th className="text-right py-2 px-3 font-medium text-gray-500 dark:text-gray-400">Prix</th>
+                    <th className="text-right py-2 px-3 font-medium text-gray-500 dark:text-gray-400">Frais</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {colis.map((col) => (
+                    <tr key={col.id} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                      <td className="py-3 px-3 font-mono text-xs text-gray-900 dark:text-white">{col.id}</td>
+                      <td className="py-3 px-3 text-gray-900 dark:text-white">{col.client?.nom || 'N/A'}</td>
+                      <td className="py-3 px-3 text-gray-900 dark:text-white">{col.entreprise?.nom || 'N/A'}</td>
+                      <td className="py-3 px-3 text-xs text-gray-600 dark:text-gray-400">{col.client?.adresse || 'N/A'}</td>
+                      <td className="py-3 px-3 text-right font-medium text-green-600 dark:text-green-400 whitespace-nowrap">
+                        {col.prix ? `${col.prix.toFixed(2)} DH` : '-'}
+                      </td>
+                      <td className="py-3 px-3 text-right font-medium text-blue-600 dark:text-blue-400 whitespace-nowrap">
+                        {col.frais ? `${col.frais.toFixed(2)} DH` : '-'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+                {colis.length > 0 && (
+                  <tfoot>
+                    <tr className="border-t-2 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800">
+                      <td colSpan={4} className="py-3 px-3 font-semibold text-gray-900 dark:text-white">TOTAL</td>
+                      <td className="py-3 px-3 text-right font-bold text-green-700 dark:text-green-400 whitespace-nowrap">
+                        {colis.reduce((sum, col) => sum + (col.prix || 0), 0).toFixed(2)} DH
+                      </td>
+                      <td className="py-3 px-3 text-right font-bold text-blue-700 dark:text-blue-400 whitespace-nowrap">
+                        {colis.reduce((sum, col) => sum + (col.frais || 0), 0).toFixed(2)} DH
+                      </td>
+                    </tr>
+                    <tr className="bg-gray-100 dark:bg-gray-700">
+                      <td colSpan={4} className="py-3 px-3 font-bold text-gray-900 dark:text-white">TOTAL GÉNÉRAL</td>
+                      <td colSpan={2} className="py-3 px-3 text-right font-bold text-gray-900 dark:text-white whitespace-nowrap">
+                        {(colis.reduce((sum, col) => sum + (col.prix || 0) + (col.frais || 0), 0)).toFixed(2)} DH
+                      </td>
+                    </tr>
+                  </tfoot>
+                )}
+              </table>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

@@ -5,11 +5,13 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TablePagination } from '@/components/ui/table-pagination';
-import { Plus, Search, RefreshCw, Eye, Download, FileSpreadsheet, RotateCcw } from 'lucide-react';
+import { Plus, Search, RefreshCw, Eye, Download, FileSpreadsheet, RotateCcw, Filter, PanelLeftOpen, X } from 'lucide-react';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { api } from '@/lib/supabase';
 import { Bon } from '@/types';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useToast } from '@/hooks/use-toast';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { downloadBonAsExcel } from '@/utils/pdfGenerator';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -17,7 +19,10 @@ export function MesRetour() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { state: authState } = useAuth();
+  const isMobile = useIsMobile();
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState<string>('all');
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [bons, setBons] = useState<Bon[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -44,7 +49,9 @@ export function MesRetour() {
 
       const { data, error, count, totalPages: pages, hasNextPage: hasNext, hasPrevPage: hasPrev } = await api.getBons({
         type: 'retour',
+        sourceType: 'livreur',
         userId,
+        statut: selectedStatus && selectedStatus !== 'all' ? selectedStatus : undefined,
         search: debouncedSearchTerm,
         sortBy: 'recent',
         page: currentPage,
@@ -72,10 +79,10 @@ export function MesRetour() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [debouncedSearchTerm, currentPage, itemsPerPage, authState.user?.id]);
+  }, [debouncedSearchTerm, selectedStatus, currentPage, itemsPerPage, authState.user?.id]);
 
   useEffect(() => { fetchBons(); }, [fetchBons]);
-  useEffect(() => { if (currentPage !== 1) setCurrentPage(1); }, [debouncedSearchTerm]);
+  useEffect(() => { if (currentPage !== 1) setCurrentPage(1); }, [debouncedSearchTerm, selectedStatus]);
 
   const handleRefresh = () => fetchBons(true);
 
@@ -84,7 +91,11 @@ export function MesRetour() {
   const handleDownloadExcel = async (bon: Bon) => {
     try {
       setDownloadingExcel(bon.id);
-      await downloadBonAsExcel(bon);
+      
+      // Fetch colis data
+      const { data: colisData } = await api.getColisByBonId(bon.id);
+      
+      await downloadBonAsExcel(bon, colisData || undefined, companySettings || undefined);
       toast({ title: 'Excel téléchargé' });
     } catch (error) {
       console.error('Error downloading Excel:', error);
@@ -113,10 +124,86 @@ export function MesRetour() {
           </div>
         </div>
 
-        <div className="relative w-full">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-          <Input placeholder="Rechercher un bon de retour par numéro ou statut" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10 w-full" />
-        </div>
+        {isMobile ? (
+          <div className="space-y-3 w-full">
+            <div className="flex items-center justify-between w-full gap-2">
+              <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+                <SheetTrigger asChild>
+                  <button className="flex items-center gap-2 cursor-pointer hover:opacity-70 transition-opacity">
+                    <svg className="h-4 w-4 text-gray-600 dark:text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+                    </svg>
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Filtres</span>
+                    <PanelLeftOpen className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+                  </button>
+                </SheetTrigger>
+                <SheetContent side="left" className="w-[300px] sm:w-[400px]">
+                  <SheetHeader>
+                    <SheetTitle>Filtrer les Bons de Retour</SheetTitle>
+                    <SheetDescription>Personnalisez votre vue avec les filtres ci-dessous</SheetDescription>
+                  </SheetHeader>
+                  <div className="space-y-4 mt-6">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Statut</label>
+                      <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Filtrer par statut" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Tous les statuts</SelectItem>
+                          <SelectItem value="En attente">En attente</SelectItem>
+                          <SelectItem value="Accepté">Accepté</SelectItem>
+                          <SelectItem value="Rejeté">Rejeté</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </SheetContent>
+              </Sheet>
+              <Button variant="outline" onClick={() => { setSelectedStatus('all'); setSearchTerm(''); setCurrentPage(1); }} disabled={!searchTerm && selectedStatus === 'all'} className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700 h-9 px-2">
+                <X className="h-4 w-4" />
+                <span className="hidden sm:inline ml-1">Réinitialiser</span>
+              </Button>
+            </div>
+            <div className="relative w-full">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input placeholder="Rechercher par numéro" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10 w-full h-9" />
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Filtres</span>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" onClick={() => { setSelectedStatus('all'); setSearchTerm(''); setCurrentPage(1); }} disabled={!searchTerm && selectedStatus === 'all'} className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700 h-8 px-2 text-xs">
+                  <X className="h-4 w-4 mr-1" />
+                  Réinitialiser
+                </Button>
+                <Button variant="outline" onClick={handleRefresh} disabled={refreshing} className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700 h-8 px-2 text-xs">
+                  <RefreshCw className={`h-4 w-4 mr-1 ${refreshing ? 'animate-spin' : ''}`} />
+                  Actualiser
+                </Button>
+              </div>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-3 w-full">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input placeholder="Rechercher un bon de retour par numéro" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10 w-full" />
+              </div>
+              <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+                <SelectTrigger className="w-full sm:w-48">
+                  <SelectValue placeholder="Filtrer par statut" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tous les statuts</SelectItem>
+                  <SelectItem value="En attente">En attente</SelectItem>
+                  <SelectItem value="Accepté">Accepté</SelectItem>
+                  <SelectItem value="Rejeté">Rejeté</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="space-y-4">

@@ -3,17 +3,22 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetTrigger } from '@/components/ui/sheet';
 import { TablePagination } from '@/components/ui/table-pagination';
-import { Plus, Search, FileText, Edit, Trash2, CreditCard, RefreshCw, Eye, Download, FileSpreadsheet } from 'lucide-react';
+import { Plus, Search, FileText, Edit, Trash2, CreditCard, RefreshCw, Eye, Download, FileSpreadsheet, X, Filter, PanelLeftOpen } from 'lucide-react';
 import { api } from '@/lib/supabase';
-import { Bon } from '@/types';
+import { Bon, Entreprise } from '@/types';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useToast } from '@/hooks/use-toast';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { downloadBonAsExcel } from '@/utils/pdfGenerator';
 
 export function Paiement() {
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState<string>('all');
+  const [selectedEntreprise, setSelectedEntreprise] = useState<string>('all');
   const [bons, setBons] = useState<Bon[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -24,7 +29,25 @@ export function Paiement() {
   const [hasNextPage, setHasNextPage] = useState(false);
   const [hasPrevPage, setHasPrevPage] = useState(false);
   const [downloadingExcel, setDownloadingExcel] = useState<string | null>(null);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [entreprises, setEntreprises] = useState<Entreprise[]>([]);
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
+
+  // Fetch entreprises
+  const fetchEntreprises = useCallback(async () => {
+    try {
+      const { data, error } = await api.getEntreprises();
+      if (!error && data) {
+        setEntreprises(data);
+      }
+    } catch (error) {
+      console.error('Error fetching entreprises:', error);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchEntreprises();
+  }, [fetchEntreprises]);
 
   // Fetch bons data
   const fetchBons = useCallback(async (isRefresh = false) => {
@@ -44,6 +67,9 @@ export function Paiement() {
 
       const { data, error, count, totalPages: pages, hasNextPage: hasNext, hasPrevPage: hasPrev } = await api.getBons({
         type: 'paiement',
+        sourceType: 'admin',
+        statut: selectedStatus && selectedStatus !== 'all' ? selectedStatus : undefined,
+        entrepriseId: selectedEntreprise && selectedEntreprise !== 'all' ? selectedEntreprise : undefined,
         search: debouncedSearchTerm,
         sortBy: 'recent',
         page: currentPage,
@@ -71,19 +97,22 @@ export function Paiement() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [debouncedSearchTerm, currentPage, itemsPerPage]);
+  }, [debouncedSearchTerm, selectedStatus, selectedEntreprise, currentPage, itemsPerPage]);
 
   // Initial fetch and when search changes
   useEffect(() => {
     fetchBons();
   }, [fetchBons]);
 
-  // Reset to first page when search changes
+  // Reset to first page when search or filter changes
   useEffect(() => {
     if (currentPage !== 1) {
       setCurrentPage(1);
     }
-  }, [debouncedSearchTerm]);
+  }, [debouncedSearchTerm, selectedStatus, selectedEntreprise]);
+
+  const hasActiveFilters = searchTerm || selectedStatus !== 'all' || selectedEntreprise !== 'all';
+  const resetFilters = () => { setSearchTerm(''); setSelectedStatus('all'); setSelectedEntreprise('all'); setCurrentPage(1); };
 
   // Handle refresh
   const handleRefresh = () => {
@@ -109,21 +138,10 @@ export function Paiement() {
     try {
       setDownloadingExcel(bon.id);
 
-      // Add user data to bon object
-      const bonWithUser = {
-        ...bon,
-        user: {
-          id: 'user-1',
-          nom: 'Alami',
-          prenom: 'Mohammed',
-          email: 'mohammed.alami@logitrack.ma',
-          telephone: '+212 6 12 34 56 78',
-          vehicule: 'Renault Kangoo - AB-1234-CD',
-          zone: 'Casablanca Centre'
-        }
-      };
+      // Fetch colis data
+      const { data: colisData } = await api.getColisByBonId(bon.id);
 
-      await downloadBonAsExcel(bonWithUser);
+      await downloadBonAsExcel(bon, colisData || undefined, companySettings || undefined, companySettings || undefined);
 
       toast({
         title: 'Excel téléchargé',
@@ -143,7 +161,7 @@ export function Paiement() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {/* Header */}
       <div className="space-y-3">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
@@ -152,15 +170,6 @@ export function Paiement() {
             Bons de paiement
           </h1>
           <div className="flex gap-2 w-full sm:w-auto">
-            <Button
-              variant="outline"
-              onClick={handleRefresh}
-              disabled={refreshing}
-              className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700 flex-1 sm:flex-none"
-            >
-              <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-              Actualiser
-            </Button>
             <Button className="bg-blue-600 hover:bg-blue-700 flex-1 sm:flex-none">
               <Plus className="h-4 w-4 mr-2" />
               <span className="sm:hidden">Nouveau</span>
@@ -169,16 +178,166 @@ export function Paiement() {
           </div>
         </div>
 
-        {/* Search Section */}
-        <div className="relative w-full">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-          <Input
-            placeholder="Recherchez des bons de paiement par ID, client ou statut"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 w-full"
-          />
-        </div>
+        {/* Filters */}
+        {isMobile ? (
+          <div className="space-y-3 w-full">
+            {/* Row 1: Filtres button + Actualiser button */}
+            <div className="flex items-center justify-between w-full gap-2">
+              <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+                <SheetTrigger asChild>
+                  <button className="flex items-center gap-2 cursor-pointer hover:opacity-70 transition-opacity">
+                    <svg className="h-4 w-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.707A1 1 0 013 7V4z" />
+                    </svg>
+                    <span className="font-medium text-gray-700 dark:text-gray-300">Filtres</span>
+                    <PanelLeftOpen className="h-4 w-4 text-gray-700 dark:text-gray-300" />
+                  </button>
+                </SheetTrigger>
+                <SheetContent side="left" className="w-[300px] sm:w-[400px]">
+                  <SheetHeader>
+                    <SheetTitle>Filtres des Bons</SheetTitle>
+                    <SheetDescription>
+                      Filtrez les bons de paiement par statut et entreprise
+                    </SheetDescription>
+                  </SheetHeader>
+                  <div className="space-y-4 mt-6">
+                    <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+                      <SelectTrigger className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
+                        <SelectValue placeholder="Filtrer par statut" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Tous les statuts</SelectItem>
+                        <SelectItem value="En attente">En attente</SelectItem>
+                        <SelectItem value="Payé">Payé</SelectItem>
+                        <SelectItem value="Annulé">Annulé</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Select value={selectedEntreprise} onValueChange={setSelectedEntreprise}>
+                      <SelectTrigger className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
+                        <SelectValue placeholder="Sélectionner une entreprise" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Toutes les entreprises</SelectItem>
+                        {entreprises.map((entreprise) => (
+                          <SelectItem key={entreprise.id} value={entreprise.id}>
+                            {entreprise.nom}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {hasActiveFilters && (
+                      <Button
+                        onClick={() => {
+                          resetFilters();
+                          setIsFilterOpen(false);
+                        }}
+                        variant="outline"
+                        size="sm"
+                        className="w-full text-sm"
+                      >
+                        <X className="mr-2 h-4 w-4" />
+                        Réinitialiser
+                      </Button>
+                    )}
+                  </div>
+                </SheetContent>
+              </Sheet>
+              <Button
+                variant="outline"
+                onClick={() => fetchBons(true)}
+                disabled={refreshing}
+                className="border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700 px-2 py-1 text-xs h-9 inline-flex items-center gap-2"
+              >
+                {refreshing ? (
+                  <RefreshCw className="h-3 w-3 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-3 w-3" />
+                )}
+                Actualiser
+              </Button>
+            </div>
+            {/* Row 2: Search input only */}
+            <div className="relative w-full">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input
+                placeholder="Rechercher..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 w-full bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600"
+              />
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Filter className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                <span className="font-medium text-gray-700 dark:text-gray-300">Filtres</span>
+              </div>
+              <div className="flex items-center gap-2">
+                {hasActiveFilters && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={resetFilters}
+                    className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                  >
+                    <X className="mr-2 h-4 w-4" />
+                    Réinitialiser
+                  </Button>
+                )}
+                <Button
+                  variant="outline"
+                  onClick={() => fetchBons(true)}
+                  disabled={refreshing}
+                  className="text-sm"
+                >
+                  {refreshing ? (
+                    <RefreshCw className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <RefreshCw className="h-4 w-4" />
+                  )}
+                  Actualiser
+                </Button>
+              </div>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-3 w-full">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input
+                  placeholder="Rechercher un bon..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 w-full"
+                />
+              </div>
+              <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+                <SelectTrigger className="w-full sm:w-48 flex-1">
+                  <SelectValue placeholder="Filtrer par statut" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tous les statuts</SelectItem>
+                  <SelectItem value="En attente">En attente</SelectItem>
+                  <SelectItem value="Payé">Payé</SelectItem>
+                  <SelectItem value="Annulé">Annulé</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={selectedEntreprise} onValueChange={setSelectedEntreprise}>
+                <SelectTrigger className="w-full sm:w-48 flex-1">
+                  <SelectValue placeholder="Filtrer par entreprise" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Toutes les entreprises</SelectItem>
+                  {entreprises.map((entreprise) => (
+                    <SelectItem key={entreprise.id} value={entreprise.id}>
+                      {entreprise.nom}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Table Container */}

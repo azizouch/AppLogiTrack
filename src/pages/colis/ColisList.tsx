@@ -1056,7 +1056,13 @@ export function ColisList() {
                         onCheckedChange={(checked) => handleSelectColis(colisItem.id, checked as boolean)}
                       />
                     </TableCell>
-                    <TableCell className="text-sm text-gray-900 dark:text-gray-100">{colisItem.id}</TableCell>
+                    <TableCell className="w-[150px] block">
+                      <div className="flex items-center justify-center min-h-[40px]">
+                        <span className="truncate">
+                          {colisItem.id}
+                        </span>
+                      </div>
+                    </TableCell>
                     <TableCell className="text-gray-900 dark:text-gray-100">{colisItem.client?.nom}</TableCell>
                     <TableCell className="text-gray-900 dark:text-gray-100">{colisItem.client?.telephone || '-'}</TableCell>
                     <TableCell className="text-gray-900 dark:text-gray-100">{colisItem.entreprise?.nom}</TableCell>
@@ -1090,7 +1096,7 @@ export function ColisList() {
           </Table>
         </div>
 
-        {/* Pagination */}8
+        {/* Pagination */}
         {totalPages > 1 && (
           <TablePagination
             currentPage={currentPage}
