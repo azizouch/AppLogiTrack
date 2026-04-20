@@ -19,6 +19,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
 import { TablePagination } from '@/components/ui/table-pagination';
 import {
@@ -60,7 +70,7 @@ const STATUS_TYPES = [
 interface StatusFormData {
   nom: string;
   couleur: string;
-  ordre: number;
+  ordre: number | '';
   type: string;
   actif: boolean;
 }
@@ -87,6 +97,8 @@ export function Statuts() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingStatut, setEditingStatut] = useState<Statut | null>(null);
   const [saving, setSaving] = useState(false);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [deletingStatutId, setDeletingStatutId] = useState<string | null>(null);
 
   // Form data
   const [formData, setFormData] = useState<StatusFormData>({
@@ -212,6 +224,15 @@ export function Statuts() {
     });
   };
 
+  const hasDuplicateStatut = (name: string, type: string, excludeId?: string) => {
+    const normalizedName = name.trim().toLowerCase();
+    return statuts.some(statut =>
+      statut.type === type &&
+      statut.nom.trim().toLowerCase() === normalizedName &&
+      statut.id !== excludeId
+    );
+  };
+
   // Handle add statut
   const handleAddStatut = async () => {
     if (!formData.nom.trim()) {
@@ -223,19 +244,48 @@ export function Statuts() {
       return;
     }
 
+    const ordreNumber = Number(formData.ordre);
+
+    if (!ordreNumber || ordreNumber < 1) {
+      toast({
+        title: 'Erreur',
+        description: "L'ordre doit être un nombre valide",
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (hasDuplicateStatut(formData.nom, formData.type)) {
+      toast({
+        title: 'Erreur',
+        description: 'Un statut avec ce nom existe déjà pour ce type',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const conflictStatuses = statuts
+      .filter(statut => statut.type === formData.type && statut.ordre >= ordreNumber)
+      .sort((a, b) => b.ordre - a.ordre);
+
     setSaving(true);
     try {
+      for (const status of conflictStatuses) {
+        const { error: reorderError } = await api.updateStatut(status.id, {
+          ordre: status.ordre + 1,
+        });
+        if (reorderError) throw reorderError;
+      }
+
       const { error } = await api.createStatut({
         nom: formData.nom.trim(),
         couleur: formData.couleur,
-        ordre: formData.ordre,
+        ordre: ordreNumber, // ✅ FIXED
         type: formData.type,
         actif: formData.actif,
       });
 
-      if (error) {
-        throw new Error(error.message);
-      }
+      if (error) throw new Error(error.message);
 
       toast({
         title: 'Succès',
@@ -258,24 +308,53 @@ export function Statuts() {
 
   // Handle edit statut
   const handleEditStatut = async () => {
-    if (!editingStatut || !formData.nom.trim()) {
+    if (!editingStatut || !formData.nom.trim()) return;
+
+    const ordreNumber = Number(formData.ordre);
+
+    if (!ordreNumber || ordreNumber < 1) {
+      toast({
+        title: 'Erreur',
+        description: "L'ordre doit être un nombre valide",
+        variant: 'destructive',
+      });
       return;
     }
 
+    if (hasDuplicateStatut(formData.nom, formData.type, editingStatut.id)) {
+      toast({
+        title: 'Erreur',
+        description: 'Un autre statut avec ce nom existe déjà pour ce type',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const conflictingStatus = statuts.find(statut =>
+      statut.type === formData.type &&
+      statut.id !== editingStatut.id &&
+      statut.ordre === ordreNumber
+    );
+
     setSaving(true);
     try {
+      if (conflictingStatus && ordreNumber !== editingStatut.ordre) {
+        const { error: swapError } = await api.updateStatut(conflictingStatus.id, {
+          ordre: editingStatut.ordre,
+        });
+        if (swapError) throw swapError;
+      }
+
       const { error } = await api.updateStatut(editingStatut.id, {
         nom: formData.nom.trim(),
         couleur: formData.couleur,
-        ordre: formData.ordre,
+        ordre: ordreNumber, // ✅ FIXED
         type: formData.type,
         actif: formData.actif,
         updated_at: new Date().toISOString(),
       });
 
-      if (error) {
-        throw new Error(error.message);
-      }
+      if (error) throw new Error(error.message);
 
       toast({
         title: 'Succès',
@@ -297,15 +376,18 @@ export function Statuts() {
       setSaving(false);
     }
   };
-
   // Handle delete statut
   const handleDeleteStatut = async (id: string) => {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer ce statut ?')) {
-      return;
-    }
+    setDeletingStatutId(id);
+    setIsDeleteConfirmOpen(true);
+  };
+
+  // Confirm delete
+  const confirmDelete = async () => {
+    if (!deletingStatutId) return;
 
     try {
-      const { error } = await api.deleteStatut(id);
+      const { error } = await api.deleteStatut(deletingStatutId);
 
       if (error) {
         throw new Error(error.message);
@@ -316,6 +398,8 @@ export function Statuts() {
         description: 'Le statut a été supprimé avec succès',
       });
 
+      setIsDeleteConfirmOpen(false);
+      setDeletingStatutId(null);
       fetchStatuts();
     } catch (error) {
       console.error('Error deleting statut:', error);
@@ -549,9 +633,9 @@ export function Statuts() {
       )}
 
       {/* Status List */}
-      <div className="space-y-4">
+      <div className="space-y-3">
         <div className="space-y-3 sm:space-y-0">
-          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-1 gap-3">
             <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">Liste des statuts</h2>
             <div className="flex justify-between items-center sm:gap-4">
               <div className="flex items-center gap-2">
@@ -724,7 +808,7 @@ export function Statuts() {
                 Couleur
               </Label>
               <Select value={formData.couleur} onValueChange={(value) => setFormData({ ...formData, couleur: value })}>
-                <SelectTrigger className="mt-1 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white">
+                <SelectTrigger id="couleur" className="mt-1 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600">
@@ -770,7 +854,15 @@ export function Statuts() {
                 type="number"
                 min="1"
                 value={formData.ordre}
-                onChange={(e) => setFormData({ ...formData, ordre: parseInt(e.target.value) || 1 })}
+                onFocus={(e) => (e.target as HTMLInputElement).select()}
+                onChange={(e) => {
+                  const value = e.target.value;
+
+                  setFormData((prev) => ({
+                    ...prev,
+                    ordre: value === '' ? '' : Number(value),
+                  }));
+                }}
                 className="mt-1 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
               />
             </div>
@@ -781,7 +873,7 @@ export function Statuts() {
                 Type de statut
               </Label>
               <Select value={formData.type} onValueChange={(value) => setFormData({ ...formData, type: value })}>
-                <SelectTrigger className="mt-1 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white">
+                <SelectTrigger id="type" className="mt-1 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600">
@@ -828,6 +920,29 @@ export function Statuts() {
         </DialogContent>
       </Dialog>
 
+      {/* Delete Confirmation Modal */}
+      <AlertDialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
+        <AlertDialogContent className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer ce statut?</AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-600 dark:text-gray-400">
+              Êtes-vous sûr de vouloir supprimer ce statut? Cette action ne peut pas être annulée.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white hover:bg-gray-300 dark:hover:bg-gray-600">
+              Annuler
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Edit Status Modal */}
       <Dialog open={isEditModalOpen} onOpenChange={handleCloseModal}>
         <DialogContent
@@ -859,7 +974,7 @@ export function Statuts() {
                 Couleur
               </Label>
               <Select value={formData.couleur} onValueChange={(value) => setFormData({ ...formData, couleur: value })}>
-                <SelectTrigger className="mt-1 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white">
+                <SelectTrigger id="edit-couleur" className="mt-1 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600">
@@ -905,7 +1020,13 @@ export function Statuts() {
                 type="number"
                 min="1"
                 value={formData.ordre}
-                onChange={(e) => setFormData({ ...formData, ordre: parseInt(e.target.value) || 1 })}
+                onFocus={(e) => (e.target as HTMLInputElement).select()}
+                onChange={(e) => {
+                  const num = parseInt(e.target.value);
+                  if (!isNaN(num)) {
+                    setFormData({ ...formData, ordre: num });
+                  }
+                }}
                 className="mt-1 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
               />
             </div>
@@ -916,7 +1037,7 @@ export function Statuts() {
                 Type de statut
               </Label>
               <Select value={formData.type} onValueChange={(value) => setFormData({ ...formData, type: value })}>
-                <SelectTrigger className="mt-1 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white">
+                <SelectTrigger id="edit-type" className="mt-1 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600">

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Download, Printer, Truck, Calendar, User, Package, FileText, AlertCircle, FileSpreadsheet } from 'lucide-react';
+import { ArrowLeft, Download, Printer, Truck, Calendar, User, Package, FileText, AlertCircle, FileSpreadsheet, History } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { api } from '@/lib/supabase';
 import { Bon, Colis } from '@/types';
 import { downloadBonAsPDF, downloadMobileBonAsPDF, printBon, downloadBonAsExcel } from '@/utils/pdfGenerator';
+import { BonHistoryModal } from '@/components/modals/BonHistoryModal';
 
 interface CompanySettings {
   id?: string;
@@ -31,6 +32,7 @@ export function BonDetails() {
   const [downloadingMobilePdf, setDownloadingMobilePdf] = useState(false);
   const [downloadingExcel, setDownloadingExcel] = useState(false);
   const [printing, setPrinting] = useState(false);
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -368,6 +370,15 @@ export function BonDetails() {
               </>
             )}
           </Button>
+
+          <Button
+            onClick={() => setIsHistoryModalOpen(true)}
+            variant="outline"
+            className="border-purple-600 text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/20 dark:hover:text-purple-400 flex-1 lg:flex-none"
+          >
+            <History className="mr-2 h-4 w-4" />
+            <span className="hidden sm:inline">Historique</span>
+          </Button>
         </div>
       </div>
 
@@ -541,6 +552,16 @@ export function BonDetails() {
           )}
         </CardContent>
       </Card>
+
+      {/* Bon History Modal */}
+      {bon && (
+        <BonHistoryModal
+          open={isHistoryModalOpen}
+          onOpenChange={setIsHistoryModalOpen}
+          bonId={bon.id}
+          bonReference={bon.id}
+        />
+      )}
     </div>
   );
 }

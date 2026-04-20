@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Header } from './Header';
@@ -7,7 +6,7 @@ import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { ScrollToTop } from '@/components/ui/scroll-to-top';
 import { QRScannerProvider, useQRScanner } from '@/contexts/QRScannerContext';
 import { ColisQRScanner, ScannedColisDetailsModal, ScannedColisTableModal } from '@/components/colis';
-import { api } from '@/lib/supabase';
+import { api, supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -42,7 +41,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
     window.scrollTo(0, 0);
   }, [location.pathname]);
 
-  const handleScanComplete = (colis: any) => {
+  const handleScanComplete = async (colis: any) => {
     if (colis.livreur_id && colis.livreur_id !== state.user?.id) {
       toast.error('Ce colis est déjà assigné à un autre livreur');
       setScannedColis(null);
@@ -55,6 +54,34 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
       return false;
     }
 
+    // Check if colis is part of a completed bon
+    try {
+      const { data: bonColisList } = await api.getColisById(colis.id);
+      if (bonColisList) {
+        // Fetch all bons to check if this colis is part of a completed one
+        const { data: allBons } = await api.getBons({
+          limit: 1000,
+          sourceType: 'livreur'
+        });
+        
+        if (Array.isArray(allBons)) {
+          for (const bon of allBons) {
+            if ((bon.statut === 'Complété' || bon.statut === 'Complete' || bon.statut === 'Livré') && bon.id) {
+              // Check if this colis is part of this bon
+              const { data: bonColis } = await api.getColisByBonId(bon.id);
+              if (bonColis && bonColis.some((c: any) => c.id === colis.id)) {
+                toast.error(`Ce colis est déjà finalisé dans le bon #${bon.id}`);
+                setScannedColis(null);
+                return false;
+              }
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error checking colis bon status:', error);
+    }
+
     // Close table modal so details modal shows alone
     setIsScannedColisTableOpen(false);
     setScannedColis(colis);
@@ -63,7 +90,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
     return true;
   };
 
-  const handleAssociateColis = (colis: any) => {
+  const handleAssociateColis = async (colis: any) => {
     // Check if colis is already in the scanned list
     const isAlreadyScanned = scannedColisList.some(item => item.id === colis.id);
     if (isAlreadyScanned) {
@@ -103,16 +130,12 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
 
     setFinalizingBon(true);
     try {
-      // Generate bon ID
-      const bonId = `BON-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-      
       // Calculate total amount
       const totalAmount = scannedColisList.reduce((sum, colis) => sum + (colis.prix || 0), 0);
       
       // Create bon with source_type: 'livreur', type: 'distribution'
       const { data: bon, error: bonError } = await api.createBonWithColis(
         {
-          id: bonId,
           user_id: state.user?.id || '',
           type: 'distribution',
           statut: 'En cours',
@@ -129,7 +152,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
         throw bonError;
       }
 
-      toast.success(`Bon de distribution #${bonId.slice(0, 8)} créé avec ${scannedColisList.length} colis`);
+      toast.success(`Bon de distribution #${bon?.id} créé avec ${scannedColisList.length} colis`);
       
       // Clear the scanned colis list and close modals
       clearScannedColisList();

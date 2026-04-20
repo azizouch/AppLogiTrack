@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TablePagination } from '@/components/ui/table-pagination';
-import { Plus, Search, Download, Eye, Printer, Truck, RefreshCw, FileSpreadsheet, Filter, PanelLeftOpen, X } from 'lucide-react';
+import { Plus, Search, Download, Eye, Printer, Truck, RefreshCw, FileSpreadsheet, Filter, PanelLeftOpen, X, History } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetTrigger } from '@/components/ui/sheet';
 import { api } from '@/lib/supabase';
 import { Bon, User } from '@/types';
@@ -13,6 +13,7 @@ import { useDebounce } from '@/hooks/useDebounce';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { downloadBonAsPDF, downloadMobileBonAsPDF, printBon, downloadBonAsExcel } from '@/utils/pdfGenerator';
+import { BonHistoryModal } from '@/components/modals/BonHistoryModal';
 
 export function AllLivreurDistribution() {
   const navigate = useNavigate();
@@ -35,7 +36,23 @@ export function AllLivreurDistribution() {
   const [downloadingExcel, setDownloadingExcel] = useState<string | null>(null);
   const [printing, setPrinting] = useState<string | null>(null);
   const [livreurs, setLivreurs] = useState<User[]>([]);
+  const [companySettings, setCompanySettings] = useState<any>(null);
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+  const [selectedBonForHistory, setSelectedBonForHistory] = useState<Bon | null>(null);
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
+
+  // Fetch company settings on mount
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const { data } = await api.getCompanySettings();
+        if (data) setCompanySettings(data);
+      } catch (error) {
+        console.error('Error fetching company settings:', error);
+      }
+    };
+    fetchSettings();
+  }, []);
 
   // Fetch livreurs
   const fetchLivreurs = useCallback(async () => {
@@ -179,6 +196,11 @@ export function AllLivreurDistribution() {
       console.error('Error downloading Excel:', error);
       toast({ title: 'Erreur', description: 'Impossible de générer le fichier Excel', variant: 'destructive' });
     } finally { setDownloadingExcel(null); }
+  };
+
+  const handleOpenHistory = (bon: Bon) => {
+    setSelectedBonForHistory(bon);
+    setIsHistoryModalOpen(true);
   };
 
   return (
@@ -356,8 +378,8 @@ export function AllLivreurDistribution() {
         )}
       </div>
 
-      <div className="space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between py-4 gap-3">
+      <div className="space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between py-1 gap-3">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Liste de Bons de Distribution</h2>
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
@@ -413,6 +435,7 @@ export function AllLivreurDistribution() {
                       <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
                         <div className="flex items-center space-x-1">
                           <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => navigate(`/bons/${bon.id}`)} title="Voir les détails"><Eye className="h-4 w-4" /></Button>
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => handleOpenHistory(bon)} title="Historique"><History className="h-4 w-4" /></Button>
                           <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => handlePrint(bon)} disabled={printing === bon.id} title="Imprimer">{printing === bon.id ? <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600"></div> : <Printer className="h-4 w-4" />}</Button>
                           <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => handleDownloadPdf(bon)} disabled={downloadingPdf === bon.id} title="Télécharger PDF">{downloadingPdf === bon.id ? <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600"></div> : <Download className="h-4 w-4" />}</Button>
                           <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => handleDownloadExcel(bon)} disabled={downloadingExcel === bon.id} title="Télécharger Excel">{downloadingExcel === bon.id ? <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600"></div> : <FileSpreadsheet className="h-4 w-4" />}</Button>
@@ -434,6 +457,16 @@ export function AllLivreurDistribution() {
 
       {!loading && totalCount > 0 && (
         <TablePagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} hasNextPage={hasNextPage} hasPrevPage={hasPrevPage} totalItems={totalCount} itemsPerPage={itemsPerPage} />
+      )}
+
+      {/* History Modal */}
+      {selectedBonForHistory && (
+        <BonHistoryModal
+          open={isHistoryModalOpen}
+          onOpenChange={setIsHistoryModalOpen}
+          bonId={selectedBonForHistory.id}
+          bonReference={selectedBonForHistory.id}
+        />
       )}
     </div>
   );

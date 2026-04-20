@@ -431,9 +431,9 @@ export function ColisLivres() {
       )}
 
       {/* Colis Table */}
-      <div className="space-y-4">
+      <div className="space-y-3">
         <div className="space-y-3 sm:space-y-0">
-          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-1 gap-3">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
               <span>Liste Colis Livrés</span>
             </h2>

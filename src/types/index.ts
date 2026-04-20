@@ -130,10 +130,22 @@ export interface Bon {
 
   // Relations
   user?: User;
-}
-
-  // Relations (populated by joins)
-  user?: User; // The user who created/owns the bon
   client?: Client; // For paiement/retour bons
   colis?: Colis; // For retour bons
+}
+
+export interface BonHistorique {
+  id: number;
+  bon_id: string;
+  date: string;
+  type: 'distribution' | 'paiement' | 'retour';
+  utilisateur?: string;
+  statut: string;
+  notes?: string;
+  user?: {
+    id?: string;
+    nom: string;
+    prenom?: string;
+    role?: string;
+  };
 }

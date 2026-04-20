@@ -73,7 +73,7 @@
 */
 
 import { createClient, SupabaseClient, PostgrestError } from '@supabase/supabase-js'
-import { User, Client, Entreprise, Colis, Statut, HistoriqueColis, Notification, Bon } from '@/types'
+import { User, Client, Entreprise, Colis, Statut, HistoriqueColis, Notification, Bon, BonHistorique } from '@/types'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
@@ -1551,7 +1551,7 @@ export const api = {
   },
 
   // CRUD operations for Colis
-  createColis: async (colis: (Omit<Colis, 'date_creation' | 'id'> & { id?: string })) => {
+  createColis: async (colis: (Omit<Colis, 'id'> & { id?: string })) => {
     const { data, error } = await supabase
       .from('colis')
       .insert(colis)
@@ -2201,7 +2201,7 @@ export const api = {
         try {
           const { data: userData, error: userError } = await supabase
             .from('utilisateurs')
-            .select('id, nom, prenom, email, telephone, role, vehicule, zone')
+            .select('id, nom, prenom, telephone, role, vehicule, zone')
             .eq('id', bonData.user_id)
             .single();
 
@@ -2237,6 +2237,111 @@ export const api = {
     }
   },
 
+  getBonHistory: async (bonId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('bons_historique')
+        .select('*, user:utilisateurs(id, nom, prenom, role)')
+        .eq('bon_id', bonId)
+        .order('date', { ascending: true });
+
+      return { data, error };
+    } catch (error) {
+      console.error('Error fetching bon history:', error);
+      return { data: null, error };
+    }
+  },
+
+  createBonHistory: async (historyData: {
+    bon_id: string;
+    type: 'distribution' | 'paiement' | 'retour';
+    utilisateur?: string;
+    statut: string;
+    notes?: string;
+    date?: string;
+  }) => {
+    const { data, error } = await supabase
+      .from('bons_historique')
+      .insert([historyData])
+      .select()
+      .single();
+
+    return { data, error };
+  },
+
+  generateBonId: async (sourceType?: 'admin' | 'livreur', entrepriseId?: string) => {
+    try {
+      const currentYear = new Date().getFullYear();
+
+      if (sourceType === 'admin' && entrepriseId) {
+        // For admin bons: First letters of first two entreprise name words + year + sequential number
+        const { data: entreprise, error: entrepriseError } = await supabase
+          .from('entreprises')
+          .select('nom')
+          .eq('id', entrepriseId)
+          .single();
+
+        if (entrepriseError || !entreprise) {
+          console.error('Error fetching entreprise for bon ID generation:', entrepriseError);
+          throw new Error('Entreprise not found');
+        }
+
+        // Extract first letters of first two words from entreprise name
+        const words = entreprise.nom.trim().split(/\s+/);
+        const prefix = words.slice(0, 2)
+          .map(word => word.charAt(0).toUpperCase())
+          .join('') + `-${currentYear}-`;
+
+        // Get existing bons with this prefix
+        const { data: existingBons, error: bonsError } = await supabase
+          .from('bons')
+          .select('id')
+          .like('id', `${prefix}%`);
+
+        if (bonsError) {
+          console.error('Error fetching existing bons:', bonsError);
+          throw bonsError;
+        }
+
+        // Calculate next sequence number
+        const nextSequence = (existingBons || [])
+          .map((bon: any) => {
+            const suffix = bon.id?.toString().replace(prefix, '');
+            const parsed = parseInt(suffix, 10);
+            return Number.isFinite(parsed) ? parsed : 0;
+          })
+          .reduce((max, num) => Math.max(max, num), 0) + 1;
+
+        return `${prefix}${nextSequence}`;
+      } else {
+        // For livreur bons: Keep existing "BD-YYYY-N" format
+        const prefix = `BD-${currentYear}-`;
+        const { data, error } = await supabase
+          .from('bons')
+          .select('id')
+          .like('id', `${prefix}%`);
+
+        if (error) {
+          console.error('Error generating bon ID:', error);
+          throw error;
+        }
+
+        const nextSequence = (data || [])
+          .map((item: any) => {
+            const suffix = item.id?.toString().replace(prefix, '');
+            const parsed = parseInt(suffix, 10);
+            return Number.isFinite(parsed) ? parsed : 0;
+          })
+          .reduce((max, num) => Math.max(max, num), 0) + 1;
+
+        return `${prefix}${nextSequence}`;
+      }
+    } catch (error) {
+      console.error('generateBonId error:', error);
+      throw error;
+    }
+  },
+
   createBon: async (bonData: {
     id?: string;
     user_id: string;
@@ -2253,15 +2358,39 @@ export const api = {
     source_type?: 'admin' | 'livreur';
     entreprise_id?: string;
   }) => {
+    const bonDataToInsert = {
+      ...bonData,
+      id: bonData.id || await api.generateBonId(bonData.source_type, bonData.entreprise_id),
+    };
+
     const { data, error } = await supabase
       .from('bons')
-      .insert([bonData])
+      .insert([bonDataToInsert])
       .select(`
         *,
         client:clients(id, nom, email, telephone),
         colis:colis(id, client:clients(nom))
       `)
       .single();
+
+    if (data && !error) {
+      const historyPayload = {
+        bon_id: data.id,
+        type: bonData.type,
+        utilisateur: bonData.user_id,
+        statut: bonData.statut,
+        notes: bonData.notes || `Bon ${bonData.type} créé`,
+        date: bonData.date_creation || new Date().toISOString()
+      };
+
+      const { error: historyError } = await supabase
+        .from('bons_historique')
+        .insert([historyPayload]);
+
+      if (historyError) {
+        console.error('Error creating bon history entry:', historyError);
+      }
+    }
 
     return { data, error };
   },
@@ -2283,9 +2412,14 @@ export const api = {
   }, colisIds: string[]) => {
     try {
       // Create the bon
+      const bonDataToInsert = {
+        ...bonData,
+        id: bonData.id || await api.generateBonId(bonData.source_type, bonData.entreprise_id),
+      };
+
       const { data: bon, error: bonError } = await supabase
         .from('bons')
-        .insert([bonData])
+        .insert([bonDataToInsert])
         .select(`
           *,
           client:clients(id, nom, email, telephone),
@@ -2299,6 +2433,23 @@ export const api = {
 
       if (!bon) {
         return { data: null, error: new Error('Failed to create bon') };
+      }
+
+      const historyPayload = {
+        bon_id: bon.id,
+        type: bonData.type,
+        utilisateur: bonData.user_id,
+        statut: bonData.statut,
+        notes: bonData.notes || `Bon ${bonData.type} créé avec ${colisIds.length} colis`,
+        date: bonData.date_creation || new Date().toISOString()
+      };
+
+      const { error: historyError } = await supabase
+        .from('bons_historique')
+        .insert([historyPayload]);
+
+      if (historyError) {
+        console.error('Error creating bons_historique entry:', historyError);
       }
 
       // Link colis to bon
@@ -2318,14 +2469,34 @@ export const api = {
           // Still return the bon even if linking fails
         }
 
-        if (colisIds && colisIds.length > 0 && bonData.user_id) {
+        if (colisIds && colisIds.length > 0 && bonData.user_id && bonData.source_type === 'livreur') {
           const { error: colisUpdateError } = await supabase
             .from('colis')
-            .update({ livreur_id: bonData.user_id })
+            .update({
+              livreur_id: bonData.user_id,
+              statut: 'Mise en distribution',
+              date_mise_a_jour: new Date().toISOString(),
+            })
             .in('id', colisIds);
 
           if (colisUpdateError) {
             console.error('Error updating colis livreur_id:', colisUpdateError);
+          }
+
+          const historiqueRecords = colisIds.map((colisId) => ({
+            colis_id: colisId,
+            date: new Date().toISOString(),
+            statut: 'Mise en distribution',
+            utilisateur: bonData.user_id,
+            informations: `Assigné via bon ${bon.id}`,
+          }));
+
+          const { error: historiqueError } = await supabase
+            .from('historique_colis')
+            .insert(historiqueRecords);
+
+          if (historiqueError) {
+            console.error('Error creating historique_colis entries:', historiqueError);
           }
         }
       }

@@ -11,7 +11,7 @@ interface ScannedColisDetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
   colis: Colis | null;
-  onAssociate: (colis: Colis) => void;
+  onAssociate: (colis: Colis) => Promise<void>;
   loading?: boolean;
   isAlreadyAdded?: boolean;
 }
@@ -31,7 +31,7 @@ export function ScannedColisDetailsModal({
 
     setAssociating(true);
     try {
-      onAssociate(colis);
+      await onAssociate(colis);
       toast.success('Colis associé avec succès');
       onClose();
     } catch (error) {

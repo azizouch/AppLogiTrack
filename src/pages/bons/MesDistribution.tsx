@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TablePagination } from '@/components/ui/table-pagination';
-import { Plus, Search, Download, Eye, Printer, Truck, RefreshCw, FileSpreadsheet, Filter, PanelLeftOpen, X } from 'lucide-react';
+import { Plus, Search, Download, Eye, Printer, Truck, RefreshCw, FileSpreadsheet, Filter, PanelLeftOpen, X, History } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { api } from '@/lib/supabase';
 import { Bon } from '@/types';
@@ -14,6 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { downloadBonAsPDF, downloadMobileBonAsPDF, printBon, downloadBonAsExcel } from '@/utils/pdfGenerator';
 import { useAuth } from '@/contexts/AuthContext';
+import { BonHistoryModal } from '@/components/modals/BonHistoryModal';
 
 interface CompanySettings {
   id?: string;
@@ -45,6 +46,8 @@ export function MesDistribution() {
   const [downloadingPdf, setDownloadingPdf] = useState<string | null>(null);
   const [downloadingExcel, setDownloadingExcel] = useState<string | null>(null);
   const [printing, setPrinting] = useState<string | null>(null);
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+  const [selectedBonForHistory, setSelectedBonForHistory] = useState<Bon | null>(null);
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
   const fetchBons = useCallback(async (isRefresh = false) => {
@@ -183,6 +186,11 @@ export function MesDistribution() {
     } finally { setDownloadingExcel(null); }
   };
 
+  const handleOpenHistory = (bon: Bon) => {
+    setSelectedBonForHistory(bon);
+    setIsHistoryModalOpen(true);
+  };
+
   return (
     <div className="space-y-6">
       <div className="space-y-3">
@@ -291,8 +299,8 @@ export function MesDistribution() {
         )}
       </div>
 
-      <div className="space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between py-4 gap-3">
+      <div className="space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between py-1 gap-3">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Liste de mes Bons de Distribution</h2>
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
@@ -351,6 +359,7 @@ export function MesDistribution() {
                           <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => handlePrint(bon)} disabled={printing === bon.id} title="Imprimer">{printing === bon.id ? <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600"></div> : <Printer className="h-4 w-4" />}</Button>
                           <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => handleDownloadPdf(bon)} disabled={downloadingPdf === bon.id} title="Télécharger PDF">{downloadingPdf === bon.id ? <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600"></div> : <Download className="h-4 w-4" />}</Button>
                           <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => handleDownloadExcel(bon)} disabled={downloadingExcel === bon.id} title="Télécharger Excel">{downloadingExcel === bon.id ? <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600"></div> : <FileSpreadsheet className="h-4 w-4" />}</Button>
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => handleOpenHistory(bon)} title="Voir l'historique"><History className="h-4 w-4" /></Button>
                         </div>
                       </td>
                     </tr>
@@ -369,6 +378,16 @@ export function MesDistribution() {
 
       {!loading && totalCount > 0 && (
         <TablePagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} hasNextPage={hasNextPage} hasPrevPage={hasPrevPage} totalItems={totalCount} itemsPerPage={itemsPerPage} />
+      )}
+
+      {/* Bon History Modal */}
+      {selectedBonForHistory && (
+        <BonHistoryModal
+          open={isHistoryModalOpen}
+          onOpenChange={setIsHistoryModalOpen}
+          bonId={selectedBonForHistory.id}
+          bonReference={selectedBonForHistory.id}
+        />
       )}
     </div>
   );

@@ -438,14 +438,14 @@ export function ColisQRScanner({
           {/* Instructions for Camera - show when actively scanning */}
           {scanning && (
             <>
-              <div className="text-sm text-gray-600 dark:text-gray-400 space-y-2 bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-200 dark:border-blue-800">
+              {/* <div className="text-sm text-gray-600 dark:text-gray-400 space-y-2 bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-200 dark:border-blue-800">
                 <p className="font-semibold text-blue-900 dark:text-blue-100">En cours de scan...</p>
                 <ul className="list-disc list-inside space-y-1 text-xs text-blue-800 dark:text-blue-200">
                   <li>Pointez le QR code du colis vers la caméra</li>
                   <li>Le code sera détecté automatiquement</li>
                   <li>Les détails s'afficheront dans une nouvelle fenêtre</li>
                 </ul>
-              </div>
+              </div> */}
 
               {/* Action Buttons for Camera */}
               <div className="flex gap-2 pt-2">

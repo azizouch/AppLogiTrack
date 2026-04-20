@@ -429,9 +429,9 @@ export function Entreprises() {
       )}
 
       {/* Table */}
-      <div className="space-y-4">
+      <div className="space-y-3">
         <div className="space-y-3 sm:space-y-0">
-          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-1 gap-3">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Liste des Entreprises</h2>
             <div className="flex justify-between items-center sm:gap-4">
             <div className="flex items-center gap-2">
@@ -464,7 +464,7 @@ export function Entreprises() {
               <TableHead className="font-semibold text-gray-900">Adresse</TableHead>
               <TableHead className="font-semibold text-gray-900">Contact Principal</TableHead>
               <TableHead className="font-semibold text-gray-900">Colis</TableHead>
-              <TableHead className="font-semibold text-right text-gray-900">Actions</TableHead>
+              <TableHead className="font-semibold text-center text-gray-900">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

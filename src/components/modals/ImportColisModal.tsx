@@ -168,34 +168,33 @@ export function ImportColisModal({ open, onOpenChange, onImportSuccess }: Import
     const duplicateErrors: string[] = [];
     
     try {
-      // Get all existing colis to check for duplicates
+      const codesToCheck = rows
+        .map(row => String(row.code_suivi).trim())
+        .filter(code => code.length > 0);
+
+      if (codesToCheck.length === 0) {
+        return [];
+      }
+
+      // Query actual colis IDs for exact code_suivi matches.
       const { data: existingColis, error } = await supabase
         .from('colis')
-        .select('id, notes');
-      
+        .select('id')
+        .in('id', codesToCheck)
+        .limit(1000);
+
       if (error) {
         console.error('Error checking for duplicate codes:', error);
         return [];
       }
 
-      // Extract code_suivi from notes field (stored as "Code suivi: XXX...")
-      const existingCodes = new Set<string>();
-      if (existingColis) {
-        existingColis.forEach(colis => {
-          if (colis.notes) {
-            const match = colis.notes.match(/Code suivi:\s*([^\s-]+)/);
-            if (match) {
-              existingCodes.add(match[1].trim());
-            }
-          }
-        });
-      }
+      const existingIds = new Set((existingColis || []).map(colis => colis.id));
 
-      // Check each row for duplicates
-      rows.forEach((row, index) => {
-        if (existingCodes.has(row.code_suivi)) {
+      rows.forEach(row => {
+        const codeSuivi = String(row.code_suivi).trim();
+        if (codeSuivi && existingIds.has(codeSuivi)) {
           duplicateErrors.push(
-            `Colis avec CODE SUIVI "${row.code_suivi}" existe déjà en base de données`
+            `Colis avec CODE SUIVI "${codeSuivi}" existe déjà en base de données`
           );
         }
       });
@@ -320,44 +319,31 @@ export function ImportColisModal({ open, onOpenChange, onImportSuccess }: Import
           console.log('Starting import for colis:', colisData.code_suivi);
           console.log('✓ User ID for this import:', user?.id);
           
-          // Check if client already exists with same name
-          let clientId: string;
-          const { data: existingClients, error: searchError } = await supabase
-            .from('clients')
-            .select('id, nom, telephone')
-            .eq('nom', colisData.destinataire);
-          
-          if (searchError) {
-            console.error('Error searching for existing client:', searchError);
-          }
-          
-          if (existingClients && existingClients.length > 0) {
-            // Use existing client
-            clientId = existingClients[0].id;
-            console.log('Found existing client:', clientId, existingClients[0].nom);
-          } else {
-            // Create new client only if it doesn't exist
-            clientId = generateUUID();
-            console.log('Creating new client with ID:', clientId);
-            
-            // Get entreprise name
-            const selectedEntreprise = entreprises.find(e => e.id === selectedEntrepriseId);
-            const entrepriseName = selectedEntreprise?.nom || '';
+          // Always create a new client
+          const clientId = generateUUID();
+          console.log('Creating new client with ID:', clientId);
 
-            const { data: clientResult, error: clientError } = await api.createClient({
-              id: clientId,
-              nom: colisData.destinataire,
-              telephone: colisData.telephone,
-              adresse: colisData.adresse,
-              ville: colisData.ville,
-              entreprise: entrepriseName,
-            });
+          // Get entreprise name
+          const selectedEntreprise = entreprises.find(e => e.id === selectedEntrepriseId);
+          const entrepriseName = selectedEntreprise?.nom || '';
 
-            console.log('Create client response:', { data: clientResult, error: clientError });
+          const { data: clientResult, error: clientError } = await api.createClient({
+            id: clientId,
+            nom: colisData.destinataire,
+            telephone: colisData.telephone,
+            adresse: colisData.adresse,
+            ville: colisData.ville,
+            entreprise: entrepriseName,
+          });
 
-            if (clientError || !clientResult) {
-              throw new Error(`Impossible de créer le client: ${colisData.destinataire} - ${clientError?.message || 'Erreur inconnue'}`);
-            }
+          console.log('Create client response:', { data: clientResult, error: clientError });
+
+          if (clientError || !clientResult) {
+            throw new Error(
+              `Impossible de créer le client: ${colisData.destinataire} - ${
+                clientError?.message || 'Erreur inconnue'
+              }`
+            );
           }
 
           // Use the file tracking code as the colis ID
@@ -414,8 +400,7 @@ export function ImportColisModal({ open, onOpenChange, onImportSuccess }: Import
       // Create ONE bon distribution for all imported colis
       if (successfulImports > 0) {
         try {
-          const bonId = generateUUID();
-          console.log('Creating single bon distribution for all colis with ID:', bonId);
+          console.log('Creating single bon distribution for all colis');
           const colisCodesString = previewData
             .slice(0, 5)
             .map(c => c.code_suivi)
@@ -424,51 +409,27 @@ export function ImportColisModal({ open, onOpenChange, onImportSuccess }: Import
             ? `Bon créé automatiquement lors de l'import de ${successfulImports} colis (${colisCodesString}...)`
             : `Bon créé automatiquement lors de l'import de ${successfulImports} colis (${colisCodesString})`;
 
-          const bonResult = await api.createBon({
-            id: bonId,
-            user_id: user.id,
-            type: 'distribution',
-            statut: 'En cours',
-            source_type: 'admin',
-            colis_id: importedColisIds[0], // Reference the first colis
-            montant: totalMontant,
-            nb_colis: successfulImports,
-            date_creation: new Date().toISOString(),
-            notes: notesText,
-            entreprise_id: selectedEntrepriseId,
-          });
+          const bonResult = await api.createBonWithColis(
+            {
+              user_id: user.id,
+              type: 'distribution',
+              statut: 'En cours',
+              source_type: 'admin',
+              montant: totalMontant,
+              nb_colis: successfulImports,
+              date_creation: new Date().toISOString(),
+              notes: notesText,
+              entreprise_id: selectedEntrepriseId,
+            },
+            importedColisIds
+          );
 
           if (bonResult.error) {
             console.error('Erreur lors de la création du bon distribution:', bonResult.error);
             toast.warning('Colis importés mais bon non généré');
           } else {
-            console.log('✓ Bon distribution created successfully:', bonResult.data?.id);
-            
-            // Add all colis to bon_colis junction table
-            try {
-              const bonColisRecords = importedColisIds.map(colisId => ({
-                bon_id: bonId,
-                colis_id: colisId,
-                date_assigned: new Date().toISOString(),
-              }));
-
-              console.log('📌 Adding colis to bon_colis table:', bonColisRecords);
-              
-              const { error: bonColisError } = await supabase
-                .from('bon_colis')
-                .insert(bonColisRecords);
-
-              if (bonColisError) {
-                console.error('Erreur lors de l\'ajout des colis au bon:', bonColisError);
-                toast.warning('Bon créé mais erreur lors de la liaison avec les colis');
-              } else {
-                console.log('✓ Colis successfully linked to bon');
-                toast.success(`Bon distribution #${bonResult.data?.id?.slice(0, 8)} créé pour ${successfulImports} colis`);
-              }
-            } catch (linkError: any) {
-              console.error('Erreur lors de la liaison des colis:', linkError);
-              toast.warning('Bon créé mais erreur lors de la liaison avec les colis');
-            }
+            console.log('✓ Bon distribution créé successfully:', bonResult.data?.id);
+            toast.success(`Bon distribution #${bonResult.data?.id?.slice(0, 8)} créé pour ${successfulImports} colis`);
           }
         } catch (bonError: any) {
           console.error('Erreur lors de la création du bon distribution:', bonError);

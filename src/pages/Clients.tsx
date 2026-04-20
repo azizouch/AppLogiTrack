@@ -34,6 +34,7 @@ import { useDebounce } from '@/hooks/useDebounce';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
+import { Checkbox } from '@/components/ui/checkbox';
 
 export function Clients() {
   const navigate = useNavigate();
@@ -66,6 +67,10 @@ export function Clients() {
   const [hasNextPage, setHasNextPage] = useState(false);
   const [hasPrevPage, setHasPrevPage] = useState(false);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+
+  // Bulk operations state
+  const [selectedClientIds, setSelectedClientIds] = useState<string[]>([]);
+  const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false);
 
   // Fetch clients data
   const fetchClients = useCallback(async (isRefresh = false) => {
@@ -150,6 +155,8 @@ export function Clients() {
         setTotalPages(Math.ceil(filteredClients.length / itemsPerPage));
         setHasNextPage(endIndex < filteredClients.length);
         setHasPrevPage(currentPage > 1);
+        // Clear selected clients when data changes
+        setSelectedClientIds([]);
       }
     } catch (error) {
       console.error('Error fetching clients:', error);
@@ -216,10 +223,49 @@ export function Clients() {
     setCityFilter('all');
     setEntrepriseFilter('all');
     setCurrentPage(1);
+    setSelectedClientIds([]); // Clear selected clients when resetting filters
   };
 
   // Check if any filters are active
   const hasActiveFilters = searchTerm || cityFilter !== 'all' || entrepriseFilter !== 'all';
+
+  // Bulk operations functions
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedClientIds(clients.map(c => c.id));
+    } else {
+      setSelectedClientIds([]);
+    }
+  };
+
+  const handleSelectClient = (clientId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedClientIds(prev => [...prev, clientId]);
+    } else {
+      setSelectedClientIds(prev => prev.filter(id => id !== clientId));
+    }
+  };
+
+  const isAllSelected = clients.length > 0 && selectedClientIds.length === clients.length;
+  const isIndeterminate = selectedClientIds.length > 0 && selectedClientIds.length < clients.length;
+
+  const handleBulkDelete = () => {
+    if (selectedClientIds.length === 0) return;
+    setDeleteConfirmationOpen(true);
+  };
+
+  const confirmBulkDelete = async () => {
+    try {
+      const deletePromises = selectedClientIds.map(id => api.deleteClient(id));
+      await Promise.allSettled(deletePromises);
+
+      setSelectedClientIds([]);
+      await fetchClients();
+      setDeleteConfirmationOpen(false);
+    } catch (error) {
+      console.error('Error deleting clients:', error);
+    }
+  };
 
 
 
@@ -469,9 +515,9 @@ export function Clients() {
       )}
 
       {/* Liste des Clients */}
-      <div className="space-y-4">
+      <div className="space-y-3">
         <div className="space-y-3 sm:space-y-0">
-          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-1 gap-3">
             <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">Liste des Clients</h2>
             <div className="flex justify-between items-center sm:gap-4">
             <div className="flex items-center gap-2">
@@ -496,100 +542,152 @@ export function Clients() {
             </div>
           </div>
         </div>
+        {/* Bulk Operations Bar */}
+        {selectedClientIds.length > 0 && (
+          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <Users className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                  <span className="font-medium text-blue-900 dark:text-blue-100">
+                    {selectedClientIds.length} client{selectedClientIds.length > 1 ? 's' : ''} sélectionné{selectedClientIds.length > 1 ? 's' : ''}
+                  </span>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSelectedClientIds([])}
+                  className="text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-700 hover:bg-blue-100 dark:hover:bg-blue-900/40"
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  Désélectionner
+                </Button>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={handleBulkDelete}
+                  className="bg-red-600 hover:bg-red-700 text-white"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Supprimer
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* <div className="w-full"> */}
           <div className="overflow-x-auto">
             <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nom</TableHead>
-                <TableHead>Contact</TableHead>
-                <TableHead>Adresse</TableHead>
-                <TableHead>Entreprise</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-                  {loading ? (
-                    Array.from({ length: 5 }).map((_, index) => (
-                      <TableRow key={index} className="border-b border-gray-200 dark:border-gray-600 bg-white dark:bg-transparent">
-                        <TableCell colSpan={5}>
-                          <div className="flex items-center space-x-4">
-                            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse flex-1"></div>
+              <TableHeader>
+                <TableRow className="border-b border-gray-200 dark:border-gray-600" style={{ backgroundColor: 'hsl(210, 40%, 96.1%)' }}>
+                  <TableHead className="w-12">
+                    <Checkbox
+                      className='dark:border-gray-900'
+                      checked={isAllSelected}
+                      ref={(el) => {
+                        if (el) el.indeterminate = isIndeterminate;
+                      }}
+                      onCheckedChange={handleSelectAll}
+                    />
+                  </TableHead>
+                  <TableHead className="font-semibold text-gray-900">Nom</TableHead>
+                  <TableHead className="font-semibold text-gray-900">Contact</TableHead>
+                  <TableHead className="font-semibold text-gray-900">Adresse</TableHead>
+                  <TableHead className="font-semibold text-gray-900">Entreprise</TableHead>
+                  <TableHead className="font-semibold text-gray-900">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                    {loading ? (
+                      Array.from({ length: 5 }).map((_, index) => (
+                        <TableRow key={index} className="border-b border-gray-200 dark:border-gray-600 bg-white dark:bg-transparent">
+                          <TableCell colSpan={6}>
+                            <div className="flex items-center space-x-4">
+                              <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse flex-1"></div>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : clients.length === 0 ? (
+                      <TableRow className="border-b border-gray-200 dark:border-gray-600 bg-white dark:bg-transparent">
+                        <TableCell colSpan={6} className="text-center py-8">
+                          <div className="flex flex-col items-center justify-center text-gray-500 dark:text-gray-400">
+                            <Users className="h-12 w-12 mb-4 text-gray-300 dark:text-gray-600" />
+                            <p className="text-lg font-medium mb-2">Aucun client trouvé</p>
+                            <p className="text-sm">
+                              {hasActiveFilters
+                                ? 'Aucun client ne correspond aux filtres sélectionnés'
+                                : 'Commencez par ajouter votre premier client'
+                              }
+                            </p>
                           </div>
                         </TableCell>
                       </TableRow>
-                    ))
-                  ) : clients.length === 0 ? (
-                    <TableRow className="border-b border-gray-200 dark:border-gray-600 bg-white dark:bg-transparent">
-                      <TableCell colSpan={5} className="text-center py-8">
-                        <div className="flex flex-col items-center justify-center text-gray-500 dark:text-gray-400">
-                          <Users className="h-12 w-12 mb-4 text-gray-300 dark:text-gray-600" />
-                          <p className="text-lg font-medium mb-2">Aucun client trouvé</p>
-                          <p className="text-sm">
-                            {hasActiveFilters
-                              ? 'Aucun client ne correspond aux filtres sélectionnés'
-                              : 'Commencez par ajouter votre premier client'
-                            }
-                          </p>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    clients.map((client) => (
-                      <TableRow key={client.id}>
-                        <TableCell>
-                          <div className="font-medium">{client.nom}</div>
-                        </TableCell>
-                        <TableCell>
-                          <div>
-                            {client.telephone && (
-                              <div className="text-sm text-gray-500">{client.telephone}</div>
+                    ) : (
+                      clients.map((client) => (
+                        <TableRow key={client.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-200 dark:border-gray-600 bg-white dark:bg-transparent">
+                          <TableCell>
+                            <Checkbox
+                              checked={selectedClientIds.includes(client.id)}
+                              onCheckedChange={(checked) => handleSelectClient(client.id, checked as boolean)}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <div className="font-medium">{client.nom}</div>
+                          </TableCell>
+                          <TableCell>
+                            <div>
+                              {client.telephone && (
+                                <div className="text-sm text-gray-500">{client.telephone}</div>
+                              )}
+                              {client.email && (
+                                <div className="text-sm text-gray-500">{client.email}</div>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            {client.adresse || '-'}
+                          </TableCell>
+                          <TableCell>
+                            {client.entreprise ? (
+                              <Badge variant="secondary" className="bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
+                                {client.entreprise}
+                              </Badge>
+                            ) : (
+                              '-'
                             )}
-                            {client.email && (
-                              <div className="text-sm text-gray-500">{client.email}</div>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          {client.adresse || '-'}
-                        </TableCell>
-                        <TableCell>
-                          {client.entreprise ? (
-                            <Badge variant="secondary" className="bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
-                              {client.entreprise}
-                            </Badge>
-                          ) : (
-                            '-'
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => navigate(`/clients/${client.id}`)}
-                            >
-                              Voir
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => showDeleteConfirmation(client)}
-                              disabled={deleting === client.id}
-                              className="text-red-600 hover:text-red-700"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-            </TableBody>
-          </Table>
-          </div>
-        {/* </div> */}
-      </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => navigate(`/clients/${client.id}`)}
+                              >
+                                Voir
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => showDeleteConfirmation(client)}
+                                disabled={deleting === client.id}
+                                className="text-red-600 hover:text-red-700"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+              </TableBody>
+            </Table>
+            </div>
+          {/* </div> */}
+        </div>
 
       {/* Pagination */}
       {totalPages > 1 && (
@@ -616,6 +714,16 @@ export function Clients() {
         variant="destructive"
         onConfirm={handleDelete}
       />
-    </div>
+      {/* Bulk Delete Confirmation Dialog */}
+      <ConfirmationDialog
+        open={deleteConfirmationOpen}
+        onOpenChange={setDeleteConfirmationOpen}
+        title="Supprimer les clients sélectionnés"
+        description={`Êtes-vous sûr de vouloir supprimer ${selectedClientIds.length} client${selectedClientIds.length > 1 ? 's' : ''} ? \n\nCette action supprimera :\n• Les clients sélectionnés et tous leurs colis\n• L'historique complet de tous les colis des clients\n\nCette action est irréversible.`}
+        confirmText="Supprimer tout"
+        cancelText="Annuler"
+        variant="destructive"
+        onConfirm={confirmBulkDelete}
+      />    </div>
   );
 }

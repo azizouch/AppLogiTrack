@@ -6,13 +6,14 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetTrigger } from '@/components/ui/sheet';
 import { TablePagination } from '@/components/ui/table-pagination';
-import { Plus, Search, Download, Eye, Printer, Truck, RefreshCw, FileSpreadsheet, X, Filter, PanelLeftOpen } from 'lucide-react';
+import { Plus, Search, Download, Eye, Printer, Truck, RefreshCw, FileSpreadsheet, X, Filter, PanelLeftOpen, History } from 'lucide-react';
 import { api } from '@/lib/supabase';
 import { Bon, Entreprise } from '@/types';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { downloadBonAsPDF, downloadMobileBonAsPDF, printBon, downloadBonAsExcel } from '@/utils/pdfGenerator';
+import { BonHistoryModal } from '@/components/modals/BonHistoryModal';
 
 export function Distribution() {
   const navigate = useNavigate();
@@ -36,6 +37,8 @@ export function Distribution() {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [entreprises, setEntreprises] = useState<Entreprise[]>([]);
   const [companySettings, setCompanySettings] = useState<any>(null);
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+  const [selectedBonForHistory, setSelectedBonForHistory] = useState<Bon | null>(null);
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
   // Fetch company settings on mount
@@ -253,6 +256,11 @@ export function Distribution() {
     }
   };
 
+  const handleOpenHistory = (bon: Bon) => {
+    setSelectedBonForHistory(bon);
+    setIsHistoryModalOpen(true);
+  };
+
   return (
     <div className="space-y-3">
       {/* Header */}
@@ -437,9 +445,9 @@ export function Distribution() {
       </div>
 
       {/* Table Container */}
-      <div className="space-y-4">
+      <div className="space-y-3">
         {/* Table Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between py-4 gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between py-1 gap-3">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
             Liste des Bons de Distribution
           </h2>
@@ -595,6 +603,15 @@ export function Distribution() {
                               <FileSpreadsheet className="h-4 w-4" />
                             )}
                           </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0"
+                            onClick={() => handleOpenHistory(bon)}
+                            title="Voir l'historique"
+                          >
+                            <History className="h-4 w-4" />
+                          </Button>
                         </div>
                       </td>
                     </tr>
@@ -621,6 +638,16 @@ export function Distribution() {
           hasPrevPage={hasPrevPage}
           totalItems={totalCount}
           itemsPerPage={itemsPerPage}
+        />
+      )}
+
+      {/* Bon History Modal */}
+      {selectedBonForHistory && (
+        <BonHistoryModal
+          open={isHistoryModalOpen}
+          onOpenChange={setIsHistoryModalOpen}
+          bonId={selectedBonForHistory.id}
+          bonReference={selectedBonForHistory.id}
         />
       )}
     </div>

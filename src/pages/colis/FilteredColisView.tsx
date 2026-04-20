@@ -535,9 +535,9 @@ export function FilteredColisView() {
           <p className="text-gray-500 dark:text-gray-400">Aucun colis trouvé pour ce statut.</p>
         </div>
       ) : (
-        <div className="space-y-4">
-          <div className="flex justify-between items-center">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+        <div className="space-y-3">
+          <div className="flex justify-between items-center py-1">
+            <h2 className="text-sm sm:text-xl font-semibold text-gray-900 dark:text-white">
               Liste des Colis ({totalCount} résultats)
             </h2>
             <div className="flex items-center gap-4">
