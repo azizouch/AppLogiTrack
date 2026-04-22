@@ -1192,8 +1192,8 @@ export const api = {
   getLivreurs: async () => {
     const { data, error } = await supabase
       .from('utilisateurs')
-      .select('id, nom, prenom, statut, role, auth_id')
-      .eq('role', 'Livreur') // Use exact match with correct capitalization
+      .select('id, nom, prenom, telephone, role, vehicule, zone')
+      .eq('role', 'Livreur')
       .order('nom', { ascending: true })
 
     // For now, return without emails until RPC function is created
@@ -2201,7 +2201,7 @@ export const api = {
         try {
           const { data: userData, error: userError } = await supabase
             .from('utilisateurs')
-            .select('id, nom, prenom, telephone, role, vehicule, zone')
+            .select('id, nom, prenom, telephone, role, vehicule, zone, ville')
             .eq('id', bonData.user_id)
             .single();
 

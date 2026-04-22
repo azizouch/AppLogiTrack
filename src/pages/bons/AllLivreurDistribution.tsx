@@ -149,7 +149,7 @@ export function AllLivreurDistribution() {
       // Fetch colis data
       const { data: colisData } = await api.getColisByBonId(bon.id);
       
-      if (isMobile()) {
+      if (isMobile) {
         await downloadMobileBonAsPDF(bonWithUser, colisData || undefined, companySettings || undefined);
         toast({ title: 'PDF Mobile téléchargé' });
       } else {

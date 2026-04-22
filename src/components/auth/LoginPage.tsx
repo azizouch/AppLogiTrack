@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
-import { Eye, EyeOff, AlertCircle, CheckCircle } from 'lucide-react';
+import { Eye, EyeOff, AlertCircle, CheckCircle, Mail, Lock } from 'lucide-react';
 import { ForgotPasswordModal } from './ForgotPasswordModal';
 
 export function LoginPage() {
@@ -104,29 +104,36 @@ export function LoginPage() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
       <div className="w-full max-w-md mx-auto animate-fade-in-down">
         {/* Logo Section outside card */}
-        <div className="text-center">
+        {/* <div className="text-center">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-xl mb-2">
             <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
             </svg>
           </div>
-        </div>
+        </div> */}
 
         <Card className="bg-white dark:bg-gray-800 shadow-xl border border-gray-200 dark:border-gray-700">
-          <CardHeader className="text-center space-y-4 pb-6">
+          <CardHeader className="text-center space-y-2 sm:space-y-3 pb-4 sm:pb-6">
+            <div className="text-center">
+              <div className="inline-flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 bg-blue-600 rounded-xl mb-2">
+                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                </svg>
+              </div>
+            </div>
             {/* LogiTrack title inside card */}
-            <h1 className="text-3xl font-bold text-blue-600 dark:text-blue-400">LogiTrack</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold text-black dark:text-blue-400">LogiTrack</h1>
             <div>
-              <CardTitle className="text-2xl font-bold text-gray-900 dark:text-white mb-3">
+              {/* <CardTitle className="text-2xl font-bold text-gray-900 dark:text-white mb-3">
                 Connexion
-              </CardTitle>
-              <CardDescription className="text-gray-600 dark:text-gray-400 mt-2">
-                Entrez vos identifiants pour accéder à votre compte
+              </CardTitle> */}
+              <CardDescription className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-2">
+                Connectez-vous à votre compte
               </CardDescription>
             </div>
           </CardHeader>
 
-          <CardContent className="space-y-6">
+          <CardContent className="space-y-4">
             {error && (
               <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
                 <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
@@ -139,17 +146,22 @@ export function LoginPage() {
                 <Label htmlFor="email" className="text-gray-700 dark:text-gray-300 font-medium">
                   Email
                 </Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="exemple@email.com"
-                  className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
-                  style={{ height: '2.5rem' }}
-                  required
-                  disabled={loading}
-                />
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none">
+                    <Mail className="h-4 w-4" />
+                  </span>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="exemple@email.com"
+                    className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white pl-10 rounded-2xl"
+                    style={{ height: '2.5rem' }}
+                    required
+                    disabled={loading}
+                  />
+                </div>
               </div>
 
               <div className="space-y-2">
@@ -167,13 +179,16 @@ export function LoginPage() {
                   </button>
                 </div>
                 <div className="relative">
+                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none">
+                    <Lock className="h-4 w-4" />
+                  </span>
                   <Input
                     id="password"
                     type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white pr-10"
+                    className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white pl-10 pr-10 rounded-2xl"
                     style={{ height: '2.5rem' }}
                     required
                     disabled={loading}
@@ -207,7 +222,7 @@ export function LoginPage() {
 
               <Button
                 type="submit"
-                className="w-full relative overflow-hidden bg-blue-600 text-white text-base font-medium border-0 transition-all duration-300 hover:shadow-lg group"
+                className="w-full relative overflow-hidden bg-blue-600 text-white text-base font-medium border-0 rounded-2xl transition-all duration-300 hover:shadow-lg group"
                 style={{ height: '2.5rem' }}
                 disabled={loading}
               >
@@ -225,7 +240,7 @@ export function LoginPage() {
               </Button>
             </form>
 
-            <div className="text-center pt-4 border-t border-gray-200 dark:border-gray-700">
+            <div className="hidden sm:block text-center pt-4 border-t border-gray-200 dark:border-gray-700">
               <p className="text-sm text-gray-600 dark:text-gray-400">
                 Problème de connexion ? <a href="mailto:admin@logitrack.com" className="text-blue-600 dark:text-blue-400 hover:underline">Contactez votre administrateur</a>
               </p>
