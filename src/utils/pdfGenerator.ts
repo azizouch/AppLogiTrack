@@ -1,6 +1,7 @@
 import { createElement } from 'react';
 import {
   Document,
+  Font,
   Image,
   Page,
   StyleSheet,
@@ -11,14 +12,34 @@ import {
   Path,
   G,
   Rect,
+  Style,
 } from '@react-pdf/renderer';
 // Polyfill Buffer for @react-pdf/renderer in browser environments
 import { Buffer as NodeBuffer } from 'buffer';
 if (typeof globalThis !== 'undefined' && !globalThis.Buffer) {
   globalThis.Buffer = NodeBuffer;
+// Use built-in Helvetica font for reliability (supports basic Latin characters)
+// For proper Arabic support, consider self-hosting Arabic fonts or using a different approach
 }
 import { Bon, Colis } from '@/types';
 import * as XLSX from 'xlsx';
+
+Font.register({
+  family: 'NotoArabic',
+  fonts: [
+    {
+      src: '/fonts/NotoSansArabic-Regular.ttf',
+      fontWeight: 'normal',
+    },
+    {
+      src: '/fonts/NotoSansArabic-Bold.ttf',
+      fontWeight: 'bold',
+    },
+  ],
+});
+
+const defaultFont = 'Helvetica';
+const arabicFont = 'NotoArabic';
 
 interface CompanySettings {
   id?: string;
@@ -299,6 +320,13 @@ const getBonTypeLabel = (type: Bon['type']) =>
 
 const money = (value: number) => `${value.toFixed(2)} DH`;
 
+const isArabic = (text: string) => /[\u0600-\u06FF]/.test(text);
+
+const getFont = (text: string) => {
+  if (isArabic(text)) return arabicFont;
+  return defaultFont;
+};
+
 const getPreparedColis = (colisData?: Colis[]): PreparedColis[] => {
   if (colisData && colisData.length > 0) {
     return colisData.map((colis, index) => ({
@@ -316,36 +344,45 @@ const getPreparedColis = (colisData?: Colis[]): PreparedColis[] => {
     }));
   }
 
-  return [
-    {
-      reference: 'COL-2024-001',
-      client: 'Ahmed Benali',
-      entreprise: 'TechCorp SARL',
-      adresse: '123 Rue Mohammed V, Casablanca',
-      prix: 250,
-      frais: 25,
-      statut: 'En cours',
-    },
-    {
-      reference: 'COL-2024-002',
-      client: 'Fatima Zahra',
-      entreprise: 'Digital Solutions',
-      adresse: '456 Avenue Hassan II, Rabat',
-      prix: 180.5,
-      frais: 20,
-      statut: 'En cours',
-    },
-  ];
+  return [];
 };
 
-const createInfoRow = (label: string, value?: string | number | null, uniqueKey?: string) => {
+const createInfoRow = (
+  label: string,
+  value?: string | number | null,
+  uniqueKey?: string,
+) => {
   if (value === undefined || value === null || value === '') return null;
+
+  const textValue = String(value);
 
   return h(
     View,
     { style: styles.infoRow, key: uniqueKey || label },
-    h(Text, { style: styles.infoLabel }, label),
-    h(Text, { style: styles.infoValue }, String(value)),
+    h(
+      Text,
+      {
+        key: `${uniqueKey || label}-label`,
+        style: {
+          ...styles.infoLabel,
+          fontFamily: getFont(label),
+        },
+      },
+      label,
+    ),
+    h(
+      Text,
+      {
+        key: `${uniqueKey || label}-value`,
+        style: {
+          ...styles.infoValue,
+          fontFamily: getFont(textValue),
+          direction: isArabic(textValue) ? 'rtl' : 'ltr',
+          textAlign: isArabic(textValue) ? 'right' : 'left',
+        },
+      },
+      textValue,
+    ),
   );
 };
 
@@ -353,7 +390,7 @@ const createTableCell = (
   key: string,
   content: string,
   style: Record<string, unknown>,
-  textStyle: object | object[],
+  textStyle: any,
   removeRightBorder = false,
 ) =>
   h(
@@ -366,7 +403,15 @@ const createTableCell = (
         removeRightBorder ? { borderRightWidth: 0 } : null,
       ],
     },
-    h(Text, { style: textStyle }, content),
+    h(Text, {
+      key: `${key}-text`,
+      style: {
+        ...textStyle,
+        fontFamily: getFont(content),
+        direction: isArabic(content) ? 'rtl' : 'ltr',
+        textAlign: isArabic(content) ? 'right' : 'left',
+      },
+    }, content),
   );
 
 const BonPdfDocument = ({
@@ -385,6 +430,7 @@ const BonPdfDocument = ({
   const totalFrais = preparedColis.reduce((sum, item) => sum + item.frais, 0);
   const totalGeneral = totalPrix + totalFrais;
   const bonUser = bon.user;
+  console.log('USER AFTER ASSIGN:', bonUser);
   const hasBonUser = Boolean(
     bonUser && (bonUser.nom || bonUser.prenom || bonUser.email || bonUser.telephone),
   );
@@ -400,7 +446,7 @@ const BonPdfDocument = ({
       createInfoRow('Statut:', getStatusText(bon.statut)),
       createInfoRow('Date de création:', formatDate(bon.date_creation)),
       createInfoRow('Nombre de colis:', bon.nb_colis ?? preparedColis.length),
-    ].filter(Boolean),
+    ].filter((item): item is NonNullable<typeof item> => item !== null),
   );
 
   const rightCard = h(
@@ -428,7 +474,7 @@ const BonPdfDocument = ({
             createInfoRow('Téléphone:', bonUser?.telephone),
             createInfoRow('Véhicule:', bonUser?.vehicule),
             createInfoRow('Zone:', bonUser?.zone),
-            createInfoRow('Ville:', bonUser?.ville),
+            createInfoRow('Ville:', bonUser?.ville || 'TEST'),
           ]
         : [
             createInfoRow('Entreprise:', companySettings?.nom),
@@ -441,7 +487,7 @@ const BonPdfDocument = ({
             createInfoRow('Téléphone:', companySettings?.telephone),
             createInfoRow('Email:', companySettings?.email),
           ]),
-    ].filter(Boolean),
+    ].filter((item): item is NonNullable<typeof item> => item !== null),
   );
 
   const desktopTable = h(
@@ -491,61 +537,81 @@ const BonPdfDocument = ({
           ),
         ],
       ),
-      ...preparedColis.map((item, index) =>
+      preparedColis.length === 0
+        ? h(
+            View,
+            {
+              key: 'empty-row',
+              style: styles.tableRow,
+            },
+            [
+              createTableCell(
+                'empty-cell',
+                'Aucun colis trouvé',
+                { flexGrow: 6, flexBasis: 6 },
+                [styles.textBold],
+                true
+              ),
+            ]
+          )
+        : preparedColis.map((item, index) =>
+            h(
+              View,
+              {
+                key: `row-${index}`,
+                style: [styles.tableRow, index % 2 === 1 ? styles.tableRowAlt : null],
+                wrap: false,
+              },
+              [
+                createTableCell(`cell-ref-${index}`, item.reference, columnStyles.reference, styles.textBold),
+                createTableCell(`cell-client-${index}`, item.client, columnStyles.client, styles.text),
+                createTableCell(`cell-ent-${index}`, item.entreprise, columnStyles.entreprise, styles.text),
+                createTableCell(`cell-addr-${index}`, item.adresse, columnStyles.adresse, styles.text),
+                createTableCell(`cell-frais-${index}`, money(item.frais), columnStyles.frais, styles.moneyText),
+                createTableCell(`cell-prix-${index}`, money(item.prix), columnStyles.prix, styles.moneyText, true),
+              ],
+            )
+          ),
+      preparedColis.length > 0 &&
         h(
           View,
-          {
-            key: `${item.reference}-${index}`,
-            style: [styles.tableRow, index % 2 === 1 ? styles.tableRowAlt : null],
-            wrap: false,
-          },
+          { style: styles.totalRow, key: 'total-row', wrap: false },
           [
-            createTableCell(`r-${index}-reference`, item.reference, columnStyles.reference, styles.textBold),
-            createTableCell(`r-${index}-client`, item.client, columnStyles.client, styles.text),
-            createTableCell(`r-${index}-entreprise`, item.entreprise, columnStyles.entreprise, styles.text),
-            createTableCell(`r-${index}-adresse`, item.adresse, columnStyles.adresse, styles.text),
-            createTableCell(`r-${index}-frais`, money(item.frais), columnStyles.frais, styles.moneyText),
-            createTableCell(`r-${index}-prix`, money(item.prix), columnStyles.prix, styles.moneyText, true),
+            createTableCell(
+              'total-label',
+              'TOTAL',
+              { flexGrow: 4.5, flexBasis: 4.5 },
+              styles.textBold,
+              true,
+            ),
+            createTableCell('total-frais', money(totalFrais), columnStyles.frais, styles.textBold),
+            createTableCell('total-prix', money(totalPrix), columnStyles.prix, styles.textBold, true),
           ],
         ),
-      ),
-      h(
-        View,
-        { style: styles.totalRow, key: 'total-row', wrap: false },
-        [
-          createTableCell(
-            'total-label',
-            'TOTAL',
-            { flexGrow: 4.5, flexBasis: 4.5 },
-            styles.textBold,
-            true,
-          ),
-          createTableCell('total-frais', money(totalFrais), columnStyles.frais, styles.textBold),
-          createTableCell('total-prix', money(totalPrix), columnStyles.prix, styles.textBold, true),
-        ],
-      ),
-      h(
-        View,
-        { style: styles.totalGeneralRow, key: 'general-row', wrap: false },
-        [
-          createTableCell(
-            'general-label',
-            'TOTAL GÉNÉRAL',
-            { flexGrow: 4.5, flexBasis: 4.5 },
-            styles.textBold,
-            true,
-          ),
-          createTableCell(
-            'general-value',
-            money(totalGeneral),
-            { flexGrow: 1.6, flexBasis: 1.6 },
-            styles.textBold,
-            true,
-          ),
-        ],
-      ),
-    ],
-  );
+
+      preparedColis.length > 0 &&
+        h(
+          View,
+          { style: styles.totalGeneralRow, key: 'general-row', wrap: false },
+          [
+            createTableCell(
+              'general-label',
+              'TOTAL GÉNÉRAL',
+              { flexGrow: 4.5, flexBasis: 4.5 },
+              styles.textBold,
+              true,
+            ),
+            createTableCell(
+              'general-value',
+              money(totalGeneral),
+              { flexGrow: 1.6, flexBasis: 1.6 },
+              styles.textBold,
+              true,
+            ),
+          ],
+        ),
+          ],
+        );
 
   const compactCards = preparedColis.map((item, index) =>
     h(
@@ -558,35 +624,35 @@ const BonPdfDocument = ({
       [
         h(
           View,
-          { style: styles.compactItemHeader, key: `header-${item.reference}` },
-          h(Text, { style: styles.compactItemHeaderText }, `Réf: ${item.reference}`),
+          { style: styles.compactItemHeader, key: `header-${item.reference}-${index}` },
+          h(Text, { key: `header-text-${index}`, style: styles.compactItemHeaderText }, `Réf: ${item.reference}`),
         ),
         h(
           View,
-          { style: styles.compactItemBody, key: `body-${item.reference}` },
+          { style: styles.compactItemBody, key: `body-${item.reference}-${index}` },
           [
-            h(View, { style: styles.compactRow, key: `client-${item.reference}` }, [
-              h(Text, { style: styles.infoLabel }, 'Client:'),
-              h(Text, { style: styles.infoValue }, item.client),
+            h(View, { style: styles.compactRow, key: `client-${item.reference}-${index}` }, [
+              h(Text, { key: `client-label-${index}`, style: styles.infoLabel }, 'Client:'),
+              h(Text, { key: `client-value-${index}`, style: styles.infoValue }, item.client),
             ]),
-            h(View, { style: styles.compactRow, key: `entreprise-${item.reference}` }, [
-              h(Text, { style: styles.infoLabel }, 'Entreprise:'),
-              h(Text, { style: styles.infoValue }, item.entreprise),
+            h(View, { style: styles.compactRow, key: `entreprise-${item.reference}-${index}` }, [
+              h(Text, { key: `entreprise-label-${index}`, style: styles.infoLabel }, 'Entreprise:'),
+              h(Text, { key: `entreprise-value-${index}`, style: styles.infoValue }, item.entreprise),
             ]),
-            h(View, { style: styles.compactRow, key: `adresse-${item.reference}` }, [
-              h(Text, { style: styles.infoLabel }, 'Adresse:'),
-              h(Text, { style: styles.infoValue }, item.adresse),
+            h(View, { style: styles.compactRow, key: `adresse-${item.reference}-${index}` }, [
+              h(Text, { key: `adresse-label-${index}`, style: styles.infoLabel }, 'Adresse:'),
+              h(Text, { key: `adresse-value-${index}`, style: styles.infoValue }, item.adresse),
             ]),
-            h(View, { style: styles.compactRow, key: `statut-${item.reference}` }, [
-              h(Text, { style: styles.infoLabel }, 'Statut:'),
-              h(Text, { style: styles.infoValue }, getStatusText(item.statut)),
+            h(View, { style: styles.compactRow, key: `statut-${item.reference}-${index}` }, [
+              h(Text, { key: `statut-label-${index}`, style: styles.infoLabel }, 'Statut:'),
+              h(Text, { key: `statut-value-${index}`, style: styles.infoValue }, getStatusText(item.statut)),
             ]),
             h(
               View,
-              { style: styles.compactPrices, key: `prices-${item.reference}` },
+              { style: styles.compactPrices, key: `prices-${item.reference}-${index}` },
               [
-                h(Text, { style: styles.moneyText, key: `prix-${item.reference}` }, `Prix: ${money(item.prix)}`),
-                h(Text, { style: styles.moneyText, key: `frais-${item.reference}` }, `Frais: ${money(item.frais)}`),
+                h(Text, { style: styles.moneyText, key: `prix-${item.reference}-${index}` }, `Prix: ${money(item.prix)}`),
+                h(Text, { style: styles.moneyText, key: `frais-${item.reference}-${index}` }, `Frais: ${money(item.frais)}`),
               ],
             ),
           ],
@@ -662,7 +728,7 @@ const BonPdfDocument = ({
           { style: styles.sectionTitle, key: 'section-title' },
           `Liste des Colis (${preparedColis.length} colis)`,
         ),
-        compact ? compactCards : desktopTable,
+        compact ? h(View, { key: 'compact-table' }, compactCards) : desktopTable,
         bon.notes
           ? h(
               View,
@@ -712,17 +778,13 @@ const buildPdfBlob = async (
   companySettings?: CompanySettings,
   compact = false,
 ) => {
-  console.log('[PDF] buildPdfBlob called, bon.id:', bon.id, 'compact:', compact, 'colis:', colis?.length);
   const element = h(BonPdfDocument, {
     bon,
     colis,
     companySettings,
     compact,
   });
-
-  console.log('[PDF] Element created, about to call pdf().toBlob()');
   const result = await pdf(element).toBlob();
-  console.log('[PDF] pdf().toBlob() done, result size:', result.size);
   return result;
 };
 
@@ -748,10 +810,9 @@ const downloadBlob = (blob: Blob, filename: string) => {
 };
 
 const printBlob = async (blob: Blob) => {
-  console.log('[PRINT] Starting printBlob, blob size:', blob.size);
   const blobUrl = URL.createObjectURL(blob);
-  const iframe = document.createElement('iframe');
 
+  const iframe = document.createElement('iframe');
   iframe.style.position = 'fixed';
   iframe.style.right = '0';
   iframe.style.bottom = '0';
@@ -759,40 +820,41 @@ const printBlob = async (blob: Blob) => {
   iframe.style.height = '0';
   iframe.style.border = '0';
   iframe.src = blobUrl;
-  console.log('[PRINT] Iframe created, blobUrl:', blobUrl);
 
   document.body.appendChild(iframe);
-  console.log('[PRINT] Iframe appended to body');
 
   return new Promise<void>((resolve, reject) => {
     iframe.onload = () => {
-      console.log('[PRINT] Iframe onload fired');
-      setTimeout(() => {
-        try {
-          console.log('[PRINT] Attempting to focus and print');
-          iframe.contentWindow?.focus();
-          const printResult = iframe.contentWindow?.print();
-          console.log('[PRINT] print() called, result:', printResult);
+      try {
+        const win = iframe.contentWindow;
+        if (!win) return reject('No iframe window');
 
-          setTimeout(() => {
-            console.log('[PRINT] Cleaning up iframe');
-            if (document.body.contains(iframe)) {
-              document.body.removeChild(iframe);
-            }
-            URL.revokeObjectURL(blobUrl);
+        // 🔥 KEY FIX: wait until PDF is REALLY ready
+        const checkReady = () => {
+          try {
+            win.focus();
+            win.print();
             resolve();
-          }, 2000);
-        } catch (err) {
-          console.error('[PRINT] Error during print:', err);
-          reject(err);
-        }
-      }, 500);
+          } catch {
+            setTimeout(checkReady, 300);
+          }
+        };
+
+        setTimeout(checkReady, 500);
+      } catch (err) {
+        reject(err);
+      }
     };
 
-    iframe.onerror = (err) => {
-      console.error('[PRINT] Iframe error:', err);
-      reject(err);
-    };
+    iframe.onerror = (err) => reject(err);
+
+    // cleanup
+    setTimeout(() => {
+      if (document.body.contains(iframe)) {
+        document.body.removeChild(iframe);
+      }
+      URL.revokeObjectURL(blobUrl);
+    }, 5000);
   });
 };
 
@@ -801,15 +863,12 @@ export const printBon = async (
   colis?: Colis[],
   companySettings?: CompanySettings,
 ): Promise<void> => {
-  console.log('[PRINT] printBon called, bon.id:', bon.id, 'colis length:', colis?.length);
   try {
     const blob = await buildPdfBlob(bon, colis, companySettings, false);
-    console.log('[PRINT] buildPdfBlob done, blob size:', blob.size);
     await printBlob(blob);
-    console.log('[PRINT] printBlob completed');
   } catch (error) {
     console.error('[PRINT] Error in printBon:', error);
-    throw new Error('Erreur lors de l\'impression du PDF');
+    throw new Error('Erreur lors de l\\\'impression du PDF');
   }
 };
 
@@ -847,37 +906,7 @@ export const downloadBonAsExcel = async (
   companySettings?: CompanySettings,
 ): Promise<void> => {
   try {
-    const sampleColis =
-      colisData && colisData.length > 0
-        ? colisData
-        : [
-            {
-              id: 'COL-2025-0001',
-              client_id: '1',
-              statut: 'en cours',
-              date_creation: new Date().toISOString(),
-              prix: 2500,
-              frais: 25,
-              client: {
-                nom: 'Ahmed Benali',
-                telephone: '+212 6 12 34 56 78',
-                adresse: '123 Rue Mohammed V, Casablanca',
-              } as Colis['client'],
-            } as Colis,
-            {
-              id: 'COL-2025-0002',
-              client_id: '2',
-              statut: 'en cours',
-              date_creation: new Date().toISOString(),
-              prix: 4200,
-              frais: 35,
-              client: {
-                nom: 'Fatima Alaoui',
-                telephone: '+212 6 98 76 54 32',
-                adresse: '456 Avenue Hassan II, Rabat',
-              } as Colis['client'],
-            } as Colis,
-          ];
+    const sampleColis = colisData ?? [];
 
     const totalPrix = sampleColis.reduce((sum, item) => sum + Number(item.prix || 0), 0);
     const totalFrais = sampleColis.reduce((sum, item) => sum + Number(item.frais || 0), 0);
