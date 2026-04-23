@@ -12,7 +12,6 @@ import {
   Path,
   G,
   Rect,
-  Style,
 } from '@react-pdf/renderer';
 // Polyfill Buffer for @react-pdf/renderer in browser environments
 import { Buffer as NodeBuffer } from 'buffer';
@@ -78,13 +77,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     fontSize: 9,
   },
-  header: {
-    borderBottomWidth: 2,
-    borderBottomColor: '#2563eb',
-    paddingBottom: 12,
-    marginBottom: 16,
-    alignItems: 'center',
-  },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -99,16 +91,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  title: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#2563eb',
-  },
-  subtitle: {
-    fontSize: 10,
-    color: '#64748b',
-    textAlign: 'center',
-  },
+  
+  
   infoGrid: {
     flexDirection: 'row',
     marginBottom: 16,
@@ -121,26 +105,15 @@ const styles = StyleSheet.create({
     width: 12,
     height: 8,
   },
-  infoCard: {
-    flexGrow: 1,
-    flexBasis: 0,
-    backgroundColor: '#f8fafc',
-    borderLeftWidth: 3,
-    borderLeftColor: '#2563eb',
-    borderRadius: 6,
-    padding: 12,
-  },
-  infoCardAlt: {
-    backgroundColor: '#f0f9ff',
-    borderLeftColor: '#0284c7',
-  },
+
   cardTitle: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: 'bold',
     color: '#2563eb',
-    marginBottom: 8,
   },
   cardTitleAlt: {
+    fontSize: 11,
+    fontWeight: 'bold',
     color: '#0284c7',
   },
   infoRow: {
@@ -148,38 +121,28 @@ const styles = StyleSheet.create({
     marginBottom: 5,
   },
   infoLabel: {
+    fontSize: 9.5,
     fontWeight: 'bold',
     color: '#475569',
-    marginRight: 4,
   },
   infoValue: {
-    color: '#1e293b',
-    flexShrink: 1,
+    fontSize: 9.5,
+    color: '#0f172a',
   },
   sectionTitle: {
     fontSize: 13,
     fontWeight: 'bold',
     color: '#2563eb',
-    marginBottom: 10,
+    marginLeft: 6,
   },
   tableWrapper: {
     borderWidth: 1,
     borderColor: '#e2e8f0',
-    borderRadius: 6,
+    borderRadius: 10,
     overflow: 'hidden',
     marginBottom: 16,
   },
-  tableHeader: {
-    flexDirection: 'row',
-    backgroundColor: '#2563eb',
-    minHeight: 30,
-  },
-  tableRow: {
-    flexDirection: 'row',
-    minHeight: 28,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
-  },
+
   tableRowAlt: {
     backgroundColor: '#f8fafc',
   },
@@ -194,7 +157,7 @@ const styles = StyleSheet.create({
     fontSize: 8.5,
   },
   textBold: {
-    fontSize: 8.5,
+    fontSize: 9,
     fontWeight: 'bold',
   },
   textHeader: {
@@ -209,17 +172,9 @@ const styles = StyleSheet.create({
   totalRow: {
     flexDirection: 'row',
     minHeight: 30,
-    backgroundColor: '#f1f5f9',
-    borderTopWidth: 2,
-    borderTopColor: '#2563eb',
+    backgroundColor: '#cbdef1',
   },
-  totalGeneralRow: {
-    flexDirection: 'row',
-    minHeight: 30,
-    backgroundColor: '#e2e8f0',
-    borderTopWidth: 1,
-    borderTopColor: '#2563eb',
-  },
+
   compactItemCard: {
     borderWidth: 1,
     borderColor: '#e2e8f0',
@@ -253,29 +208,239 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
-  notesBox: {
-    marginTop: 10,
-    padding: 12,
-    backgroundColor: '#f1f5f9',
-    borderRadius: 6,
-  },
-  footer: {
-    marginTop: 14,
-    paddingTop: 10,
-    borderTopWidth: 1,
-    borderTopColor: '#e2e8f0',
-    alignItems: 'center',
-  },
+
   footerText: {
     fontSize: 9,
     color: '#64748b',
     textAlign: 'center',
     marginBottom: 3,
   },
+  
+
+  //new styles :
+
+  logoBox: {
+    width: 48,
+    height: 48,
+    backgroundColor: '#2F5BD3',
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+
+  title: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#1e293b',
+    flexShrink: 1,
+  },
+
+  subtitle: {
+    fontSize: 10,
+    color: '#64748b',
+    marginTop: 2,
+  },
+
+  header: {
+    borderBottomWidth: 2,
+    borderBottomColor: '#2563eb',
+    paddingBottom: 12,
+    marginBottom: 16,
+    display: 'flex',
+    alignItems: 'center',
+  },
+
+  headerTop: {
+    flexDirection: 'row',   // ✅ MUST be row
+    alignItems: 'center',
+    width: '100%', // ✅ VERY IMPORTANT
+  },
+
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexGrow: 1,     // ✅ take remaining space
+    flexShrink: 1,
+    minWidth: 0,   
+  },
+
+  headerRight: {
+    width: 180,
+    flexShrink: 0,
+    paddingLeft: 12,
+    borderLeftWidth: 1,
+    borderLeftColor: '#cbd5f5',
+  },
+
+  metaLabel: {
+    fontSize: 8,
+    color: '#64748b',
+  },
+
+  metaValue: {
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: '#2563eb',
+    marginBottom: 4,
+  },
+
+  headerDivider: {
+    marginTop: 10,
+    height: 2,
+    backgroundColor: '#2563eb',
+  },
+
+  infoCard: {
+    flexGrow: 1,
+    flexBasis: 0,
+    backgroundColor: '#f8fafc',
+    borderRadius: 10,
+    padding: 14,
+    borderLeftWidth: 4,
+    borderLeftColor: '#2563eb',
+  },
+
+  cardHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+
+  cardDivider: {
+    height: 1,
+    backgroundColor: '#e2e8f0',
+    marginBottom: 10,
+  },
+
+
+  infoCardAlt: {
+    backgroundColor: '#f0f9ff',
+    borderLeftColor: '#0284c7',
+  },
+
+  tableHeader: {
+    flexDirection: 'row',
+    backgroundColor: '#2F5BD3',
+    minHeight: 32,
+  },
+
+  tableRow: {
+    flexDirection: 'row',
+    minHeight: 30,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
+
+  totalGeneralRow: {
+    flexDirection: 'row',
+    minHeight: 32,
+    backgroundColor: '#2F5BD3',
+  },
+
+  textBoldWhite: {
+    fontWeight: 'bold',
+    color: '#ffffff',
+  },
+
+  footer: {
+    marginTop: 20,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#e2e8f0',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  iconBox: {
+    width: 20,
+    height: 20,
+    borderRadius: 5,
+    backgroundColor: '#2563eb',
+    marginRight: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  summaryTotal: {
+    marginTop: 8,
+    backgroundColor: '#e0edff',
+    padding: 6,
+    borderRadius: 6,
+    fontWeight: 'bold',
+    color: '#2563eb',
+  },
+
+  notesSummaryRow: {
+    flexDirection: 'row',
+    marginTop: 12,
+  },
+
+  notesBox: {
+    flex: 1,
+    backgroundColor: '#f1f5f9',
+    borderRadius: 12,
+    padding: 14,
+    marginRight: 10,
+  },
+
+  summaryBox: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+
+  summaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 6,
+  },
+
+  summaryLabel: {
+    fontSize: 9.5,
+    color: '#475569',
+  },
+
+  summaryValue: {
+    fontSize: 9.5,
+    color: '#0f172a',
+  },
+
+  summaryHighlight: {
+    marginTop: 8,
+    backgroundColor: '#e0e7ff',
+    borderRadius: 8,
+    padding: 8,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+
+  summaryTotalLabel: {
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: '#1d4ed8',
+  },
+
+  summaryTotalValue: {
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: '#1d4ed8',
+  },
+
+  textCenter:{
+    textAlign: 'center',
+  },
+
+  textBlue:{
+    color: '#2563eb' 
+  },
 });
 
 const columnStyles = {
-  reference: { flexGrow: 1, flexBasis: 1 },
+  reference: { flexGrow: 1.2, flexBasis: 1.2 },
   client: { flexGrow: 1, flexBasis: 1 },
   entreprise: { flexGrow: 1, flexBasis: 1 },
   adresse: { flexGrow: 1.5, flexBasis: 1.5 },
@@ -358,33 +523,58 @@ const createInfoRow = (
 
   return h(
     View,
-    { style: styles.infoRow, key: uniqueKey || label },
-    h(
-      Text,
-      {
-        key: `${uniqueKey || label}-label`,
-        style: {
-          ...styles.infoLabel,
-          fontFamily: getFont(label),
-        },
+    {
+      key: uniqueKey || label,
+      style: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 8,
       },
-      label,
-    ),
-    h(
-      Text,
-      {
-        key: `${uniqueKey || label}-value`,
+    },
+    [
+      // BULLET
+      h(View, {
+        key: 'bullet',
         style: {
-          ...styles.infoValue,
-          fontFamily: getFont(textValue),
-          direction: isArabic(textValue) ? 'rtl' : 'ltr',
-          textAlign: isArabic(textValue) ? 'right' : 'left',
+          width: 4,
+          height: 4,
+          borderRadius: 2,
+          backgroundColor: '#2563eb',
+          marginRight: 6,
         },
-      },
-      textValue,
-    ),
+      }),
+
+      // LABEL (FIXED WIDTH)
+      h(
+        Text,
+        {
+          key: 'label',
+          style: {
+            ...styles.infoLabel,
+            width: 110, // 🔥 KEY: align all values
+            fontFamily: getFont(label),
+          },
+        },
+        label,
+      ),
+
+      // VALUE (aligned column)
+      h(
+        Text,
+        {
+          key: 'value',
+          style: {
+            ...styles.infoValue,
+            fontFamily: getFont(textValue),
+            flex: 1,
+          },
+        },
+        textValue,
+      ),
+    ],
   );
 };
+
 
 const createTableCell = (
   key: string,
@@ -392,8 +582,13 @@ const createTableCell = (
   style: Record<string, unknown>,
   textStyle: any,
   removeRightBorder = false,
-) =>
-  h(
+  align?: 'left' | 'center' | 'right',
+) => {
+  const isAr = isArabic(content);
+
+  const finalAlign = align ?? (isAr ? 'right' : 'left');
+
+  return h(
     View,
     {
       key,
@@ -403,16 +598,48 @@ const createTableCell = (
         removeRightBorder ? { borderRightWidth: 0 } : null,
       ],
     },
-    h(Text, {
-      key: `${key}-text`,
-      style: {
-        ...textStyle,
-        fontFamily: getFont(content),
-        direction: isArabic(content) ? 'rtl' : 'ltr',
-        textAlign: isArabic(content) ? 'right' : 'left',
-      },
-    }, content),
+    [
+      h(
+        View, // ✅ WRAPPER that controls alignment (THIS is the fix)
+        {
+          key: `${key}-wrapper`,
+          style: {
+            width: '100%',
+            alignItems:
+              finalAlign === 'center'
+                ? 'center'
+                : finalAlign === 'right'
+                ? 'flex-end'
+                : 'flex-start',
+          },
+        },
+        [
+          h(
+            Text,
+            {
+              key: `${key}-text`,
+              style: [
+                textStyle,
+                {
+                  fontFamily: getFont(content),
+                  ...(isAr
+                  ? {
+                      width: '100%',
+                      textAlign: 'center',
+                    }
+                  : {
+                      textAlign: finalAlign,
+                    }),
+                },
+              ],
+            },
+            content
+          ),
+        ]
+      ),
+    ]
   );
+};
 
 const BonPdfDocument = ({
   bon,
@@ -430,79 +657,128 @@ const BonPdfDocument = ({
   const totalFrais = preparedColis.reduce((sum, item) => sum + item.frais, 0);
   const totalGeneral = totalPrix + totalFrais;
   const bonUser = bon.user;
-  console.log('USER AFTER ASSIGN:', bonUser);
   const hasBonUser = Boolean(
     bonUser && (bonUser.nom || bonUser.prenom || bonUser.email || bonUser.telephone),
   );
   const showLivreurCard = bon.source_type === 'livreur' || hasBonUser;
 
   const leftCard = h(
-    View,
-    { style: styles.infoCard, key: 'info-card-1' },
-    [
-      h(Text, { style: styles.cardTitle, key: 'title' }, 'Informations générales'),
-      createInfoRow('ID Bon:', bon.id),
-      createInfoRow('Type:', getBonTypeLabel(bon.type)),
-      createInfoRow('Statut:', getStatusText(bon.statut)),
-      createInfoRow('Date de création:', formatDate(bon.date_creation)),
-      createInfoRow('Nombre de colis:', bon.nb_colis ?? preparedColis.length),
-    ].filter((item): item is NonNullable<typeof item> => item !== null),
-  );
+  View,
+  { style: styles.infoCard, key: 'info-card-1' },
+  [
+    // HEADER
+    h(
+      View,
+      { key: 'left-header', style: styles.cardHeaderRow },
+      [
+        h(
+          View,
+          { key: 'left-icon', style: styles.iconBox },
+          h(
+            Svg,
+            { width: 12, height: 12, viewBox: '0 0 24 24' },
+            h(Path, {
+              d: 'M12 2a10 10 0 100 20 10 10 0 000-20zm1 14h-2v-6h2zm0-8h-2V6h2z',
+              fill: '#ffffff',
+            })
+          )
+        ),
+        h(Text, { key: 'left-title', style: styles.cardTitle }, 'INFORMATIONS GÉNÉRALES'),
+      ]
+    ),
 
-  const rightCard = h(
-    View,
-    {
-      style: [styles.infoCard, !showLivreurCard ? styles.infoCardAlt : null],
-      key: 'info-card-2',
-    },
-    [
-      h(
-        Text,
-        {
-          style: [styles.cardTitle, !showLivreurCard ? styles.cardTitleAlt : null],
-          key: 'title',
-        },
-        showLivreurCard ? 'Livreur assigné' : 'Informations Entreprise',
-      ),
-      ...(showLivreurCard
-        ? [
-            createInfoRow(
-              'Nom:',
-              [bonUser?.nom, bonUser?.prenom].filter(Boolean).join(' ').trim() || '—',
-            ),
-            createInfoRow('Email:', bonUser?.email),
-            createInfoRow('Téléphone:', bonUser?.telephone),
-            createInfoRow('Véhicule:', bonUser?.vehicule),
-            createInfoRow('Zone:', bonUser?.zone),
-            createInfoRow('Ville:', bonUser?.ville || 'TEST'),
-          ]
-        : [
-            createInfoRow('Entreprise:', companySettings?.nom),
-            createInfoRow(
-              'Adresse:',
-              [companySettings?.adresse, companySettings?.ville]
-                .filter(Boolean)
-                .join(', '),
-            ),
-            createInfoRow('Téléphone:', companySettings?.telephone),
-            createInfoRow('Email:', companySettings?.email),
-          ]),
-    ].filter((item): item is NonNullable<typeof item> => item !== null),
-  );
+    h(View, { key: 'left-divider', style: styles.cardDivider }),
 
+    // CONTENT
+    createInfoRow('ID Bon:', bon.id, 'id'),
+    createInfoRow('Type:', getBonTypeLabel(bon.type), 'type'),
+    createInfoRow('Statut:', getStatusText(bon.statut), 'statut'),
+    createInfoRow('Date de création:', formatDate(bon.date_creation), 'date'),
+    createInfoRow('Nombre de colis:', bon.nb_colis ?? preparedColis.length, 'colis'),
+  ].filter(Boolean),
+);
+
+
+const rightCard = h(
+  View,
+  {
+    style: [styles.infoCard, styles.infoCardAlt],
+    key: 'info-card-2',
+  },
+  [
+    // HEADER
+    h(
+      View,
+      { key: 'right-header', style: styles.cardHeaderRow },
+      [
+        h(
+          View,
+          { key: 'right-icon', style: styles.iconBox },
+          h(
+            Svg,
+            { width: 12, height: 12, viewBox: '0 0 24 24' },
+            h(Path, {
+              d: 'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z',
+              stroke: '#ffffff',
+              strokeWidth: 1.8,
+              fill: 'none',
+            })
+          )
+        ),
+
+        h(
+          Text,
+          { key: 'right-title', style: styles.cardTitleAlt },
+          showLivreurCard
+            ? 'LIVREUR ASSIGNÉ'
+            : 'INFORMATIONS ENTREPRISE'
+        ),
+      ]
+    ),
+
+    h(View, { key: 'right-divider', style: styles.cardDivider }),
+
+    // CONTENT
+    ...(showLivreurCard
+      ? [
+          createInfoRow(
+            'Nom:',
+            [bonUser?.nom, bonUser?.prenom].filter(Boolean).join(' ').trim() || '—',
+            'nom'
+          ),
+          createInfoRow('Email:', bonUser?.email, 'email'),
+          createInfoRow('Téléphone:', bonUser?.telephone, 'tel'),
+          createInfoRow('Véhicule:', bonUser?.vehicule, 'vehicule'),
+          createInfoRow('Zone:', bonUser?.zone, 'zone'),
+          createInfoRow('Ville:', bonUser?.ville || '—', 'ville'),
+        ]
+      : [
+          createInfoRow('Entreprise:', companySettings?.nom, 'ent'),
+          createInfoRow(
+            'Adresse:',
+            [companySettings?.adresse, companySettings?.ville]
+              .filter(Boolean)
+              .join(', '),
+            'adresse'
+          ),
+          createInfoRow('Téléphone:', companySettings?.telephone, 'tel2'),
+          createInfoRow('Email:', companySettings?.email, 'email2'),
+        ]),
+  ].filter(Boolean),
+);
   const desktopTable = h(
     View,
     { style: styles.tableWrapper, key: 'table' },
     [
       h(
         View,
-        { style: styles.tableHeader, key: 'header' },
+        { key: 'table-header-row', style: styles.tableHeader },
         [
           createTableCell(
             'h-reference',
             'Référence',
             columnStyles.reference,
-            [styles.textBold, styles.textHeader],
+            [styles.textBold, { whiteSpace: 'nowrap' }, styles.textHeader],
           ),
           createTableCell(
             'h-client',
@@ -526,14 +802,17 @@ const BonPdfDocument = ({
             'h-frais',
             'Frais',
             columnStyles.frais,
-            [styles.textBold, styles.textHeader],
+            [styles.textBold, styles.textHeader, styles.textCenter],
+            false,
+            'center' 
           ),
           createTableCell(
             'h-prix',
             'Prix',
             columnStyles.prix,
-            [styles.textBold, styles.textHeader],
+            [styles.textBold, styles.textHeader, styles.textCenter],
             true,
+            'center' 
           ),
         ],
       ),
@@ -567,45 +846,45 @@ const BonPdfDocument = ({
                 createTableCell(`cell-client-${index}`, item.client, columnStyles.client, styles.text),
                 createTableCell(`cell-ent-${index}`, item.entreprise, columnStyles.entreprise, styles.text),
                 createTableCell(`cell-addr-${index}`, item.adresse, columnStyles.adresse, styles.text),
-                createTableCell(`cell-frais-${index}`, money(item.frais), columnStyles.frais, styles.moneyText),
-                createTableCell(`cell-prix-${index}`, money(item.prix), columnStyles.prix, styles.moneyText, true),
+                createTableCell(`cell-frais-${index}`, money(item.frais), columnStyles.frais, styles.moneyText,false,'center'),
+                createTableCell(`cell-prix-${index}`, money(item.prix), columnStyles.prix, styles.moneyText, true,'center'),
               ],
             )
           ),
       preparedColis.length > 0 &&
         h(
           View,
-          { style: styles.totalRow, key: 'total-row', wrap: false },
+          { key: 'total-row', style: styles.totalRow, wrap: false },
           [
             createTableCell(
               'total-label',
               'TOTAL',
-              { flexGrow: 4.5, flexBasis: 4.5 },
-              styles.textBold,
+              { flexGrow: 5.2, flexBasis: 5.2 },
+              [styles.textBold, styles.textBlue],
               true,
             ),
-            createTableCell('total-frais', money(totalFrais), columnStyles.frais, styles.textBold),
-            createTableCell('total-prix', money(totalPrix), columnStyles.prix, styles.textBold, true),
+            createTableCell('total-frais', money(totalFrais), columnStyles.frais, [styles.textBold, styles.textBlue],false,'center'),
+            createTableCell('total-prix', money(totalPrix), columnStyles.prix, [styles.textBold, styles.textBlue], true, 'center'),
           ],
         ),
 
       preparedColis.length > 0 &&
         h(
           View,
-          { style: styles.totalGeneralRow, key: 'general-row', wrap: false },
+          { key: 'general-row', style: styles.totalGeneralRow, wrap: false },
           [
             createTableCell(
               'general-label',
               'TOTAL GÉNÉRAL',
-              { flexGrow: 4.5, flexBasis: 4.5 },
-              styles.textBold,
+              { flexGrow: 7, flexBasis: 7 },
+              styles.textBoldWhite,
               true,
             ),
             createTableCell(
               'general-value',
               money(totalGeneral),
               { flexGrow: 1.6, flexBasis: 1.6 },
-              styles.textBold,
+              styles.textBoldWhite,
               true,
             ),
           ],
@@ -624,35 +903,35 @@ const BonPdfDocument = ({
       [
         h(
           View,
-          { style: styles.compactItemHeader, key: `header-${item.reference}-${index}` },
+          { key: `compact-header-${index}`, style: styles.compactItemHeader },
           h(Text, { key: `header-text-${index}`, style: styles.compactItemHeaderText }, `Réf: ${item.reference}`),
         ),
         h(
           View,
-          { style: styles.compactItemBody, key: `body-${item.reference}-${index}` },
+          { key: `compact-body-${index}`, style: styles.compactItemBody },
           [
-            h(View, { style: styles.compactRow, key: `client-${item.reference}-${index}` }, [
+            h(View, { key: `compact-client-${index}`, style: styles.compactRow }, [
               h(Text, { key: `client-label-${index}`, style: styles.infoLabel }, 'Client:'),
               h(Text, { key: `client-value-${index}`, style: styles.infoValue }, item.client),
             ]),
-            h(View, { style: styles.compactRow, key: `entreprise-${item.reference}-${index}` }, [
+            h(View, { key: `compact-entreprise-${index}`, style: styles.compactRow }, [
               h(Text, { key: `entreprise-label-${index}`, style: styles.infoLabel }, 'Entreprise:'),
               h(Text, { key: `entreprise-value-${index}`, style: styles.infoValue }, item.entreprise),
             ]),
-            h(View, { style: styles.compactRow, key: `adresse-${item.reference}-${index}` }, [
+            h(View, { key: `compact-adresse-${index}`, style: styles.compactRow }, [
               h(Text, { key: `adresse-label-${index}`, style: styles.infoLabel }, 'Adresse:'),
               h(Text, { key: `adresse-value-${index}`, style: styles.infoValue }, item.adresse),
             ]),
-            h(View, { style: styles.compactRow, key: `statut-${item.reference}-${index}` }, [
+            h(View, { key: `compact-statut-${index}`, style: styles.compactRow }, [
               h(Text, { key: `statut-label-${index}`, style: styles.infoLabel }, 'Statut:'),
               h(Text, { key: `statut-value-${index}`, style: styles.infoValue }, getStatusText(item.statut)),
             ]),
             h(
               View,
-              { style: styles.compactPrices, key: `prices-${item.reference}-${index}` },
+              { key: `compact-prices-${index}`, style: styles.compactPrices },
               [
-                h(Text, { style: styles.moneyText, key: `prix-${item.reference}-${index}` }, `Prix: ${money(item.prix)}`),
-                h(Text, { style: styles.moneyText, key: `frais-${item.reference}-${index}` }, `Frais: ${money(item.frais)}`),
+                h(Text, { key: `prix-${index}`, style: styles.moneyText }, `Prix: ${money(item.prix)}`),
+                h(Text, { key: `frais-${index}`, style: styles.moneyText }, `Frais: ${money(item.frais)}`),
               ],
             ),
           ],
@@ -683,37 +962,65 @@ const BonPdfDocument = ({
           [
             h(
               View,
-              { style: styles.headerRow, key: 'header-row' },
+              { key: 'header-top', style: styles.headerTop },
               [
+                // LEFT SIDE
                 h(
-                  Svg,
-                  { width: 56, height: 56, viewBox: '0 0 24 24', style: styles.logoContainer, key: 'logo-svg' },
-                  h(
-                    G,
-                    { transform: 'translate(4, 4)' },
-                    h(Path, {
-                      d: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4',
-                      stroke: '#ffffff',
-                      strokeWidth: 2,
-                      strokeLinecap: 'round',
-                      strokeLinejoin: 'round',
-                      fill: 'none',
-                    }),
-                  ),
+                  View,
+                  { key: 'header-left', style: styles.headerLeft },
+                  [
+                    h(
+                      View,
+                      { key: 'logo-box', style: styles.logoBox },
+                      h(
+                        Svg,
+                        { width: 28, height: 28, viewBox: '0 0 24 24' },
+                        h(Path, {
+                          d: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4',
+                          stroke: '#ffffff',
+                          strokeWidth: 1.6,
+                          fill: 'none',
+                        })
+                      )
+                    ),
+
+                    h(
+                      View,
+                      {key: 'title-container', style: { flexShrink: 1 }},
+                      [
+                        h(
+                          Text,
+                          { key: 'title', style: styles.title },
+                          `BON DE ${getBonTypeLabel(bon.type).toUpperCase()}`
+                        ),
+                        h(
+                          Text,
+                          { key: 'subtitle', style: styles.subtitle },
+                          'LogiTrack - Système de gestion logistique'
+                        ),
+                      ]
+                    )
+                  ]
                 ),
+
+                // RIGHT SIDE
                 h(
-                  Text,
-                  { style: styles.title, key: 'title' },
-                  `BON DE ${getBonTypeLabel(bon.type).toUpperCase()}`,
-                ),
-              ],
+                  View,
+                  { key: 'header-right', style: styles.headerRight },
+                  [
+                    h(Text, { key: 'meta-label-1', style: styles.metaLabel }, 'N° Bon'),
+                    h(Text, { key: 'meta-value-1', style: styles.metaValue }, bon.id),
+
+                    h(Text, { key: 'meta-label-2', style: styles.metaLabel }, 'Date de création'),
+                    h(Text, { key: 'meta-value-2', style: styles.metaValue }, formatDate(bon.date_creation)),
+                  ]
+                )
+              ]
             ),
-            h(
-              Text,
-              { style: styles.subtitle, key: 'subtitle' },
-              'LogiTrack - Système de gestion logistique',
-            ),
-          ],
+
+            // BLUE LINE
+            h(View, { key: 'header-divider', style: styles.headerDivider })
+          ]
         ),
         h(
           View,
@@ -724,49 +1031,154 @@ const BonPdfDocument = ({
           [leftCard, h(View, { style: styles.spacer, key: 'spacer' }), rightCard],
         ),
         h(
-          Text,
-          { style: styles.sectionTitle, key: 'section-title' },
-          `Liste des Colis (${preparedColis.length} colis)`,
-        ),
-        compact ? h(View, { key: 'compact-table' }, compactCards) : desktopTable,
-        bon.notes
-          ? h(
-              View,
-              { style: styles.notesBox, key: 'notes' },
-              [
-                h(Text, { style: styles.cardTitle, key: 'title' }, 'Notes'),
-                h(Text, { style: styles.infoValue, key: 'value' }, bon.notes),
-              ],
-            )
-          : null,
-        compact
-          ? h(
-              View,
-              { style: styles.notesBox, key: 'summary' },
-              [
-                h(Text, { style: styles.cardTitle, key: 'title' }, 'Résumé'),
-                h(Text, { style: styles.infoValue, key: 'prix' }, `Total prix: ${money(totalPrix)}`),
-                h(Text, { style: styles.infoValue, key: 'frais' }, `Total frais: ${money(totalFrais)}`),
-                h(Text, { style: styles.infoValue, key: 'general' }, `Total général: ${money(totalGeneral)}`),
-              ],
-            )
-          : null,
-        h(
           View,
-          { style: styles.footer, key: 'footer' },
+          { key: 'section-title-row', style: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 } },
           [
             h(
-              Text,
-              { style: styles.footerText, key: 'generated' },
-              `Document généré le ${formatDate(new Date().toISOString())} par LogiTrack`,
+              View,
+              { key: 'section-icon' },
+              h(
+                Svg,
+                { width: 28, height: 28, viewBox: '0 0 24 24' },
+                h(Path, {
+                  d: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4',
+                  stroke: '#1d4ed8',
+                  strokeWidth: 1.6,
+                  fill: 'none',
+                })
+              )
             ),
             h(
               Text,
-              { style: styles.footerText, key: 'totals' },
-              `Total des colis: ${preparedColis.length} | Montant total: ${money(totalGeneral)}`,
+              { key: 'section-title-text', style: styles.sectionTitle },
+              `LISTE DES COLIS (${preparedColis.length} colis)`
             ),
-          ],
+          ]
         ),
+        compact ? h(View, { key: 'compact-table' }, compactCards) : desktopTable,
+        h(
+          View,
+          { style: styles.notesSummaryRow, key: 'notes-summary' },
+          [
+            ...(bon.notes
+              ? [
+                  h(
+                    View,
+                    { style: styles.notesBox, key: 'notes-card' },
+                    [
+                      // HEADER
+                      h(
+                        View,
+                        { key: 'notes-header', style: styles.cardHeaderRow },
+                        [
+                          h(
+                            View,
+                            { key: 'notes-icon', style: styles.iconBox },
+                            h(
+                              Svg,
+                              { width: 10, height: 10, viewBox: '0 0 24 24' },
+                              h(Path, {
+                                d: 'M6 2h9l5 5v15a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z',
+                                stroke: '#ffffff',
+                                strokeWidth: 1.5,
+                                fill: 'none',
+                              })
+                            )
+                          ),
+                          h(Text, { key: 'notes-title', style: styles.cardTitle }, 'NOTES'),
+                        ]
+                      ),
+
+                      h(View, { key: 'notes-divider', style: styles.cardDivider }),
+
+                      // CONTENT
+                      h(Text, { key: 'notes-content', style: styles.infoValue }, bon.notes),
+                    ]
+                  )
+                ]
+              : []),
+
+            // SUMMARY CARD
+            h(
+              View,
+              { style: styles.summaryBox, key: 'summary-card' },
+              [
+                // HEADER
+                h(
+                  View,
+                  { key: 'summary-header', style: styles.cardHeaderRow },
+                  [
+                    h(
+                      View,
+                      { key: 'summary-icon', style: styles.iconBox },
+                      h(
+                        Svg,
+                        { width: 10, height: 10, viewBox: '0 0 24 24' },
+                        h(Path, {
+                          d: 'M20 12v8H4V4h8m4 0v4m0-4l-8 8',
+                          stroke: '#ffffff',
+                          strokeWidth: 1.5,
+                          fill: 'none',
+                        })
+                      )
+                    ),
+                    h(Text, { key: 'summary-title', style: styles.cardTitle }, 'RÉSUMÉ FINANCIER'),
+                  ]
+                ),
+
+                h(View, { key: 'summary-divider', style: styles.cardDivider }),
+
+                // ROWS
+                h(
+                  View,
+                  { key: 'summary-row-1', style: styles.summaryRow },
+                  [
+                    h(Text, { key: 'summary-label-1', style: styles.summaryLabel }, 'Total frais'),
+                    h(Text, { key: 'summary-value-1', style: styles.summaryValue }, money(totalFrais)),
+                  ]
+                ),
+
+                h(
+                  View,
+                  { key: 'summary-row-2', style: styles.summaryRow },
+                  [
+                    h(Text, { key: 'summary-label-2', style: styles.summaryLabel }, 'Total prix'),
+                    h(Text, { key: 'summary-value-2', style: styles.summaryValue }, money(totalPrix)),
+                  ]
+                ),
+
+                // TOTAL HIGHLIGHT
+                h(
+                  View,
+                  { key: 'summary-highlight', style: styles.summaryHighlight },
+                  [
+                    h(Text, { key: 'summary-total-label', style: styles.summaryTotalLabel }, 'Total général'),
+                    h(Text, { key: 'summary-total-value', style: styles.summaryTotalValue }, money(totalGeneral)),
+                  ]
+                ),
+              ]
+            ),
+          ]
+        ),
+        h(
+          View,
+          { key: 'footer', style: styles.footer },
+          [
+            h(Text, { key: 'footer-1', style: styles.footerText }, 'LogiTrack'),
+
+            h(
+              Text,
+              { key: 'footer-2', style: styles.footerText },
+              `Document généré le ${formatDate(new Date().toISOString())}`
+            ),
+
+            h(
+              Text,
+              { key: 'footer-3', style: styles.footerText },
+              `Total: ${money(totalGeneral)}`
+            ),
+          ]
+)
       ],
     ),
   );

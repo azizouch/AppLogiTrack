@@ -565,6 +565,15 @@ export function Distribution() {
                             variant="ghost"
                             size="sm"
                             className="h-8 w-8 p-0"
+                            onClick={() => handleOpenHistory(bon)}
+                            title="Voir l'historique"
+                          >
+                            <History className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0"
                             onClick={() => handlePrint(bon)}
                             disabled={printing === bon.id}
                             title="Imprimer"
@@ -602,15 +611,6 @@ export function Distribution() {
                             ) : (
                               <FileSpreadsheet className="h-4 w-4" />
                             )}
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-8 w-8 p-0"
-                            onClick={() => handleOpenHistory(bon)}
-                            title="Voir l'historique"
-                          >
-                            <History className="h-4 w-4" />
                           </Button>
                         </div>
                       </td>

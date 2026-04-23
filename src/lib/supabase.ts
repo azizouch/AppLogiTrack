@@ -1192,7 +1192,7 @@ export const api = {
   getLivreurs: async () => {
     const { data, error } = await supabase
       .from('utilisateurs')
-      .select('id, nom, prenom, telephone, role, vehicule, zone')
+      .select('id, nom, prenom, telephone, role, vehicule, zone, ville')
       .eq('role', 'Livreur')
       .order('nom', { ascending: true })
 
