@@ -101,7 +101,7 @@ export function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-start sm:items-center justify-center p-4 pt-8 sm:pt-4">
       <div className="w-full max-w-md mx-auto animate-fade-in-down">
         {/* Logo Section outside card */}
         {/* <div className="text-center">

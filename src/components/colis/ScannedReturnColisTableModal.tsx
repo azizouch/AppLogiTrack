@@ -18,6 +18,7 @@ interface ScannedReturnColisTableModalProps {
   onScanAgain: () => void;
   onFinalize: () => void;
   loading?: boolean;
+  selectedLivreur?: { nom: string; prenom?: string } | null;
 }
 
 export function ScannedReturnColisTableModal({
@@ -27,6 +28,7 @@ export function ScannedReturnColisTableModal({
   onScanAgain,
   onFinalize,
   loading = false,
+  selectedLivreur,
 }: ScannedReturnColisTableModalProps) {
   const { state: authState } = useAuth();
   const { removeScannedReturnColis, clearScannedReturnColisList } = useAdminReturnScanner();
@@ -95,25 +97,31 @@ export function ScannedReturnColisTableModal({
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4">
+          <div className="space-y-4 min-w-full">
             {/* Stats Summary */}
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid grid-cols-2 sm:grid-cols-4 gap-2">
               <div className="bg-orange-50 dark:bg-orange-950 p-4 rounded-lg">
-                <p className="text-sm text-gray-600 dark:text-gray-400">Nombre de colis</p>
-                <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">
+                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Nombre de colis</p>
+                <p className="text-xs sm:text-lg font-bold text-orange-600 dark:text-orange-400">
                   {scannedReturnColisList.length}
                 </p>
               </div>
               <div className="bg-green-50 dark:bg-green-950 p-4 rounded-lg">
-                <p className="text-sm text-gray-600 dark:text-gray-400">Montant total</p>
-                <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Montant total</p>
+                <p className="text-xs sm:text-lg font-bold text-green-600 dark:text-green-400">
                   {totalAmount.toFixed(2)} DH
                 </p>
               </div>
+              <div className="bg-blue-50 dark:bg-blue-950 p-4 rounded-lg">
+                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Responsable</p>
+                <p className="text-xs sm:text-lg font-bold text-blue-600 dark:text-blue-400 truncate">
+                  {authState.user?.prenom} {authState.user?.nom}
+                </p>
+              </div>
               <div className="bg-purple-50 dark:bg-purple-950 p-4 rounded-lg">
-                <p className="text-sm text-gray-600 dark:text-gray-400">Responsable</p>
-                <p className="text-lg font-bold text-purple-600 dark:text-purple-400 truncate">
-                  {authState.user?.nom}
+                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Livreur</p>
+                <p className="text-xs sm:text-lg font-bold text-purple-600 dark:text-purple-400">
+                  {selectedLivreur ? `${selectedLivreur.prenom || ''} ${selectedLivreur.nom}`.trim() : 'Non sélectionné'}
                 </p>
               </div>
             </div>
@@ -130,8 +138,8 @@ export function ScannedReturnColisTableModal({
 
             {/* Colis Table */}
             {scannedReturnColisList.length > 0 && (
-              <div className="border rounded-lg overflow-hidden">
-                <Table>
+              <div className="border rounded-lg overflow-x-auto">
+                <Table className="min-w-full">
                   <TableHeader className="bg-gray-50 dark:bg-gray-900">
                     <TableRow>
                       <TableHead className="font-bold">ID Colis</TableHead>
@@ -147,7 +155,7 @@ export function ScannedReturnColisTableModal({
                     {scannedReturnColisList.map((colis) => (
                       <TableRow key={colis.id} className="hover:bg-gray-50 dark:hover:bg-gray-900">
                         <TableCell className="font-mono text-sm font-semibold">
-                          {colis.id.slice(0, 8)}...
+                          {colis.id}
                         </TableCell>
                         <TableCell className="text-sm">
                           {colis.client_nom || colis.client?.nom || 'N/A'}
@@ -194,21 +202,36 @@ export function ScannedReturnColisTableModal({
             )}
 
             {/* Action Buttons */}
-            {scannedReturnColisList.length > 0 && (
-              <div className="flex justify-between items-center pt-4 border-t">
+            <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 pt-4 border-t">
+              <div className="flex flex-wrap items-center gap-2">
                 <Button
                   variant="outline"
-                  onClick={onScanAgain}
+                  onClick={handleClose}
                   disabled={loading || finalizing}
-                  className="flex items-center gap-2"
+                  className="w-full sm:w-auto"
                 >
-                  <QrCode className="h-4 w-4" />
-                  Scanner plus de colis
+                  <X className="h-4 w-4" />
+                  Annuler
                 </Button>
+
+                {scannedReturnColisList.length > 0 && (
+                  <Button
+                    variant="outline"
+                    onClick={onScanAgain}
+                    disabled={loading || finalizing}
+                    className="w-full sm:w-auto"
+                  >
+                    <QrCode className="h-4 w-4" />
+                    Scanner plus de colis
+                  </Button>
+                )}
+              </div>
+
+              {scannedReturnColisList.length > 0 && (
                 <Button
                   onClick={handleFinalize}
                   disabled={loading || finalizing}
-                  className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700"
+                  className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700 w-full sm:w-auto justify-center"
                 >
                   {finalizing ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -217,8 +240,8 @@ export function ScannedReturnColisTableModal({
                   )}
                   Finaliser le bon de retour
                 </Button>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </DialogContent>
       </Dialog>

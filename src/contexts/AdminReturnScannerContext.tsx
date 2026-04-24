@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState } from 'react';
-import { Colis } from '@/types';
+import { Colis, User } from '@/types';
 
 interface AdminReturnScannerContextType {
   isAdminReturnScannerOpen: boolean;
@@ -12,8 +12,13 @@ interface AdminReturnScannerContextType {
   setScannedReturnColisList: (list: Colis[]) => void;
   isScannedReturnColisTableOpen: boolean;
   setIsScannedReturnColisTableOpen: (open: boolean) => void;
+  isLivreurSelectionModalOpen: boolean;
+  setIsLivreurSelectionModalOpen: (open: boolean) => void;
+  selectedReturnLivreur: User | null;
+  setSelectedReturnLivreur: (livreur: User | null) => void;
   openReturnScanner: () => void;
   closeReturnScanner: () => void;
+  confirmLivreurAndOpenScanner: (livreur: User) => void;
   addScannedReturnColis: (colis: Colis) => void;
   removeScannedReturnColis: (colisId: string) => void;
   clearScannedReturnColisList: () => void;
@@ -27,9 +32,17 @@ export function AdminReturnScannerProvider({ children }: { children: React.React
   const [isScannedReturnColisDetailsOpen, setIsScannedReturnColisDetailsOpen] = useState(false);
   const [scannedReturnColisList, setScannedReturnColisList] = useState<Colis[]>([]);
   const [isScannedReturnColisTableOpen, setIsScannedReturnColisTableOpen] = useState(false);
+  const [isLivreurSelectionModalOpen, setIsLivreurSelectionModalOpen] = useState(false);
+  const [selectedReturnLivreur, setSelectedReturnLivreur] = useState<User | null>(null);
 
-  const openReturnScanner = () => setIsAdminReturnScannerOpen(true);
+  const openReturnScanner = () => setIsLivreurSelectionModalOpen(true);
   const closeReturnScanner = () => setIsAdminReturnScannerOpen(false);
+
+  const confirmLivreurAndOpenScanner = (livreur: User) => {
+    setSelectedReturnLivreur(livreur);
+    setIsLivreurSelectionModalOpen(false);
+    setIsAdminReturnScannerOpen(true);
+  };
 
   const addScannedReturnColis = (colis: Colis) => {
     setScannedReturnColisList(prev => {
@@ -60,8 +73,13 @@ export function AdminReturnScannerProvider({ children }: { children: React.React
       setScannedReturnColisList,
       isScannedReturnColisTableOpen,
       setIsScannedReturnColisTableOpen,
+      isLivreurSelectionModalOpen,
+      setIsLivreurSelectionModalOpen,
+      selectedReturnLivreur,
+      setSelectedReturnLivreur,
       openReturnScanner,
       closeReturnScanner,
+      confirmLivreurAndOpenScanner,
       addScannedReturnColis,
       removeScannedReturnColis,
       clearScannedReturnColisList,

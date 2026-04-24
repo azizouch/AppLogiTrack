@@ -293,6 +293,14 @@ export function AdminReturnScanner({
   };
 
   const handleRestart = () => {
+    // Fully stop the current camera stream before restarting
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
     // Reset all refs to allow camera to restart
     hasStartedRef.current = false;
     initializingRef.current = false;
@@ -334,6 +342,7 @@ export function AdminReturnScanner({
               className="absolute inset-0 w-full h-full object-cover"
               playsInline
               muted
+              autoPlay
             />
             <canvas ref={canvasRef} className="hidden" />
             

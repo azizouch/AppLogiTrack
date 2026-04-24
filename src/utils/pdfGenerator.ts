@@ -660,7 +660,7 @@ const BonPdfDocument = ({
   const hasBonUser = Boolean(
     bonUser && (bonUser.nom || bonUser.prenom || bonUser.email || bonUser.telephone),
   );
-  const showLivreurCard = bon.source_type === 'livreur' || hasBonUser;
+  const showLivreurCard = bon.source_type !== 'admin';
 
   const leftCard = h(
   View,

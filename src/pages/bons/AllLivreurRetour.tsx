@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -14,6 +15,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { downloadBonAsExcel } from '@/utils/pdfGenerator';
 
 export function AllLivreurRetour() {
+  const navigate = useNavigate();
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const [searchTerm, setSearchTerm] = useState('');
@@ -382,9 +384,9 @@ export function AllLivreurRetour() {
                       <td className="px-4 py-4 text-sm text-gray-900 dark:text-white">{formatDate(bon.date_creation)}</td>
                       <td className="px-4 py-4 text-sm font-medium">
                         <div className="flex items-center space-x-1">
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0"><Eye className="h-4 w-4" /></Button>
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0"><Edit className="h-4 w-4" /></Button>
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => handleDownloadExcel(bon)} disabled={downloadingExcel === bon.id}>{downloadingExcel === bon.id ? <div className="animate-spin h-4 w-4 border-2 border-gray-600 border-t-transparent rounded-full"></div> : <FileSpreadsheet className="h-4 w-4" />}</Button>
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => navigate(`/bons/${bon.id}`)} title="Voir les détails"><Eye className="h-4 w-4" /></Button>
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => navigate(`/bons/${bon.id}`)} title="Modifier"><Edit className="h-4 w-4" /></Button>
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => handleDownloadExcel(bon)} disabled={downloadingExcel === bon.id} title="Télécharger Excel">{downloadingExcel === bon.id ? <div className="animate-spin h-4 w-4 border-2 border-gray-600 border-t-transparent rounded-full"></div> : <FileSpreadsheet className="h-4 w-4" />}</Button>
                         </div>
                       </td>
                     </tr>
@@ -407,3 +409,4 @@ export function AllLivreurRetour() {
     </div>
   );
 }
+

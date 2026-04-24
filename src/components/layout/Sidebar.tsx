@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
+import { ScanRetourIcon } from '@/components/ui/icons';
 import {
   Package,
   Truck,
@@ -27,7 +28,8 @@ import {
   User,
   PanelLeftOpen,
   PanelLeftClose,
-  QrCode
+  QrCode,
+  ScanLine
 } from 'lucide-react';
 import {
   Sidebar,
@@ -471,98 +473,118 @@ export function AppSidebar() {
         collapsible="icon"
         className={`bg-sidebar border-r border-sidebar-border ${isCollapsed ? 'sidebar-collapsed' : ''}`}
       >
-      {/* Header */}
-      <SidebarHeader className="h-16 px-4 border-b border-sidebar-border">
-        <div className={`h-full flex items-center w-full ${!isCollapsed ? 'justify-between' : 'justify-center'}`}>
-          {!isCollapsed && (
-            <button
-              className="text-xl font-bold text-sidebar-foreground flex items-center cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 focus:outline-none focus:text-sidebar-foreground transition-colors select-none bg-transparent border-none p-0 m-0"
-              onClick={() => {
-                navigate('/');
-                if (isMobile) {
-                  toggleSidebar();
-                }
-              }}
-              onMouseLeave={(e) => e.currentTarget.blur()}
+        {/* Header */}
+        <SidebarHeader className="h-16 px-4 border-b border-sidebar-border">
+          <div className={`h-full flex items-center w-full ${!isCollapsed ? 'justify-between' : 'justify-center'}`}>
+            {!isCollapsed && (
+              <button
+                className="text-xl font-bold text-sidebar-foreground flex items-center cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 focus:outline-none focus:text-sidebar-foreground transition-colors select-none bg-transparent border-none p-0 m-0"
+                onClick={() => {
+                  navigate('/');
+                  if (isMobile) {
+                    toggleSidebar();
+                  }
+                }}
+                onMouseLeave={(e) => e.currentTarget.blur()}
+              >
+                {companyName}
+              </button>
+            )}
+            <div
+              className="flex items-center justify-center w-10 h-10 rounded-lg transition-colors cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
+              onClick={toggleCollapse}
             >
-              {companyName}
-            </button>
-          )}
-          <div
-            className="flex items-center justify-center w-10 h-10 rounded-lg transition-colors cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
-            onClick={toggleCollapse}
-          >
-            <PanelLeftClose className={`h-4 w-4 transition-transform duration-300 text-sidebar-foreground ${isCollapsed ? 'rotate-180' : ''}`} />
+              <PanelLeftClose className={`h-4 w-4 transition-transform duration-300 text-sidebar-foreground ${isCollapsed ? 'rotate-180' : ''}`} />
+            </div>
           </div>
-        </div>
-      </SidebarHeader>
+        </SidebarHeader>
 
-      {/* Navigation */}
-      <SidebarContent className={isCollapsed ? "p-2" : "p-2"}>
-        <SidebarGroup>
-          <SidebarGroupContent>
-            <SidebarMenu className="space-y-1">
-              {navigationItems.map((item) => {
-                if (!hasAccess(item.roles)) return null;
+        {/* Navigation */}
+        <SidebarContent className={isCollapsed ? "p-2" : "p-2"}>
+          <SidebarGroup>
+            <SidebarGroupContent>
+              <SidebarMenu className="space-y-1">
+                {navigationItems.map((item) => {
+                  if (!hasAccess(item.roles)) return null;
 
-                const isItemActive = item.url ? isActive(item.url) : false;
-                const hasActiveChild = item.items ? isParentActive(item.items) : false;
-                const expanded = isExpanded(item.title);
+                  const isItemActive = item.url ? isActive(item.url) : false;
+                  const hasActiveChild = item.items ? isParentActive(item.items) : false;
+                  const expanded = isExpanded(item.title);
 
-                return (
-                  <SidebarMenuItem key={item.title}>
-                    {item.url ? (
-                      // Single menu item
-                      <div className={`relative ${isCollapsed ? 'flex justify-center' : ''}`}>
-                        <Link to={item.url} onClick={handleLinkClick}>
-                          <div
-                            className={`flex items-center text-sm font-medium rounded-md transition-colors cursor-pointer ${
-                              !isCollapsed
-                                ? 'w-full justify-start space-x-2 px-3 py-2.5'
-                                : 'w-10 h-10 justify-center'
-                            } ${
-                              isItemActive
-                                ? 'bg-sidebar-primary text-sidebar-primary-foreground active-item'
-                                : 'text-sidebar-foreground hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-sidebar-foreground hover-item'
-                            }`}
-
-                            onMouseEnter={(e) => handleMouseEnter(e, item.title)}
-                            onMouseLeave={handleMouseLeave}
-                          >
-                            <item.icon
-                              className={`h-5 w-5 flex-shrink-0 ${
-                                isItemActive ? 'text-sidebar-primary-foreground' : 'text-sidebar-foreground'
-                              }`}
-                            />
-                            {!isCollapsed && (
-                              <div className="flex items-center justify-between w-full">
-                                <span>{item.title}</span>
-                                {item.badgeCount !== undefined && (
-                                  <Badge
-                                    variant="secondary"
-                                    className="ml-2 bg-gray-200 text-black dark:bg-gray-700 dark:text-white text-xs px-2 py-0.5 min-w-[20px] h-5 flex items-center justify-center"
-                                  >
-                                    {item.badgeCount}
-                                  </Badge>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        </Link>
-                      </div>
-                    ) : (
-                      // Menu item with dropdown
-                      <div className="space-y-1">
+                  return (
+                    <SidebarMenuItem key={item.title}>
+                      {item.url ? (
+                        // Single menu item
                         <div className={`relative ${isCollapsed ? 'flex justify-center' : ''}`}>
-                          {isCollapsed ? (
-                            // When collapsed, show dropdown popup on click - MATCH REGULAR MENU STRUCTURE EXACTLY
-                            <div onClick={(e) => handleDropdownClick(e, item.items || [])}>
-                              <div
-                                className={`flex items-center text-sm font-medium rounded-md transition-colors cursor-pointer ${
-                                  !isCollapsed
-                                    ? 'w-full justify-start space-x-2 px-3 py-2.5'
-                                    : 'w-10 h-10 justify-center'
-                                } ${
+                          <Link to={item.url} onClick={handleLinkClick}>
+                            <div
+                              className={`flex items-center text-sm font-medium rounded-md transition-colors cursor-pointer ${
+                                !isCollapsed
+                                  ? 'w-full justify-start space-x-2 px-3 py-2.5'
+                                  : 'w-10 h-10 justify-center'
+                              } ${
+                                isItemActive
+                                  ? 'bg-sidebar-primary text-sidebar-primary-foreground active-item'
+                                  : 'text-sidebar-foreground hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-sidebar-foreground hover-item'
+                              }`}
+
+                              onMouseEnter={(e) => handleMouseEnter(e, item.title)}
+                              onMouseLeave={handleMouseLeave}
+                            >
+                              <item.icon
+                                className={`h-5 w-5 flex-shrink-0 ${
+                                  isItemActive ? 'text-sidebar-primary-foreground' : 'text-sidebar-foreground'
+                                }`}
+                              />
+                              {!isCollapsed && (
+                                <div className="flex items-center justify-between w-full">
+                                  <span>{item.title}</span>
+                                  {item.badgeCount !== undefined && (
+                                    <Badge
+                                      variant="secondary"
+                                      className="ml-2 bg-gray-200 text-black dark:bg-gray-700 dark:text-white text-xs px-2 py-0.5 min-w-[20px] h-5 flex items-center justify-center"
+                                    >
+                                      {item.badgeCount}
+                                    </Badge>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          </Link>
+                        </div>
+                      ) : (
+                        // Menu item with dropdown
+                        <div className="space-y-1">
+                          <div className={`relative ${isCollapsed ? 'flex justify-center' : ''}`}>
+                            {isCollapsed ? (
+                              // When collapsed, show dropdown popup on click - MATCH REGULAR MENU STRUCTURE EXACTLY
+                              <div onClick={(e) => handleDropdownClick(e, item.items || [])}>
+                                <div
+                                  className={`flex items-center text-sm font-medium rounded-md transition-colors cursor-pointer ${
+                                    !isCollapsed
+                                      ? 'w-full justify-start space-x-2 px-3 py-2.5'
+                                      : 'w-10 h-10 justify-center'
+                                  } ${
+                                    hasActiveChild
+                                      ? 'bg-sidebar-primary text-sidebar-primary-foreground active-item'
+                                      : 'text-sidebar-foreground hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-sidebar-foreground hover-item'
+                                  }`}
+                                  onMouseEnter={(e) => handleMouseEnter(e, item.title)}
+                                  onMouseLeave={handleMouseLeave}
+                                >
+                                  <item.icon
+                                    className={`h-5 w-5 flex-shrink-0 ${
+                                      hasActiveChild ? 'text-sidebar-primary-foreground' : 'text-sidebar-foreground'
+                                    }`}
+                                  />
+                                  {!isCollapsed && <span>{item.title}</span>}
+                                </div>
+                              </div>
+                            ) : (
+                              // When expanded, keep original dropdown button
+                              <button
+                                onClick={() => toggleExpanded(item.title)}
+                                className={`flex items-center text-sm font-medium rounded-md transition-colors cursor-pointer w-full justify-between px-3 py-2.5 ${
                                   hasActiveChild
                                     ? 'bg-sidebar-primary text-sidebar-primary-foreground active-item'
                                     : 'text-sidebar-foreground hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-sidebar-foreground hover-item'
@@ -570,127 +592,107 @@ export function AppSidebar() {
                                 onMouseEnter={(e) => handleMouseEnter(e, item.title)}
                                 onMouseLeave={handleMouseLeave}
                               >
-                                <item.icon
-                                  className={`h-5 w-5 flex-shrink-0 ${
-                                    hasActiveChild ? 'text-sidebar-primary-foreground' : 'text-sidebar-foreground'
-                                  }`}
-                                />
-                                {!isCollapsed && <span>{item.title}</span>}
-                              </div>
-                            </div>
-                          ) : (
-                            // When expanded, keep original dropdown button
-                            <button
-                              onClick={() => toggleExpanded(item.title)}
-                              className={`flex items-center text-sm font-medium rounded-md transition-colors cursor-pointer w-full justify-between px-3 py-2.5 ${
-                                hasActiveChild
-                                  ? 'bg-sidebar-primary text-sidebar-primary-foreground active-item'
-                                  : 'text-sidebar-foreground hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-sidebar-foreground hover-item'
-                              }`}
-                              onMouseEnter={(e) => handleMouseEnter(e, item.title)}
-                              onMouseLeave={handleMouseLeave}
-                            >
-                              <>
-                                <div className="flex items-center space-x-2">
-                                  <item.icon
-                                    className={`h-5 w-5 flex-shrink-0 ${
-                                      hasActiveChild ? 'text-sidebar-primary-foreground' : 'text-sidebar-foreground'
-                                    }`}
-                                  />
-                                  <span>{item.title}</span>
-                                </div>
-                                {item.hasDropdown && (
-                                  <div>
-                                    {expanded ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+                                <>
+                                  <div className="flex items-center space-x-2">
+                                    <item.icon
+                                      className={`h-5 w-5 flex-shrink-0 ${
+                                        hasActiveChild ? 'text-sidebar-primary-foreground' : 'text-sidebar-foreground'
+                                      }`}
+                                    />
+                                    <span>{item.title}</span>
                                   </div>
-                                )}
-                              </>
-                            </button>
+                                  {item.hasDropdown && (
+                                    <div>
+                                      {expanded ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+                                    </div>
+                                  )}
+                                </>
+                              </button>
+                            )}
+                          </div>
+
+                          {/* Dropdown items */}
+                          {!isCollapsed && expanded && item.items && (
+                            <div className="ml-8 space-y-1 mt-2">
+                              {item.items.map((subItem: any) => {
+                                if (subItem.roles && !hasAccess(subItem.roles)) return null;
+                                const isSubItemActive = isActive(subItem.url);
+
+                                return (
+                                  <Link key={subItem.url} to={subItem.url} onClick={handleLinkClick} className="block">
+                                    <div
+                                      className={`w-full flex items-center space-x-2 px-3 py-1.5 text-sm rounded-md transition-colors cursor-pointer ${
+                                        isSubItemActive
+                                          ? 'bg-black/20 dark:bg-blue-900 text-black dark:text-blue-100 font-medium border-l-4 border-black dark:border-sidebar-ring shadow-sm'
+                                          : 'text-sidebar-foreground hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-sidebar-foreground'
+                                      }`}
+                                    >
+                                      <subItem.icon className="h-4 w-4" />
+                                      <span>{subItem.title}</span>
+                                    </div>
+                                  </Link>
+                                );
+                              })}
+                            </div>
                           )}
                         </div>
+                      )}
+                    </SidebarMenuItem>
+                  );
+                })}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        </SidebarContent>
 
-                        {/* Dropdown items */}
-                        {!isCollapsed && expanded && item.items && (
-                          <div className="ml-8 space-y-1 mt-2">
-                            {item.items.map((subItem: any) => {
-                              if (subItem.roles && !hasAccess(subItem.roles)) return null;
-                              const isSubItemActive = isActive(subItem.url);
-
-                              return (
-                                <Link key={subItem.url} to={subItem.url} onClick={handleLinkClick} className="block">
-                                  <div
-                                    className={`w-full flex items-center space-x-2 px-3 py-1.5 text-sm rounded-md transition-colors cursor-pointer ${
-                                      isSubItemActive
-                                        ? 'bg-black/20 dark:bg-blue-900 text-black dark:text-blue-100 font-medium border-l-4 border-black dark:border-sidebar-ring shadow-sm'
-                                        : 'text-sidebar-foreground hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-sidebar-foreground'
-                                    }`}
-                                  >
-                                    <subItem.icon className="h-4 w-4" />
-                                    <span>{subItem.title}</span>
-                                  </div>
-                                </Link>
-                              );
-                            })}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </SidebarMenuItem>
-                );
-              })}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-      </SidebarContent>
-
-      {/* Bottom Buttons - QR Scanner (for livreurs and admin/gestionnaire) and Theme Toggle */}
-      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex items-center gap-2">
-        {/* QR Scanner Button - Only show for livreurs */}
-        {authState.user?.role === 'Livreur' && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-10 w-10 bg-black dark:bg-blue-900 hover:bg-gray-700 dark:hover:bg-blue-800 dark:hover:text-blue-100 rounded-md transition-colors"
-            onClick={openScanner}
-            title="Scanner un colis"
-          >
-            <QrCode className="h-5 w-5 text-white" />
-          </Button>
-        )}
-
-        {/* Return Scanner Button - Only show for Admin and Gestionnaire */}
-        {(authState.user?.role === 'Admin' || authState.user?.role === 'Gestionnaire') && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-10 w-10 bg-orange-600 hover:bg-orange-700 rounded-md transition-colors"
-            onClick={openReturnScanner}
-            title="Scanner un colis pour retour"
-          >
-            <RotateCcw className="h-5 w-5 text-white" />
-          </Button>
-        )}
-        
-        {/* Theme Toggle Button */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className={`h-10 w-10 rounded-md ${
-                      isDarkMode
-                        ? "bg-gray-800 hover:bg-gray-700"
-                        : "bg-gray-400 hover:bg-gray-300"
-                    }`}  
-          onClick={toggleDarkMode}
-          title={isDarkMode ? 'Mode clair' : 'Mode sombre'}
-        >
-          {isDarkMode ? (
-            <Sun className="h-5 w-5 transition-colors text-white" />
-          ) : (
-            <Moon className="h-5 w-5 transition-colors text-sidebar-foreground" />
+        {/* Bottom Buttons - QR Scanner (for livreurs and admin/gestionnaire) and Theme Toggle */}
+        <div className="mt-auto flex justify-center gap-2 pb-4">
+          {/* QR Scanner Button - Only show for livreurs */}
+          {authState.user?.role === 'Livreur' && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-10 w-10 bg-black dark:bg-blue-900 hover:bg-gray-700 dark:hover:bg-blue-800 dark:hover:text-blue-100 rounded-md transition-colors"
+              onClick={openScanner}
+              title="Scanner un colis"
+            >
+              <QrCode className="h-5 w-5 text-white" />
+            </Button>
           )}
-        </Button>
-      </div>
-    </Sidebar>
+
+          {/* Return Scanner Button - Only show for Admin and Gestionnaire */}
+          {(authState.user?.role === 'Admin' || authState.user?.role === 'Gestionnaire') && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-10 w-10 bg-orange-600 hover:bg-orange-700 rounded-md transition-colors"
+              onClick={openReturnScanner}
+              title="Scanner un colis pour retour"
+            >
+              <ScanLine className="h-5 w-5 text-white" />
+            </Button>
+          )}
+          
+          {/* Theme Toggle Button */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className={`h-10 w-10 rounded-md ${
+                        isDarkMode
+                          ? "bg-gray-800 hover:bg-gray-700"
+                          : "bg-gray-400 hover:bg-gray-300"
+                      }`}  
+            onClick={toggleDarkMode}
+            title={isDarkMode ? 'Mode clair' : 'Mode sombre'}
+          >
+            {isDarkMode ? (
+              <Sun className="h-5 w-5 transition-colors text-white" />
+            ) : (
+              <Moon className="h-5 w-5 transition-colors text-sidebar-foreground" />
+            )}
+          </Button>
+        </div>
+      </Sidebar>
 
     {/* Portal-based Tooltip */}
     {tooltip && createPortal(

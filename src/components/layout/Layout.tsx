@@ -10,6 +10,11 @@ import { ColisQRScanner, ScannedColisDetailsModal, ScannedColisTableModal, Admin
 import { api, supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
+import { UserCheck, X, Loader2 } from 'lucide-react';
+import type { User } from '@/types';
 
 
 interface LayoutProps {
@@ -48,9 +53,37 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
     scannedReturnColisList,
     isScannedReturnColisTableOpen,
     setIsScannedReturnColisTableOpen,
+    isLivreurSelectionModalOpen,
+    setIsLivreurSelectionModalOpen,
+    selectedReturnLivreur,
+    setSelectedReturnLivreur,
+    confirmLivreurAndOpenScanner,
     addScannedReturnColis,
     clearScannedReturnColisList,
   } = useAdminReturnScanner();
+
+  // Livreurs list for return scanner selection
+  const [livreurs, setLivreurs] = useState<User[]>([]);
+  const [livreursLoading, setLivreursLoading] = useState(false);
+
+  useEffect(() => {
+    if (isLivreurSelectionModalOpen) {
+      const fetchLivreurs = async () => {
+        setLivreursLoading(true);
+        try {
+          const { data, error } = await api.getLivreurs();
+          if (!error && data) {
+            setLivreurs(data as User[]);
+          }
+        } catch (err) {
+          console.error('Error fetching livreurs:', err);
+        } finally {
+          setLivreursLoading(false);
+        }
+      };
+      fetchLivreurs();
+    }
+  }, [isLivreurSelectionModalOpen]);
 
   // Scroll to top when route changes
   useEffect(() => {
@@ -157,13 +190,15 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
       // Calculate total amount
       const totalAmount = scannedColisList.reduce((sum, colis) => sum + (colis.prix || 0), 0);
       
-      // Create bon with source_type: 'livreur', type: 'distribution'
+      //   with source_type: 'livreur', type: 'distribution'
+      // assigned_to is the livreur who scanned the colis
       const { data: bon, error: bonError } = await api.createBonWithColis(
         {
           user_id: state.user?.id || '',
           type: 'distribution',
           statut: 'En cours',
           source_type: 'livreur',
+          assigned_to: state.user?.id || undefined,
           nb_colis: scannedColisList.length,
           montant: totalAmount,
           date_creation: new Date().toISOString(),
@@ -197,6 +232,20 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
   const scanReturnJustCompletedRef = useRef(false);
 
   const handleReturnScanComplete = async (colis: any) => {
+    // Check if a livreur is selected
+    if (!selectedReturnLivreur) {
+      toast.error('Veuillez d\'abord sélectionner un livreur');
+      setScannedReturnColis(null);
+      return false;
+    }
+
+    // Check if colis belongs to the selected livreur
+    if (colis.livreur_id !== selectedReturnLivreur.id) {
+      toast.error(`Ce colis n'appartient pas à ${selectedReturnLivreur.nom}. Il ne peut pas être retourné par ce livreur.`);
+      setScannedReturnColis(null);
+      return false;
+    }
+
     // Check if colis is already in the scanned return list
     if (scannedReturnColisList.some(item => item.id === colis.id)) {
       toast.error('Ce colis est déjà dans la liste des retours');
@@ -273,17 +322,20 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
       // Calculate total amount
       const totalAmount = scannedReturnColisList.reduce((sum, colis) => sum + (colis.prix || 0), 0);
       
-      // Create bon with source_type: 'admin' (for Admin/Gestionnaire), type: 'retour'
+      // Create bon with source_type: 'livreur' (bon for livreur), type: 'retour'
+      // assigned_to is the livreur who is returning the colis
+      // user_id is the admin/gestionnaire who performed the action
       const { data: bon, error: bonError } = await api.createBonWithColis(
         {
           user_id: state.user?.id || '',
           type: 'retour',
           statut: 'En cours',
-          source_type: 'admin',
+          source_type: 'livreur',
+          assigned_to: selectedReturnLivreur?.id || undefined,
           nb_colis: scannedReturnColisList.length,
           montant: totalAmount,
           date_creation: new Date().toISOString(),
-          notes: `Bon de retour créé par ${state.user?.nom} via scannage de ${scannedReturnColisList.length} colis`,
+          notes: `Bon de retour créé par ${state.user?.nom} pour ${selectedReturnLivreur?.nom || 'livreur'} via scannage de ${scannedReturnColisList.length} colis`,
         },
         scannedReturnColisList.map(c => c.id)
       );
@@ -296,7 +348,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
       for (const colis of scannedReturnColisList) {
         const { error: updateError } = await supabase
           .from('colis')
-          .update({ statut: 'retourne' })
+          .update({ statut: 'Retourné' })
           .eq('id', colis.id);
 
         if (updateError) {
@@ -304,14 +356,20 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
         }
 
         // Create historique entry for each colis
-        await supabase.from('historique_colis').insert({
-          colis_id: colis.id,
-          ancien_statut: colis.statut,
-          nouveau_statut: 'retourne',
-          date_changement: new Date().toISOString(),
-          utilisateur_id: state.user?.id,
-          notes: `Colis retourné via bon de retour #${bon?.id}`,
-        });
+        try {
+          const { error: histError } = await supabase.from('historique_colis').insert({
+            colis_id: colis.id,
+            date: new Date().toISOString(),
+            statut: 'Retourné',
+            utilisateur: state.user?.id,
+            informations: `Colis retourné via bon de retour #${bon?.id}`,
+          });
+          if (histError) {
+            console.error('Error creating historique_colis entry:', histError);
+          }
+        } catch (histErr) {
+          console.error('Exception creating historique_colis entry:', histErr);
+        }
       }
 
       toast.success(`Bon de retour #${bon?.id} créé avec ${scannedReturnColisList.length} colis`);
@@ -321,7 +379,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
       setIsScannedReturnColisTableOpen(false);
       
       // Navigate to the bon details page
-      navigate(`/bons/${bon?.id}`);
+      navigate(`/bons/retour/${bon?.id}`);
     } catch (error: any) {
       console.error('Error finalizing return bon:', error);
       toast.error('Erreur lors de la création du bon de retour');
@@ -382,6 +440,65 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
         loading={finalizingBon}
       />
 
+      {/* Livreur Selection Modal for Return Scanner */}
+      <Dialog open={isLivreurSelectionModalOpen} onOpenChange={setIsLivreurSelectionModalOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserCheck className="h-5 w-5 text-orange-600" />
+              Sélectionner un livreur
+            </DialogTitle>
+            <DialogDescription>
+              Choisissez le livreur qui retourne les colis. Seuls ses colis pourront être scannés.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            {livreursLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin text-orange-600" />
+                <span className="ml-2 text-sm text-gray-600">Chargement des livreurs...</span>
+              </div>
+            ) : (
+              <>
+                <Select
+                  onValueChange={(value) => {
+                    const selected = livreurs.find(l => l.id === value);
+                    if (selected) {
+                      confirmLivreurAndOpenScanner(selected);
+                    }
+                  }}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Sélectionner un livreur..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {livreurs.map((livreur) => (
+                      <SelectItem key={livreur.id} value={livreur.id}>
+                        {livreur.nom} {livreur.prenom || ''} {livreur.telephone ? `(${livreur.telephone})` : ''}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <div className="flex justify-end gap-3 pt-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setIsLivreurSelectionModalOpen(false);
+                      setSelectedReturnLivreur(null);
+                    }}
+                  >
+                    <X className="h-4 w-4 mr-2" />
+                    Annuler
+                  </Button>
+                </div>
+              </>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Global Admin Return Scanner Modal */}
       <AdminReturnScanner
         isOpen={isAdminReturnScannerOpen}
@@ -393,8 +510,8 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
           scanReturnJustCompletedRef.current = false;
         }}
         onScanComplete={handleReturnScanComplete}
-        title="Scanner un colis pour retour"
-        description="Scannez le code QR du colis pour le retourner au livreur"
+        title={`Scanner un colis pour retour - ${selectedReturnLivreur?.nom || ''}`}
+        description={selectedReturnLivreur ? `Scannez les colis assignés à ${selectedReturnLivreur.nom} pour le retour` : 'Scannez le code QR du colis pour le retourner'}
       />
 
       {/* Global Scanned Return Colis Details Modal */}
@@ -420,6 +537,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
         onScanAgain={handleScanReturnAgain}
         onFinalize={handleFinalizeReturnBon}
         loading={finalizingReturnBon}
+        selectedLivreur={selectedReturnLivreur}
       />
     </SidebarProvider>
   );
