@@ -3,7 +3,6 @@ import { Package, Clock, CheckCircle, RotateCcw, User, MapPin, Truck, Calendar, 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
-import { useQRScanner } from '@/contexts/QRScannerContext';
 import { useNavigate } from 'react-router-dom';
 import { api } from '@/lib/supabase';
 import { isDateTodayLocal, isDateThisMonthLocal } from '@/lib/utils';
@@ -107,12 +106,6 @@ export function LivreurDashboard() {
   const { state } = useAuth();
   const { toast: toastHook } = useToast();
   const navigate = useNavigate();
-  const { 
-    scannedColisList,
-    isScannedColisTableOpen,
-    setIsScannedColisTableOpen,
-    clearScannedColisList,
-  } = useQRScanner();
 
   const [stats, setStats] = useState<LivreurStats>({
     aLivrerAujourdhui: 0,

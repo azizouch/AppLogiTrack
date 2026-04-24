@@ -401,13 +401,13 @@ export function ImportColisModal({ open, onOpenChange, onImportSuccess }: Import
       if (successfulImports > 0) {
         try {
           console.log('Creating single bon distribution for all colis');
-          const colisCodesString = previewData
-            .slice(0, 5)
-            .map(c => c.code_suivi)
-            .join(', ');
+          // const colisCodesString = previewData
+          //   .slice(0, 5)
+          //   .map(c => c.code_suivi)
+          //   .join(', ');
           const notesText = successfulImports > 5 
-            ? `Bon créé automatiquement lors de l'import de ${successfulImports} colis (${colisCodesString}...)`
-            : `Bon créé automatiquement lors de l'import de ${successfulImports} colis (${colisCodesString})`;
+            ? `Bon créé automatiquement lors de l'import de ${successfulImports} colis .`
+            : `Bon créé automatiquement lors de l'import de ${successfulImports} colis .`;
 
           const bonResult = await api.createBonWithColis(
             {

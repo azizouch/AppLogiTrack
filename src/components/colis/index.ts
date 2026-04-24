@@ -6,4 +6,7 @@ export { ColisQRCode } from './ColisQRCode';
 export { ColisQRScanner } from './ColisQRScanner';
 export { ScannedColisTableModal } from './ScannedColisTableModal';
 export { ScannedColisDetailsModal } from './ScannedColisDetailsModal';
+export { AdminReturnScanner } from './AdminReturnScanner';
+export { ScannedReturnColisTableModal } from './ScannedReturnColisTableModal';
+export { ScannedReturnColisDetailsModal } from './ScannedReturnColisDetailsModal';
 export * from './colisUtils.tsx';

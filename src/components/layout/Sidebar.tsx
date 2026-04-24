@@ -45,6 +45,7 @@ import { Badge } from '@/components/ui/badge';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQRScanner } from '@/contexts/QRScannerContext';
+import { useAdminReturnScanner } from '@/contexts/AdminReturnScannerContext';
 import { api } from '@/lib/supabase';
 
 export function AppSidebar() {
@@ -53,6 +54,7 @@ export function AppSidebar() {
   const { state, toggleSidebar } = useSidebar();
   const { state: authState } = useAuth();
   const { openScanner } = useQRScanner();
+  const { openReturnScanner } = useAdminReturnScanner();
   const isMobile = useIsMobile();
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -641,7 +643,7 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      {/* Bottom Buttons - QR Scanner (for livreurs) and Theme Toggle */}
+      {/* Bottom Buttons - QR Scanner (for livreurs and admin/gestionnaire) and Theme Toggle */}
       <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex items-center gap-2">
         {/* QR Scanner Button - Only show for livreurs */}
         {authState.user?.role === 'Livreur' && (
@@ -653,6 +655,19 @@ export function AppSidebar() {
             title="Scanner un colis"
           >
             <QrCode className="h-5 w-5 text-white" />
+          </Button>
+        )}
+
+        {/* Return Scanner Button - Only show for Admin and Gestionnaire */}
+        {(authState.user?.role === 'Admin' || authState.user?.role === 'Gestionnaire') && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-10 w-10 bg-orange-600 hover:bg-orange-700 rounded-md transition-colors"
+            onClick={openReturnScanner}
+            title="Scanner un colis pour retour"
+          >
+            <RotateCcw className="h-5 w-5 text-white" />
           </Button>
         )}
         

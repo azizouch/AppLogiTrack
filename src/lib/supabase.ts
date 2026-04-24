@@ -1726,9 +1726,17 @@ export const api = {
       const { data, error } = await supabase
         .from('company_settings')
         .select('*')
-        .single();
+        .limit(1);
 
-      return { data, error };
+      // Handle empty result or multiple results
+      if (error) {
+        return { data: null, error };
+      }
+      if (!data || data.length === 0) {
+        return { data: null, error: null };
+      }
+      // Return the first row if multiple exist
+      return { data: data[0], error: null };
     } catch (err) {
       return { data: null, error: err as any };
     }

@@ -718,12 +718,14 @@ const rightCard = h(
             Svg,
             { width: 12, height: 12, viewBox: '0 0 24 24' },
             h(Path, {
-              d: 'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z',
+              d: showLivreurCard
+                ? 'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z' // user icon
+                : 'M3 21h18M5 21V7l8-4 8 4v14M9 21v-6h6v6', // entreprise (building) icon
               stroke: '#ffffff',
               strokeWidth: 1.8,
               fill: 'none',
             })
-          )
+          ),
         ),
 
         h(
@@ -1048,7 +1050,7 @@ const rightCard = h(
                 })
               )
             ),
-            h(
+            h( 
               Text,
               { key: 'section-title-text', style: styles.sectionTitle },
               `LISTE DES COLIS (${preparedColis.length} colis)`
