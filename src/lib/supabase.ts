@@ -132,8 +132,6 @@ export interface ApiResponse<T> {
   error: PostgrestError | null;
 }
 
-
-
 // Database types for Supabase
 export interface Database {
   public: {
@@ -184,6 +182,7 @@ export interface Database {
 
 // Auth helpers
 export const auth = {
+
   signIn: async (email: string, password: string) => {
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
@@ -328,8 +327,6 @@ export const auth = {
     })
     return { data, error }
   },
-
-
 
   // Upload profile image
   uploadProfileImage: async (file: File, userId: string) => {
@@ -2725,4 +2722,5 @@ export const api = {
       return { data: null, error };
     }
   }
+  
 }
