@@ -1765,7 +1765,6 @@ export const api = {
         .from('company_settings')
         .select('*')
         .limit(1);
-      console.log("TEST company_settings:", data, error);
       // Handle empty result or multiple results
       if (error) {
         return { data: null, error };

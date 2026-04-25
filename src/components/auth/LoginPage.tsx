@@ -112,7 +112,7 @@ export function LoginPage() {
           </div>
         </div> */}
 
-        <Card className="bg-white dark:bg-gray-800 shadow-xl border border-gray-200 dark:border-gray-700">
+        <Card className="bg-white dark:bg-gray-800 shadow-xl border border-gray-200 dark:border-gray-700 rounded-3xl">
           <CardHeader className="text-center space-y-2 sm:space-y-3 pb-4 sm:pb-6">
             <div className="text-center">
               <div className="inline-flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 bg-blue-600 rounded-xl mb-2">

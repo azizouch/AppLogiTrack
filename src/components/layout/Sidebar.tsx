@@ -646,7 +646,10 @@ export function AppSidebar() {
         </SidebarContent>
 
         {/* Bottom Buttons - QR Scanner (for livreurs and admin/gestionnaire) and Theme Toggle */}
-        <div className="mt-auto flex justify-center gap-2 pb-4">
+        <div className={`
+            mt-auto pb-4 flex gap-2 justify-center
+            ${isCollapsed ? "flex-col items-center" : ""}
+          `}>
           {/* QR Scanner Button - Only show for livreurs */}
           {authState.user?.role === 'Livreur' && (
             <Button

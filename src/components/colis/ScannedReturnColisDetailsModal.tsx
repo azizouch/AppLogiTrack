@@ -46,7 +46,9 @@ export function ScannedReturnColisDetailsModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="w-[95vw] sm:max-w-[500px]
+                                fixed left-1/2 top-1/2
+                                -translate-x-1/2 -translate-y-1/2">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <RotateCcw className="h-5 w-5" />
@@ -59,7 +61,7 @@ export function ScannedReturnColisDetailsModal({
 
         <div className="space-y-4">
           {/* Colis Information */}
-          <div className="space-y-3 bg-gray-50 dark:bg-gray-900 p-4 rounded-lg">
+          <div className="space-y-3 bg-gray-100 dark:bg-gray-900 p-4 rounded-lg">
             {/* Client Information */}
             <div className="flex items-start gap-3">
               <User className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />

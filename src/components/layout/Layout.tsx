@@ -472,7 +472,11 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Sélectionner un livreur..." />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent 
+                    position="popper"
+                    side="bottom"
+                    align="center"
+                    className="w-[90vw] max-w-sm">
                     {livreurs.map((livreur) => (
                       <SelectItem key={livreur.id} value={livreur.id}>
                         {livreur.nom} {livreur.prenom || ''} {livreur.telephone ? `(${livreur.telephone})` : ''}

@@ -187,41 +187,49 @@ const App = () => (
 
           {/* Bons Routes - Smart Redirector (role-based) */}
           <Route path="/bons/distribution" element={
-            <ProtectedRoute>
+            <ProtectedRoute roles={["Admin", "Gestionnaire"]}>
               <BonRedirector bonType="distribution" />
             </ProtectedRoute>
           } />
           <Route path="/bons/distribution/:id" element={
-            <ProtectedRoute>
+            <ProtectedRoute roles={["Admin", "Gestionnaire"]}>
               <Layout>
                 <BonDetails />
               </Layout>
             </ProtectedRoute>
           } />
           <Route path="/bons/paiement" element={
-            <ProtectedRoute>
+            <ProtectedRoute roles={["Admin", "Gestionnaire"]}>
               <BonRedirector bonType="paiement" />
             </ProtectedRoute>
           } />
           <Route path="/bons/paiement/:id" element={
-            <ProtectedRoute>
+            <ProtectedRoute roles={["Admin", "Gestionnaire"]}>
               <Layout>
                 <BonDetails />
               </Layout>
             </ProtectedRoute>
           } />
           <Route path="/bons/retour" element={
-            <ProtectedRoute>
+            <ProtectedRoute roles={["Admin", "Gestionnaire"]}>
               <BonRedirector bonType="retour" />
             </ProtectedRoute>
           } />
           <Route path="/bons/retour/:id" element={
+            <ProtectedRoute roles={["Admin", "Gestionnaire"]}>
+              <Layout>
+                <BonDetails />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/bons/:id" element={
             <ProtectedRoute>
               <Layout>
                 <BonDetails />
               </Layout>
             </ProtectedRoute>
           } />
+          
           {/* Livreur-specific bons pages */}
           <Route path="/bons/mes-distribution" element={
             <ProtectedRoute roles={["Livreur"]}>

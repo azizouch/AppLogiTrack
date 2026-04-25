@@ -35,6 +35,7 @@ export function BonDetails() {
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [bonHistory, setBonHistory] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const [assignedLivreur, setAssignedLivreur] = useState<any | null>(null);
   // Fetch bon history directly for display
   useEffect(() => {
     if (bon && bon.id) {
@@ -81,6 +82,19 @@ export function BonDetails() {
       }
 
       setBon(data);
+
+      // Load assigned livreur details when bon source is livreur
+      if (data.source_type === 'livreur' && data.assigned_to) {
+        try {
+          const { data: livreurData } = await api.getUserById(data.assigned_to);
+          setAssignedLivreur(livreurData || null);
+        } catch (err) {
+          console.warn('Could not load assigned livreur:', err);
+          setAssignedLivreur(null);
+        }
+      } else {
+        setAssignedLivreur(null);
+      }
 
       // Fetch related colis based on bon type
       await fetchRelatedColis(data);
@@ -327,6 +341,8 @@ export function BonDetails() {
 
   const typeConfig = getBonTypeConfig();
   const TypeIcon = typeConfig.icon;
+  const isAdminSource = bon.source_type === 'admin';
+  const livreurInfo = assignedLivreur || bon.user;
 
   return (
     <div className="space-y-3">
@@ -371,7 +387,7 @@ export function BonDetails() {
               </>
             ) : (
               <>
-                <Printer className="mr-2 h-4 w-4" />
+                <Printer className="mr-1 h-4 w-4" />
                 <span className="hidden sm:inline">Imprimer</span>
               </>
             )}
@@ -408,8 +424,8 @@ export function BonDetails() {
                 </>
               ) : (
                 <>
-                  <Download className="mr-2 h-4 w-4" />
-                  <span className="hidden sm:inline">Télécharger </span>PDF
+                  <Download className="h-4 w-4" />
+                  <span className="hidden sm:inline"></span>PDF
                 </>
               )}
             </Button>
@@ -428,8 +444,8 @@ export function BonDetails() {
               </>
             ) : (
               <>
-                <FileSpreadsheet className="mr-2 h-4 w-4" />
-                <span className="hidden sm:inline">Télécharger </span>Excel
+                <FileSpreadsheet className="h-4 w-4" />
+                <span className="hidden sm:inline"></span>Excel
               </>
             )}
           </Button>
@@ -437,8 +453,8 @@ export function BonDetails() {
       </div>
 
       {/* Main Content */}
-      <div className="grid grid-cols-1 gap-6">
-        {/* Informations générales */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Card 1: Informations générales */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -482,10 +498,85 @@ export function BonDetails() {
             {bon.notes && (
               <div>
                 <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Notes</label>
-                <p className="text-sm text-gray-900 dark:text-white mt-1 p-3 bg-gray-50 dark:bg-gray-800 rounded-md">
+                <p className="text-xs text-gray-900 dark:text-white mt-1 p-3 bg-gray-50 dark:bg-gray-800 rounded-md">
                   {bon.notes}
                 </p>
               </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Card 2: Entreprise / Livreur assigné */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <User className="h-5 w-5" />
+              {isAdminSource ? 'Informations Entreprise' : 'Livreur Assigné'}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {isAdminSource ? (
+              <>
+                <div>
+                  <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Entreprise</label>
+                  <p className="text-sm text-gray-900 dark:text-white">{companySettings?.nom || '—'}</p>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Adresse</label>
+                  <p className="text-sm text-gray-900 dark:text-white">
+                    {[companySettings?.adresse, companySettings?.ville].filter(Boolean).join(', ') || '—'}
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Téléphone</label>
+                    <p className="text-sm text-gray-900 dark:text-white">{companySettings?.telephone || '—'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Email</label>
+                    <p className="text-sm text-gray-900 dark:text-white break-all">{companySettings?.email || '—'}</p>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                <div>
+                  <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Nom</label>
+                  <p className="text-sm text-gray-900 dark:text-white">
+                    {[livreurInfo?.nom, livreurInfo?.prenom].filter(Boolean).join(' ').trim() || '—'}
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Téléphone</label>
+                    <p className="text-sm text-gray-900 dark:text-white">{livreurInfo?.telephone || '—'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Ville</label>
+                    <p className="text-sm text-gray-900 dark:text-white">{livreurInfo?.ville || '—'}</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Véhicule</label>
+                    <p className="text-sm text-gray-900 dark:text-white">{livreurInfo?.vehicule || '—'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Zone</label>
+                    <p className="text-sm text-gray-900 dark:text-white">{livreurInfo?.zone || '—'}</p>
+                  </div>
+                </div>
+                <div>
+                <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Email</label>
+                <p className="text-xs sm:text-sm text-gray-900 dark:text-white mt-1 p-3 bg-gray-50 dark:bg-gray-800 rounded-md">
+                  {livreurInfo?.email ? `Email: ${livreurInfo.email}` : ''}
+                </p>
+              </div>
+              </>
             )}
           </CardContent>
         </Card>
@@ -514,8 +605,8 @@ export function BonDetails() {
                     <th className="text-left py-2 px-3 font-medium text-gray-500 dark:text-gray-400">Client</th>
                     <th className="text-left py-2 px-3 font-medium text-gray-500 dark:text-gray-400">Entreprise</th>
                     <th className="text-left py-2 px-3 font-medium text-gray-500 dark:text-gray-400">Adresse</th>
-                    <th className="text-right py-2 px-3 font-medium text-gray-500 dark:text-gray-400">Prix</th>
                     <th className="text-right py-2 px-3 font-medium text-gray-500 dark:text-gray-400">Frais</th>
+                    <th className="text-right py-2 px-3 font-medium text-gray-500 dark:text-gray-400">Prix</th>
                     <th className="text-center py-2 px-3 font-medium text-gray-500 dark:text-gray-400">Actions</th>
                   </tr>
                 </thead>
@@ -526,11 +617,11 @@ export function BonDetails() {
                       <td className="py-3 px-3 text-gray-900 dark:text-white">{col.client?.nom || 'N/A'}</td>
                       <td className="py-3 px-3 text-gray-900 dark:text-white">{col.entreprise?.nom || 'N/A'}</td>
                       <td className="py-3 px-3 text-xs text-gray-600 dark:text-gray-400">{col.client?.adresse || 'N/A'}</td>
-                      <td className="py-3 px-3 text-right font-medium text-green-600 dark:text-green-400 whitespace-nowrap">
-                        {col.prix ? `${col.prix.toFixed(2)} DH` : '-'}
-                      </td>
                       <td className="py-3 px-3 text-right font-medium text-blue-600 dark:text-blue-400 whitespace-nowrap">
                         {col.frais ? `${col.frais.toFixed(2)} DH` : '-'}
+                      </td>
+                      <td className="py-3 px-3 text-right font-medium text-green-600 dark:text-green-400 whitespace-nowrap">
+                        {col.prix ? `${col.prix.toFixed(2)} DH` : '-'}
                       </td>
                       <td className="py-3 px-3 text-center">
                         <button
@@ -547,11 +638,11 @@ export function BonDetails() {
                   <tfoot>
                     <tr className="border-t-2 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800">
                       <td colSpan={4} className="py-3 px-3 font-semibold text-gray-900 dark:text-white">TOTAL</td>
-                      <td className="py-3 px-3 text-right font-bold text-green-700 dark:text-green-400 whitespace-nowrap">
-                        {colis.reduce((sum, col) => sum + (col.prix || 0), 0).toFixed(2)} DH
-                      </td>
                       <td className="py-3 px-3 text-right font-bold text-blue-700 dark:text-blue-400 whitespace-nowrap">
                         {colis.reduce((sum, col) => sum + (col.frais || 0), 0).toFixed(2)} DH
+                      </td>
+                      <td className="py-3 px-3 text-right font-bold text-green-700 dark:text-green-400 whitespace-nowrap">
+                        {colis.reduce((sum, col) => sum + (col.prix || 0), 0).toFixed(2)} DH
                       </td>
                       <td></td>
                     </tr>
@@ -585,32 +676,39 @@ export function BonDetails() {
               <p className="text-gray-500 dark:text-gray-400 text-sm">Aucun historique disponible</p>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2">
               {bonHistory.map((item, index) => (
-                <div key={item.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-                  <div className="flex items-start justify-between gap-4 mb-3">
-                    <div className="flex-1 space-y-2">
+                <div key={item.id} className="rounded-lg bg-gray-100 dark:bg-gray-700/40 px-3 py-2">
+                  <div className="flex items-start gap-3">
+                    <div className="h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300 flex items-center justify-center shrink-0 mt-0.5">
+                      <History className="h-4 w-4" />
+                    </div>
+
+                    <div className="min-w-0 flex-1 space-y-1">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 px-2 py-0.5 rounded text-xs">{item.type}</span>
-                        <span className="bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200 px-2 py-0.5 rounded text-xs">{item.statut}</span>
+                        <span className="px-2 py-0.5 rounded-full border border-blue-300/80 dark:border-blue-700 text-blue-700 dark:text-blue-300 text-xs font-medium leading-none">
+                          {item.type}
+                        </span>
+                        <span className="text-sm text-gray-600 dark:text-gray-300">
+                          {new Date(item.date).toLocaleDateString('fr-FR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                        <span className="text-[11px] text-gray-400 dark:text-gray-500">#{index + 1}</span>
                       </div>
-                      <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                        {new Date(item.date).toLocaleDateString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+
+                      <div className="text-sm text-gray-700 dark:text-gray-200 leading-tight">
+                        Par {item.user ? `${item.user.nom} ${item.user.prenom || ''}`.trim() : 'Utilisateur inconnu'}
+                        {item.user?.role && (
+                          <span className="ml-2 text-[11px] text-gray-500 dark:text-gray-400">({item.user.role})</span>
+                        )}
                       </div>
+
+                      {item.notes && (
+                        <p className="text-xs text-gray-500 dark:text-gray-400 leading-tight break-words whitespace-pre-wrap">
+                          {item.notes}
+                        </p>
+                      )}
                     </div>
-                    <div className="text-xs text-gray-500 dark:text-gray-500">#{index + 1}</div>
                   </div>
-                  {item.user && (
-                    <div className="flex items-center gap-2 text-sm mb-2 text-gray-700 dark:text-gray-300">
-                      <span className="font-medium">{item.user.nom} {item.user.prenom || ''}</span>
-                      <span className="text-xs bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded">{item.user.role}</span>
-                    </div>
-                  )}
-                  {item.notes && (
-                    <div className="mt-2 p-2 bg-gray-50 dark:bg-gray-700 rounded text-sm text-gray-700 dark:text-gray-300">
-                      <p className="break-words whitespace-pre-wrap">{item.notes}</p>
-                    </div>
-                  )}
                 </div>
               ))}
             </div>
@@ -631,4 +729,7 @@ export function BonDetails() {
     </div>
   );
 }
+
+
+
 

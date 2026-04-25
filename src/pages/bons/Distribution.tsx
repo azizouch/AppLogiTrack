@@ -555,7 +555,7 @@ export function Distribution() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-8 w-8 p-0"
+                            className="h-8 w-8 p-0 border"
                             onClick={() => navigate(`/bons/distribution/${bon.id}`)}
                             title="Voir les détails"
                           >
@@ -564,7 +564,7 @@ export function Distribution() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-8 w-8 p-0"
+                            className="h-8 w-8 p-0 border"
                             onClick={() => handleOpenHistory(bon)}
                             title="Voir l'historique"
                           >
@@ -573,7 +573,7 @@ export function Distribution() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-8 w-8 p-0"
+                            className="h-8 w-8 p-0 border"
                             onClick={() => handlePrint(bon)}
                             disabled={printing === bon.id}
                             title="Imprimer"
@@ -587,7 +587,7 @@ export function Distribution() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-8 w-8 p-0"
+                            className="h-8 w-8 p-0 border"
                             onClick={() => handleDownloadPdf(bon)}
                             disabled={downloadingPdf === bon.id}
                             title="Télécharger PDF"
@@ -601,7 +601,7 @@ export function Distribution() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-8 w-8 p-0"
+                            className="h-8 w-8 p-0 border"
                             onClick={() => handleDownloadExcel(bon)}
                             disabled={downloadingExcel === bon.id}
                             title="Télécharger Excel"
