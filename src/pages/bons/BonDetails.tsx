@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Download, Printer, Truck, Calendar, User, Package, FileText, AlertCircle, FileSpreadsheet, History, RotateCcw, CreditCard } from 'lucide-react';
+import { ArrowLeft, Download, Printer, Truck, Calendar, User, Package, FileText, AlertCircle, FileSpreadsheet, History, RotateCcw, CreditCard, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { api } from '@/lib/supabase';
 import { Bon, Colis } from '@/types';
@@ -36,6 +37,8 @@ export function BonDetails() {
   const [bonHistory, setBonHistory] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [assignedLivreur, setAssignedLivreur] = useState<any | null>(null);
+  const [updatingBon, setUpdatingBon] = useState(false);
+  const [selectedStatus, setSelectedStatus] = useState('');
   // Fetch bon history directly for display
   useEffect(() => {
     if (bon && bon.id) {
@@ -66,6 +69,12 @@ export function BonDetails() {
       fetchCompanySettings();
     }
   }, [id]);
+
+  useEffect(() => {
+    if (!bon) return;
+
+    setSelectedStatus(bon.statut || '');
+  }, [bon]);
 
   const fetchBonDetails = async () => {
     try {
@@ -171,6 +180,61 @@ export function BonDetails() {
         return <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">Annulé</Badge>;
       default:
         return <Badge variant="secondary">{statut}</Badge>;
+    }
+  };
+
+  const getStatusOptions = () => {
+    switch (bon?.type) {
+      case 'retour':
+        return ['En attente', 'Accepté', 'Rejeté'];
+      case 'paiement':
+        return ['En attente', 'Payé', 'Annulé'];
+      case 'distribution':
+      default:
+        return ['En cours', 'Complété', 'Annulé', 'Livré'];
+    }
+  };
+
+  const handleUpdateBon = async () => {
+    if (!bon) return;
+
+    try {
+      setUpdatingBon(true);
+
+      const updates: {
+        statut?: string;
+      } = {
+        statut: selectedStatus,
+      };
+
+      const { error } = await api.updateBon(bon.id, updates);
+
+      if (error) {
+        console.error('Error updating bon:', error);
+        toast({
+          title: 'Erreur',
+          description: 'Impossible de mettre à jour le bon',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      toast({
+        title: 'Bon mis à jour',
+        description: 'Les informations du bon ont été mises à jour avec succès',
+      });
+
+      await fetchBonDetails();
+      await fetchBonHistory();
+    } catch (error) {
+      console.error('Error in handleUpdateBon:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Une erreur est survenue lors de la mise à jour',
+        variant: 'destructive',
+      });
+    } finally {
+      setUpdatingBon(false);
     }
   };
 
@@ -452,6 +516,54 @@ export function BonDetails() {
         </div>
       </div>
 
+      {/* Update Bon Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <FileText className="h-5 w-5" />
+            Mettre à jour le statut
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 gap-4">
+            <div className="space-y-2">
+              <Label>Statut</Label>
+              <Select
+                value={selectedStatus}
+                onValueChange={setSelectedStatus}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionner un statut" />
+                </SelectTrigger>
+                <SelectContent>
+                  {getStatusOptions().map((status) => (
+                    <SelectItem key={status} value={status}>
+                      {status}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="flex justify-end">
+            <Button onClick={handleUpdateBon} disabled={updatingBon}>
+              {updatingBon ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Mise à jour...
+                </>
+              ) : (
+                <>
+                  <Save className="h-4 w-4 mr-2" />
+                  Enregistrer les modifications
+                </>
+              )}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Main Content */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Card 1: Informations générales */}
@@ -729,6 +841,8 @@ export function BonDetails() {
     </div>
   );
 }
+
+
 
 
 

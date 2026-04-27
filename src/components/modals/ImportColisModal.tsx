@@ -304,8 +304,6 @@ export function ImportColisModal({ open, onOpenChange, onImportSuccess }: Import
       return;
     }
 
-    console.log('✓ User authenticated:', { id: user.id, nom: user.nom, role: user.role });
-
     setImporting(true);
     setStep('importing');
 
@@ -316,12 +314,8 @@ export function ImportColisModal({ open, onOpenChange, onImportSuccess }: Import
 
       for (const colisData of previewData) {
         try {
-          console.log('Starting import for colis:', colisData.code_suivi);
-          console.log('✓ User ID for this import:', user?.id);
-          
           // Always create a new client
           const clientId = generateUUID();
-          console.log('Creating new client with ID:', clientId);
 
           // Get entreprise name
           const selectedEntreprise = entreprises.find(e => e.id === selectedEntrepriseId);
@@ -336,7 +330,6 @@ export function ImportColisModal({ open, onOpenChange, onImportSuccess }: Import
             entreprise: entrepriseName,
           });
 
-          console.log('Create client response:', { data: clientResult, error: clientError });
 
           if (clientError || !clientResult) {
             throw new Error(
@@ -348,7 +341,6 @@ export function ImportColisModal({ open, onOpenChange, onImportSuccess }: Import
 
           // Use the file tracking code as the colis ID
           const colisId = String(colisData.code_suivi || '').trim() || generateUUID();
-          console.log('Creating colis with ID:', colisId, 'for client:', clientId);
 
           // Create colis with the tracking code as ID
           const { data: colisResult, error: colisError } = await api.createColis({
@@ -362,8 +354,6 @@ export function ImportColisModal({ open, onOpenChange, onImportSuccess }: Import
             notes: `Code suivi: ${colisData.code_suivi}${colisData.commentaire ? ` - ${colisData.commentaire}` : ''}`,
           });
 
-          console.log('Create colis response:', { data: colisResult, error: colisError });
-
           if (colisError) {
             throw new Error(`Impossible de créer le colis: ${colisError.message}`);
           }
@@ -376,7 +366,7 @@ export function ImportColisModal({ open, onOpenChange, onImportSuccess }: Import
             utilisateur: user.id, // Use user.id directly (already verified it exists)
             informations: 'creation du colis',
           };
-          console.log('📝 Inserting historique with user ID:', user.id, 'Full data:', historiqueData);
+
           const { error: historiqueError } = await supabase
             .from('historique_colis')
             .insert(historiqueData);
@@ -400,11 +390,6 @@ export function ImportColisModal({ open, onOpenChange, onImportSuccess }: Import
       // Create ONE bon distribution for all imported colis
       if (successfulImports > 0) {
         try {
-          console.log('Creating single bon distribution for all colis');
-          // const colisCodesString = previewData
-          //   .slice(0, 5)
-          //   .map(c => c.code_suivi)
-          //   .join(', ');
           const notesText = successfulImports > 5 
             ? `Bon créé automatiquement lors de l'import de ${successfulImports} colis .`
             : `Bon créé automatiquement lors de l'import de ${successfulImports} colis .`;
@@ -415,6 +400,7 @@ export function ImportColisModal({ open, onOpenChange, onImportSuccess }: Import
               type: 'distribution',
               statut: 'En cours',
               source_type: 'admin',
+              assigned_to: user.id,
               montant: totalMontant,
               nb_colis: successfulImports,
               date_creation: new Date().toISOString(),

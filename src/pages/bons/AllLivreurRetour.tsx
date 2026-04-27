@@ -5,14 +5,15 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TablePagination } from '@/components/ui/table-pagination';
-import { Plus, Search, Eye, Edit, Download, Trash2, RotateCcw, RefreshCw, FileSpreadsheet, Filter, PanelLeftOpen, X } from 'lucide-react';
+import { Search, Eye, Download, Printer, RotateCcw, RefreshCw, FileSpreadsheet, Filter, PanelLeftOpen, X, History } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetTrigger } from '@/components/ui/sheet';
 import { api } from '@/lib/supabase';
-import { Bon } from '@/types';
+import { Bon, User } from '@/types';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { downloadBonAsExcel } from '@/utils/pdfGenerator';
+import { downloadBonAsPDF, downloadMobileBonAsPDF, printBon, downloadBonAsExcel } from '@/utils/pdfGenerator';
+import { BonHistoryModal } from '@/components/modals/BonHistoryModal';
 
 export function AllLivreurRetour() {
   const navigate = useNavigate();
@@ -31,9 +32,13 @@ export function AllLivreurRetour() {
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [hasNextPage, setHasNextPage] = useState(false);
   const [hasPrevPage, setHasPrevPage] = useState(false);
+  const [downloadingPdf, setDownloadingPdf] = useState<string | null>(null);
+  const [printing, setPrinting] = useState<string | null>(null);
   const [downloadingExcel, setDownloadingExcel] = useState<string | null>(null);
-  const [livreurs, setLivreurs] = useState<any[]>([]);
+  const [livreurs, setLivreurs] = useState<User[]>([]);
   const [companySettings, setCompanySettings] = useState<any>(null);
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+  const [selectedBonForHistory, setSelectedBonForHistory] = useState<Bon | null>(null);
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
   // Fetch company settings on mount
@@ -138,14 +143,58 @@ export function AllLivreurRetour() {
 
   const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString('fr-FR');
 
+  const handleDownloadPdf = async (bon: Bon) => {
+    try {
+      setDownloadingPdf(bon.id);
+      const user = livreurs.find(l => l.id === bon.user_id) || bon.user;
+      const bonWithUser = { ...bon, user };
+
+      const { data: colisData } = await api.getColisByBonId(bon.id);
+
+      if (isMobile) {
+        await downloadMobileBonAsPDF(bonWithUser, colisData || undefined, companySettings || undefined);
+        toast({ title: 'PDF Mobile téléchargé' });
+      } else {
+        await downloadBonAsPDF(bonWithUser, colisData || undefined, companySettings || undefined);
+        toast({ title: 'PDF téléchargé' });
+      }
+    } catch (error) {
+      console.error('Error downloading PDF:', error);
+      toast({ title: 'Erreur', description: 'Impossible de générer le PDF', variant: 'destructive' });
+    } finally {
+      setDownloadingPdf(null);
+    }
+  };
+
+  const handlePrint = async (bon: Bon) => {
+    try {
+      setPrinting(bon.id);
+
+      const { data: colisData } = await api.getColisByBonId(bon.id);
+
+      const user = livreurs.find(l => l.id === bon.user_id) || bon.user;
+      const bonWithUser = { ...bon, user };
+
+      await printBon(bonWithUser, colisData || undefined, companySettings || undefined);
+      toast({ title: 'Impression', description: 'Le bon a été ouvert pour impression' });
+    } catch (error) {
+      console.error('Error printing bon:', error);
+      toast({ title: 'Erreur', description: 'Impossible d\'ouvrir l\'impression', variant: 'destructive' });
+    } finally {
+      setPrinting(null);
+    }
+  };
+
   const handleDownloadExcel = async (bon: Bon) => {
     try {
       setDownloadingExcel(bon.id);
+      const user = livreurs.find(l => l.id === bon.user_id) || bon.user;
+      const bonWithUser = { ...bon, user };
       
       // Fetch colis data
       const { data: colisData } = await api.getColisByBonId(bon.id);
       
-      await downloadBonAsExcel(bon, colisData || undefined, companySettings || undefined);
+      await downloadBonAsExcel(bonWithUser, colisData || undefined, companySettings || undefined);
       toast({ title: 'Excel téléchargé', description: 'Le fichier Excel a été téléchargé dans votre dossier Téléchargements' });
     } catch (error) {
       console.error('Error downloading Excel:', error);
@@ -153,6 +202,11 @@ export function AllLivreurRetour() {
     } finally {
       setDownloadingExcel(null);
     }
+  };
+
+  const handleOpenHistory = (bon: Bon) => {
+    setSelectedBonForHistory(bon);
+    setIsHistoryModalOpen(true);
   };
 
   return (
@@ -356,37 +410,42 @@ export function AllLivreurRetour() {
                 <tr className="border-b border-gray-200 dark:border-gray-600" style={{ backgroundColor: 'hsl(210, 40%, 96.1%)' }}>
                   <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">Référence</th>
                   <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">Livreur</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">Motif</th>
                   <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">Statut</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">Date de création</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">Actions</th>
+                  <th className="px-4 py-3 text-center text-sm font-medium text-gray-900">Nb Colis</th>
+                  <th className="px-4 py-3 text-center text-sm font-medium text-gray-900">Montant</th>
+                  <th className="px-4 py-3 text-center text-sm font-medium text-gray-900">Date de création</th>
+                  <th className="px-4 py-3 text-center text-sm font-medium text-gray-900">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                 {loading ? (
                   Array.from({ length: itemsPerPage }).map((_, index) => (
                     <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                      <td className="px-4 py-4"><div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div></td>
-                      <td className="px-4 py-4"><div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div></td>
-                      <td className="px-4 py-4"><div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div></td>
-                      <td className="px-4 py-4"><div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div></td>
-                      <td className="px-4 py-4"><div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div></td>
-                      <td className="px-4 py-4"><div className="h-8 bg-gray-200 dark:bg-gray-600 rounded animate-pulse w-20"></div></td>
+                      <td className="px-4 py-4 whitespace-nowrap"><div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div></td>
+                      <td className="px-4 py-4 whitespace-nowrap"><div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div></td>
+                      <td className="px-4 py-4 whitespace-nowrap"><div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div></td>
+                      <td className="px-4 py-4 whitespace-nowrap"><div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div></td>
+                      <td className="px-4 py-4 whitespace-nowrap"><div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div></td>
+                      <td className="px-4 py-4 whitespace-nowrap"><div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div></td>
+                      <td className="px-4 py-4 whitespace-nowrap"><div className="h-8 bg-gray-200 dark:bg-gray-600 rounded animate-pulse w-20"></div></td>
                     </tr>
                   ))
                 ) : (
                   bons.map((bon) => (
-                    <tr key={bon.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
-                      <td className="px-4 py-4 text-sm font-medium text-gray-900 dark:text-white">{bon.id}</td>
-                      <td className="px-4 py-4 text-sm text-gray-900 dark:text-white">{bon.user ? `${bon.user.nom} ${bon.user.prenom || ''}` : 'N/A'}</td>
-                      <td className="px-4 py-4 text-sm text-gray-900 dark:text-white">{bon.motif || 'N/A'}</td>
-                      <td className="px-4 py-4">{getStatusBadge(bon.statut)}</td>
-                      <td className="px-4 py-4 text-sm text-gray-900 dark:text-white">{formatDate(bon.date_creation)}</td>
-                      <td className="px-4 py-4 text-sm font-medium">
-                        <div className="flex items-center space-x-1">
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => navigate(`/bons/${bon.id}`)} title="Voir les détails"><Eye className="h-4 w-4" /></Button>
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => navigate(`/bons/${bon.id}`)} title="Modifier"><Edit className="h-4 w-4" /></Button>
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => handleDownloadExcel(bon)} disabled={downloadingExcel === bon.id} title="Télécharger Excel">{downloadingExcel === bon.id ? <div className="animate-spin h-4 w-4 border-2 border-gray-600 border-t-transparent rounded-full"></div> : <FileSpreadsheet className="h-4 w-4" />}</Button>
+                    <tr key={bon.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-200 dark:border-gray-600 bg-white dark:bg-transparent">
+                      <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{bon.id}</td>
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{bon.user ? `${bon.user.nom} ${bon.user.prenom || ''}` : 'N/A'}</td>
+                      <td className="px-4 py-4 whitespace-nowrap">{getStatusBadge(bon.statut)}</td>
+                      <td className="px-4 py-4 whitespace-nowrap text-center text-sm text-gray-900 dark:text-white">{bon.nb_colis || 0}</td>
+                      <td className="px-4 py-4 whitespace-nowrap text-center text-sm text-gray-900 dark:text-white">{bon.montant || 0} DH</td>
+                      <td className="px-4 py-4 whitespace-nowrap text-center text-sm text-gray-900 dark:text-white">{formatDate(bon.date_creation)}</td>
+                      <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
+                        <div className="flex items-center justify-center space-x-1">
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 border" onClick={() => navigate(`/bons/${bon.id}`)} title="Voir les détails"><Eye className="h-4 w-4" /></Button>
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 border" onClick={() => handleOpenHistory(bon)} title="Historique"><History className="h-4 w-4" /></Button>
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 border" onClick={() => handlePrint(bon)} disabled={printing === bon.id} title="Imprimer">{printing === bon.id ? <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600"></div> : <Printer className="h-4 w-4" />}</Button>
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 border" onClick={() => handleDownloadPdf(bon)} disabled={downloadingPdf === bon.id} title="Télécharger PDF">{downloadingPdf === bon.id ? <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600"></div> : <Download className="h-4 w-4" />}</Button>
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 border" onClick={() => handleDownloadExcel(bon)} disabled={downloadingExcel === bon.id} title="Télécharger Excel">{downloadingExcel === bon.id ? <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600"></div> : <FileSpreadsheet className="h-4 w-4" />}</Button>
                         </div>
                       </td>
                     </tr>
@@ -406,7 +465,19 @@ export function AllLivreurRetour() {
       {!loading && totalCount > 0 && (
         <TablePagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} hasNextPage={hasNextPage} hasPrevPage={hasPrevPage} totalItems={totalCount} itemsPerPage={itemsPerPage} />
       )}
+
+      {/* History Modal */}
+      {selectedBonForHistory && (
+        <BonHistoryModal
+          open={isHistoryModalOpen}
+          onOpenChange={setIsHistoryModalOpen}
+          bonId={selectedBonForHistory.id}
+          bonReference={selectedBonForHistory.id}
+        />
+      )}
     </div>
   );
 }
+
+
 

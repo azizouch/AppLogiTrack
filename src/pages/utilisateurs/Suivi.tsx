@@ -149,7 +149,7 @@ export function Suivi() {
       // Toggle user status between Actif and Inactif
       const newStatus = user.statut === 'Actif' ? 'Inactif' : 'Actif';
 
-      const { error } = await api.updateUserById(user.id, { statut: newStatus });
+      const { error } = await api.updateUserByIdAdmin(user.id, { statut: newStatus });
 
       if (error) {
         toast({

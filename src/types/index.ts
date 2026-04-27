@@ -115,6 +115,7 @@ export interface Bon {
 
   // Distribution fields
   nb_colis?: number; // Optional for non-distribution bons
+  entreprise_id?: string; // For distribution bons
 
   // Paiement fields
   client_id?: string; // For paiement and retour
@@ -130,8 +131,10 @@ export interface Bon {
 
   // Relations
   user?: User;
+  assigned_user?: User;
   client?: Client; // For paiement/retour bons
   colis?: Colis; // For retour bons
+  entreprise?: Entreprise; // For distribution bons
 }
 
 export interface BonHistorique {

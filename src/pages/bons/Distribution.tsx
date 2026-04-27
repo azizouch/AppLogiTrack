@@ -483,21 +483,21 @@ export function Distribution() {
                     Référence
                   </th>
                   <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">
-                    Livreur
-                  </th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">
-                    Zone
-                  </th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">
-                    Statut
-                  </th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">
-                    Nb Colis
+                    Entreprise
                   </th>
                   <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">
                     Date de création
                   </th>
                   <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">
+                    Statut
+                  </th>
+                  <th className="px-4 py-3 text-center text-sm font-medium text-gray-900">
+                    Nb Colis
+                  </th>
+                  <th className="px-4 py-3 text-center text-sm font-medium text-gray-900">
+                    Montant
+                  </th>
+                  <th className="px-4 py-3 text-center text-sm font-medium text-gray-900">
                     Actions
                   </th>
                 </tr>
@@ -536,22 +536,22 @@ export function Distribution() {
                         {bon.id}
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                        {bon.user ? `${bon.user.nom} ${bon.user.prenom || ''}`.trim() : 'N/A'}
-                      </td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                        {bon.user?.zone || 'N/A'}
-                      </td>
-                      <td className="px-4 py-4 whitespace-nowrap">
-                        {getStatusBadge(bon.statut)}
-                      </td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                        {bon.nb_colis || 0}
+                        {bon.entreprise?.nom || 'N/A'}
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                         {formatDate(bon.date_creation)}
                       </td>
+                      <td className="px-4 py-4 whitespace-nowrap">
+                        {getStatusBadge(bon.statut)}
+                      </td>
+                      <td className="px-4 py-4 text-center whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                        {bon.nb_colis || 0}
+                      </td>
+                      <td className="px-4 py-4 text-center whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                        {bon.montant || 0 } DH
+                      </td>
                       <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex items-center space-x-1">
+                        <div className="flex items-center justify-center space-x-1">
                           <Button
                             variant="ghost"
                             size="sm"

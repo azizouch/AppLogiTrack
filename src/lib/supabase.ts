@@ -1841,6 +1841,19 @@ export const api = {
     return { data, error }
   },
 
+  // Admin update using RPC function that bypasses RLS
+  updateUserByIdAdmin: async (id: string, updates: Partial<Omit<User, 'id'>>) => {
+    try {
+      const { data, error } = await supabase.rpc('update_user_admin', {
+        p_user_id: id,
+        p_updates: updates
+      });
+      return { data, error };
+    } catch (error) {
+      return { data: null, error: error as any };
+    }
+  },
+
   // Update user profile with image
   updateUserProfile: async (userId: string, profileData: Partial<User>) => {
     const { data, error } = await supabase

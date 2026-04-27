@@ -34,6 +34,8 @@ import { MesRetour } from "@/pages/bons/MesRetour";
 import { AllLivreurDistribution } from "@/pages/bons/AllLivreurDistribution";
 import { AllLivreurPaiement } from "@/pages/bons/AllLivreurPaiement";
 import { AllLivreurRetour } from "@/pages/bons/AllLivreurRetour";
+import { DailyPaiementValidation } from "@/pages/bons/DailyPaiementValidation";
+import { MesPaiementsJournaliers } from "@/pages/bons/MesPaiementsJournaliers";
 import { Clients } from "@/pages/Clients";
 import { AddClient } from "@/pages/clients/AddClient";
 import { ClientDetails } from "@/pages/clients/ClientDetails";
@@ -326,6 +328,22 @@ const App = () => (
             <ProtectedRoute roles={["Admin", "Gestionnaire"]}>
               <Layout>
                 <AllLivreurRetour />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          {/* Daily Paiement Validation - Admin */}
+          <Route path="/admin/paiements/validation" element={
+            <ProtectedRoute roles={["Admin", "Gestionnaire"]}>
+              <Layout>
+                <DailyPaiementValidation />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          {/* Livreur Daily Payments */}
+          <Route path="/livreur/paiements" element={
+            <ProtectedRoute roles={["Livreur"]}>
+              <Layout>
+                <MesPaiementsJournaliers />
               </Layout>
             </ProtectedRoute>
           } />

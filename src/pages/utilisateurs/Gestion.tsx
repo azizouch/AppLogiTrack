@@ -411,40 +411,82 @@ export function Gestion() {
     }
 
     try {
-      // Prepare update data
-      const updates = {
+      // Prepare update data for profile (excluding email/password - handled separately)
+      const profileUpdates = {
         nom: newUser.nom,
         prenom: newUser.prenom,
-        telephone: newUser.telephone,
+        telephone: newUser.telephone || null,
         role: newUser.role,
         statut: newUser.statut,
-        adresse: newUser.adresse,
-        ville: newUser.ville,
-        zone: newUser.role === 'Livreur' ? newUser.zone : undefined,
-        vehicule: newUser.role === 'Livreur' ? newUser.vehicule : undefined,
+        adresse: newUser.adresse || null,
+        ville: newUser.ville || null,
+        zone: newUser.role === 'Livreur' ? (newUser.zone || null) : null,
+        vehicule: newUser.role === 'Livreur' ? (newUser.vehicule || null) : null,
       };
 
-      // Add email if changed
-      if (newUser.email !== editingUser.email) {
-        updates.email = newUser.email;
+      // Use admin RPC to bypass RLS
+      const { error: updateError } = await api.updateUserByIdAdmin(editingUser.id, profileUpdates);
+
+      if (updateError) {
+        throw new Error(updateError.message);
       }
 
-      // Add password if provided
+      // Handle email update separately
+      let hasWarnings = false;
+      let emailUpdated = false;
+      let passwordUpdated = false;
+
+      if (newUser.email !== editingUser.email && editingUser.id) {
+        // Need to get auth_id for email update - fetch full user details
+        const { data: fullUser } = await api.getUserById(editingUser.id);
+        if (fullUser?.auth_id) {
+          const { data: emailData, error: emailError } = await api.updateUserEmail(fullUser.auth_id, newUser.email);
+          if (emailError) {
+            hasWarnings = true;
+            toast({
+              title: 'Attention',
+              description: emailError.message || 'Impossible de mettre à jour l\'email.',
+              variant: 'destructive',
+            });
+          } else if (emailData) {
+            emailUpdated = true;
+          }
+        }
+      }
+
+      // Handle password update separately
       if (newUser.password && newUser.password.trim() !== '') {
-        updates.password = newUser.password;
+        const { data: fullUser } = await api.getUserById(editingUser.id);
+        if (fullUser?.auth_id) {
+          const { data: passwordData, error: passwordError } = await api.updateUserPassword(fullUser.auth_id, newUser.password);
+          if (passwordError) {
+            hasWarnings = true;
+            toast({
+              title: 'Attention',
+              description: passwordError.message || 'Impossible de mettre à jour le mot de passe.',
+              variant: 'destructive',
+            });
+          } else if (passwordData) {
+            passwordUpdated = true;
+          }
+        }
       }
 
-      // Use the unified update function
-      const { data, error } = await auth.updateUserWithAuth(editingUser.id, updates);
+      if (!hasWarnings) {
+        let successMessage = 'Utilisateur modifié avec succès';
+        if (emailUpdated && passwordUpdated) {
+          successMessage += '. Email et mot de passe mis à jour.';
+        } else if (emailUpdated) {
+          successMessage += '. Email mis à jour.';
+        } else if (passwordUpdated) {
+          successMessage += '. Mot de passe mis à jour.';
+        }
 
-      if (error) {
-        throw error;
+        toast({
+          title: 'Succès',
+          description: successMessage,
+        });
       }
-
-      toast({
-        title: 'Succès',
-        description: 'Utilisateur modifié avec succès',
-      });
 
       // Reset form and refresh list
       await fetchUsers();

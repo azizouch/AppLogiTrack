@@ -28,6 +28,8 @@ import {
   User,
   PanelLeftOpen,
   PanelLeftClose,
+  DollarSign,
+  CalendarCheck,
   QrCode,
   ScanLine
 } from 'lucide-react';
@@ -249,6 +251,7 @@ export function AppSidebar() {
         { title: 'Distribution', url: '/admin/bons/admin/distribution', icon: FileText, roles: ['admin', 'gestionnaire'] },
         { title: 'Paiement', url: '/admin/bons/admin/paiement', icon: CreditCard, roles: ['admin', 'gestionnaire'] },
         { title: 'Retour', url: '/admin/bons/admin/retour', icon: RotateCcw, roles: ['admin', 'gestionnaire'] },
+        { title: 'Validation paiements', url: '/admin/paiements/validation', icon: CalendarCheck, roles: ['admin', 'gestionnaire'] },
       ]
     },
     {
@@ -271,6 +274,7 @@ export function AppSidebar() {
         { title: 'Distribution', url: '/bons/mes-distribution', icon: FileText, roles: ['livreur'] },
         { title: 'Paiement', url: '/bons/mes-paiement', icon: CreditCard, roles: ['livreur'] },
         { title: 'Retour', url: '/bons/mes-retour', icon: RotateCcw, roles: ['livreur'] },
+        { title: 'Mes paiements du jour', url: '/livreur/paiements', icon: DollarSign, roles: ['livreur'] },
       ]
     },
     {
@@ -297,16 +301,16 @@ export function AppSidebar() {
       icon: Bell,
       roles: ['admin', 'gestionnaire', 'livreur']
     },
-    {
-      title: 'Mon Compte',
-      icon: User,
-      roles: ['admin', 'gestionnaire', 'livreur'],
-      hasDropdown: true,
-      items: [
-        { title: 'Mon Profil', url: '/profil', icon: User, roles: ['admin', 'gestionnaire', 'livreur'] },
-        { title: 'Paramètres', url: '/parametres/compte', icon: Settings, roles: ['admin', 'gestionnaire', 'livreur'] },
-      ]
-    },
+    // {
+    //   title: 'Mon Compte',
+    //   icon: User,
+    //   roles: ['admin', 'gestionnaire', 'livreur'],
+    //   hasDropdown: true,
+    //   items: [
+    //     { title: 'Mon Profil', url: '/profil', icon: User, roles: ['admin', 'gestionnaire', 'livreur'] },
+    //     { title: 'Paramètres', url: '/parametres/compte', icon: Settings, roles: ['admin', 'gestionnaire', 'livreur'] },
+    //   ]
+    // },
     {
       title: 'Utilisateurs',
       icon: UsersRound,

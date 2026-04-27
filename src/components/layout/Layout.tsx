@@ -211,6 +211,37 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
         throw bonError;
       }
 
+      // Update colis livreur_id and status for scanned colis (assignment via scan)
+      const { error: colisUpdateError } = await supabase
+        .from('colis')
+        .update({
+          livreur_id: state.user?.id,
+          statut: 'Mise en distribution',
+          date_mise_a_jour: new Date().toISOString(),
+        })
+        .in('id', scannedColisList.map(c => c.id));
+
+      if (colisUpdateError) {
+        console.error('Error updating colis livreur_id:', colisUpdateError);
+      }
+
+      // Create historique entries for assignment
+      const historiqueRecords = scannedColisList.map((colis) => ({
+        colis_id: colis.id,
+        date: new Date().toISOString(),
+        statut: 'Mise en distribution',
+        utilisateur: state.user?.id,
+        informations: `Assigné via scan au livreur ${state.user?.nom}`,
+      }));
+
+      const { error: historiqueError } = await supabase
+        .from('historique_colis')
+        .insert(historiqueRecords);
+
+      if (historiqueError) {
+        console.error('Error creating historique_colis entries:', historiqueError);
+      }
+
       toast.success(`Bon de distribution #${bon?.id} créé avec ${scannedColisList.length} colis`);
       
       // Clear the scanned colis list and close modals

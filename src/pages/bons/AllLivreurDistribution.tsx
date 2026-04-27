@@ -406,10 +406,11 @@ export function AllLivreurDistribution() {
                 <tr className="border-b border-gray-200 dark:border-gray-600" style={{ backgroundColor: 'hsl(210, 40%, 96.1%)' }}>
                   <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">Référence</th>
                   <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">Livreur</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">Statut</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">Nb Colis</th>
                   <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">Date de création</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">Actions</th>
+                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">Statut</th>
+                  <th className="px-4 py-3 text-center text-sm font-medium text-gray-900">Nb Colis</th>
+                  <th className="px-4 py-3 text-center text-sm font-medium text-gray-900">Montant</th>
+                  <th className="px-4 py-3 text-center text-sm font-medium text-gray-900">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -428,12 +429,17 @@ export function AllLivreurDistribution() {
                   bons.map((bon) => (
                     <tr key={bon.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-200 dark:border-gray-600 bg-white dark:bg-transparent">
                       <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{bon.id}</td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{bon.user ? `${bon.user.nom} ${bon.user.prenom || ''}` : 'N/A'}</td>
-                      <td className="px-4 py-4 whitespace-nowrap">{getStatusBadge(bon.statut)}</td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{bon.nb_colis || 0}</td>
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                        {bon.assigned_user
+                        ? `${bon.assigned_user.nom} ${bon.assigned_user.prenom ?? ''}`
+                        : 'N/A'}
+                      </td>
                       <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{formatDate(bon.date_creation)}</td>
+                      <td className="px-4 py-4 whitespace-nowrap">{getStatusBadge(bon.statut)}</td>
+                      <td className="px-4 py-4 whitespace-nowrap text-center text-sm text-gray-900 dark:text-white">{bon.nb_colis || 0}</td>
+                      <td className="px-4 py-4 whitespace-nowrap text-center text-sm text-gray-900 dark:text-white">{bon.montant || 0} DH</td>
                       <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex items-center space-x-1">
+                        <div className="flex items-center justify-center space-x-1">
                           <Button variant="ghost" size="sm" className="h-8 w-8 p-0 border" onClick={() => navigate(`/bons/${bon.id}`)} title="Voir les détails"><Eye className="h-4 w-4" /></Button>
                           <Button variant="ghost" size="sm" className="h-8 w-8 p-0 border" onClick={() => handleOpenHistory(bon)} title="Historique"><History className="h-4 w-4" /></Button>
                           <Button variant="ghost" size="sm" className="h-8 w-8 p-0 border" onClick={() => handlePrint(bon)} disabled={printing === bon.id} title="Imprimer">{printing === bon.id ? <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600"></div> : <Printer className="h-4 w-4" />}</Button>

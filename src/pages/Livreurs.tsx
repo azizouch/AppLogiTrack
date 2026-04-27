@@ -535,8 +535,8 @@ export function Livreurs() {
             <TableRow className="border-b border-gray-200 dark:border-gray-600" style={{ backgroundColor: 'hsl(210, 40%, 96.1%)' }}>
               <TableHead className="font-semibold text-gray-900">Nom</TableHead>
               <TableHead className="font-semibold text-gray-900">Contact</TableHead>
-              <TableHead className="font-semibold text-gray-900">Activité</TableHead>
-              <TableHead className="font-semibold text-right text-gray-900">Actions</TableHead>
+              <TableHead className="font-semibold text-center text-gray-900">Activité</TableHead>
+              <TableHead className="font-semibold text-center text-gray-900">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

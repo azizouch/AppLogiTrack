@@ -167,8 +167,8 @@ export function EditLivreur() {
         statut: values.statut,
       };
 
-      // Update user profile in utilisateurs table using the correct ID
-      const { error: updateError } = await api.updateUserById(id, livreurData);
+      // Update user profile in utilisateurs table using the admin RPC (bypasses RLS)
+      const { error: updateError } = await api.updateUserByIdAdmin(id, livreurData);
 
       if (updateError) {
         throw new Error(updateError.message);
@@ -325,10 +325,11 @@ export function EditLivreur() {
                       <Input
                         {...field}
                         placeholder="LIV-XXX"
+                        disabled
                       />
                     </FormControl>
                     <FormDescription>
-                      Identifiant unique du livreur (ex: LIV-001)
+                      Cet identifiant est généré automatiquement et ne peut pas être modifié.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>

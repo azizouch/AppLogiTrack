@@ -80,7 +80,7 @@ export function MesColisRefuses() {
       if (debouncedSearchTerm) {
         query = query.or(`id.ilike.%${debouncedSearchTerm}%,client.nom.ilike.%${debouncedSearchTerm}%`);
       }
-
+  
       // Apply sorting
       if (sortBy === 'recent') {
         query = query.order('date_mise_a_jour', { ascending: false });
@@ -96,7 +96,6 @@ export function MesColisRefuses() {
       const result = await query;
 
       const { data, error, count } = result;
-
       if (error) {
         console.error('API error:', error);
         toast({
