@@ -167,10 +167,11 @@ export function AllLivreurPaiement() {
             <CreditCard className="h-5 w-5 sm:h-6 sm:w-6 text-green-600 dark:text-green-400" />
             Bons de Paiement - Tous les Livreurs
           </h1>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={handleRefresh} disabled={refreshing} className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
-              <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-              temporary button
+          <div className="flex gap-2 w-full sm:w-auto">
+            <Button className="bg-blue-600 hover:bg-blue-700 flex-1 sm:flex-none">
+              <Plus className="h-4 w-4 mr-2" />
+              <span className="sm:hidden">Nouveau</span>
+              <span className="hidden sm:inline">Nouveau bon de paiement</span>
             </Button>
           </div>
         </div>

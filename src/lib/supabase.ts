@@ -2424,11 +2424,7 @@ export const api = {
     const { data, error } = await supabase
       .from('bons')
       .insert([bonDataToInsert])
-      .select(`
-        *,
-        client:clients(id, nom, email, telephone),
-        colis:colis(id, client:clients(nom))
-      `)
+      .select('*')
       .single();
 
     if (data && !error) {
@@ -2479,11 +2475,7 @@ export const api = {
       const { data: bon, error: bonError } = await supabase
         .from('bons')
         .insert([bonDataToInsert])
-        .select(`
-          *,
-          client:clients(id, nom, email, telephone),
-          colis:colis(id, client:clients(nom))
-        `)
+        .select('*')
         .single();
 
       if (bonError) {
@@ -2579,11 +2571,7 @@ export const api = {
       .from('bons')
       .update(updates)
       .eq('id', id)
-      .select(`
-        *,
-        client:clients(id, nom, email, telephone),
-        colis:colis(id, client:clients(nom))
-      `)
+      .select('*')
       .single();
 
     return { data, error };

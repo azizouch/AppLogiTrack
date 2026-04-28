@@ -149,7 +149,7 @@ export function Dashboard() {
     {
       title: 'En attente',
       value: loading ? '...' : stats.enAttente.toString(),
-      description: 'Nouveaux colis',
+      description: 'Nouveaux Colis',
       icon: Clock,
       iconColor: 'text-orange-500',
       titleColor: 'text-gray-900 dark:text-white',

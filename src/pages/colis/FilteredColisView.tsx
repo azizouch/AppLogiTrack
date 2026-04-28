@@ -42,7 +42,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 // Status mapping for dashboard cards to database statuses
 const STATUS_MAPPING = {
   // Admin/Gestionnaire statuses
-  'en_attente': ['en_attente'],
+  'en_attente': ['Nouveau Colis'],
   'en_traitement': 'exclude', // Special case: all statuses except en_attente, Livré, Retourné
   'livres': ['Livré'],
   'retournes': ['Retourné'],
@@ -56,7 +56,7 @@ const STATUS_MAPPING = {
 
 // Status display names
 const STATUS_DISPLAY_NAMES = {
-  'en_attente': 'En attente',
+  'en_attente': 'Nouveau Colis',
   'en_traitement': 'En traitement',
   'livres': 'Livrés',
   'retournes': 'Retournés',
@@ -206,7 +206,7 @@ export function FilteredColisView() {
           // Client-side filtering for multi-status or exclude
           let filteredData;
           if (filterStatuses === 'exclude') {
-            filteredData = data.filter(colisItem => !['en_attente', 'Livré', 'Retourné'].includes(colisItem.statut));
+            filteredData = data.filter(colisItem => !['Nouveau Colis', 'Livré', 'Retourné'].includes(colisItem.statut));
           } else {
             filteredData = data.filter(colisItem => filterStatuses.includes(colisItem.statut));
           }
@@ -332,11 +332,11 @@ export function FilteredColisView() {
     <div className="space-y-3">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-4">
           <Button
             variant="ghost"
             onClick={() => navigate('/')}
-            className="flex items-center bg-gray-50 dark:bg-gray-900 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-800"
+            className="px-2 sm:px-3 flex items-center bg-gray-50 dark:bg-gray-900 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-800"
           >
             <ArrowLeft className="h-4 w-4" />
           </Button>

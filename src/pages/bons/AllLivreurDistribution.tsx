@@ -213,9 +213,10 @@ export function AllLivreurDistribution() {
             Bons de Distribution - Tous les Livreurs
           </h1>
           <div className="flex gap-2 w-full sm:w-auto">
-            <Button variant="outline" onClick={handleRefresh} disabled={refreshing} className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700 flex-1 sm:flex-none">
-              <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-              temporary button
+            <Button className="bg-blue-600 hover:bg-blue-700 flex-1 sm:flex-none">
+              <Plus className="h-4 w-4 mr-2" />
+              <span className="sm:hidden">Nouveau</span>
+              <span className="hidden sm:inline">Nouveau bon de distribution</span>
             </Button>
           </div>
         </div>

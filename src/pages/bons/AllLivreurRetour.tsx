@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TablePagination } from '@/components/ui/table-pagination';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Search, Eye, Download, Printer, RotateCcw, RefreshCw, FileSpreadsheet, Filter, PanelLeftOpen, X, History } from 'lucide-react';
+import { Search, Eye, Download, Printer, RotateCcw, RefreshCw, FileSpreadsheet, Filter, PanelLeftOpen, X, History, Plus } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetTrigger } from '@/components/ui/sheet';
 import { api } from '@/lib/supabase';
 import { Bon, User } from '@/types';
@@ -15,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { downloadBonAsPDF, downloadMobileBonAsPDF, printBon, downloadBonAsExcel } from '@/utils/pdfGenerator';
 import { BonHistoryModal } from '@/components/modals/BonHistoryModal';
+import { useAdminReturnScanner } from '@/contexts/AdminReturnScannerContext';
 
 export function AllLivreurRetour() {
   const navigate = useNavigate();
@@ -41,6 +42,7 @@ export function AllLivreurRetour() {
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [selectedBonForHistory, setSelectedBonForHistory] = useState<Bon | null>(null);
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
+  const { openReturnScanner } = useAdminReturnScanner();
 
   // Fetch company settings on mount
   useEffect(() => {
@@ -147,7 +149,8 @@ export function AllLivreurRetour() {
   const handleDownloadPdf = async (bon: Bon) => {
     try {
       setDownloadingPdf(bon.id);
-      const user = livreurs.find(l => l.id === bon.user_id) || bon.user;
+      // For retour bons created by admin/gestionnaire, the actual livreur is in assigned_to
+      const user = livreurs.find(l => l.id === (bon.assigned_to || bon.user_id)) || bon.user;
       const bonWithUser = { ...bon, user };
 
       const { data: colisData } = await api.getColisByBonId(bon.id);
@@ -173,7 +176,8 @@ export function AllLivreurRetour() {
 
       const { data: colisData } = await api.getColisByBonId(bon.id);
 
-      const user = livreurs.find(l => l.id === bon.user_id) || bon.user;
+      // For retour bons created by admin/gestionnaire, the actual livreur is in assigned_to
+      const user = livreurs.find(l => l.id === (bon.assigned_to || bon.user_id)) || bon.user;
       const bonWithUser = { ...bon, user };
 
       await printBon(bonWithUser, colisData || undefined, companySettings || undefined);
@@ -189,7 +193,8 @@ export function AllLivreurRetour() {
   const handleDownloadExcel = async (bon: Bon) => {
     try {
       setDownloadingExcel(bon.id);
-      const user = livreurs.find(l => l.id === bon.user_id) || bon.user;
+      // For retour bons created by admin/gestionnaire, the actual livreur is in assigned_to
+      const user = livreurs.find(l => l.id === (bon.assigned_to || bon.user_id)) || bon.user;
       const bonWithUser = { ...bon, user };
       
       // Fetch colis data
@@ -218,10 +223,15 @@ export function AllLivreurRetour() {
             <RotateCcw className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600 dark:text-purple-400" />
             Bons de Retour - Tous les Livreurs
           </h1>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={handleRefresh} disabled={refreshing} className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
-              <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-              temporary button
+          <div className="flex gap-2 w-full sm:w-auto">
+            <Button 
+              className="bg-blue-600 hover:bg-blue-700 flex-1 sm:flex-none"
+              onClick={openReturnScanner}
+              title="Scanner un colis pour retour"
+              >
+              <Plus className="h-4 w-4 mr-2" />
+              <span className="sm:hidden">Nouveau</span>
+              <span className="hidden sm:inline">Nouveau bon de retour</span>
             </Button>
           </div>
         </div>
@@ -435,7 +445,10 @@ export function AllLivreurRetour() {
                   bons.map((bon) => (
                     <TableRow key={bon.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-200 dark:border-gray-600 bg-white dark:bg-transparent">
                       <TableCell className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{bon.id}</TableCell>
-                      <TableCell className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{bon.user ? `${bon.user.nom} ${bon.user.prenom || ''}` : 'N/A'}</TableCell>
+                      <TableCell className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{(() => {
+                        const livreur = livreurs.find(l => l.id === (bon.assigned_to || bon.user_id)) || bon.user;
+                        return livreur ? `${livreur.nom} ${livreur.prenom || ''}`.trim() : 'N/A';
+                      })()}</TableCell>
                       <TableCell className="px-4 py-4 whitespace-nowrap">{getStatusBadge(bon.statut)}</TableCell>
                       <TableCell className="px-4 py-4 whitespace-nowrap text-center text-sm text-gray-900 dark:text-white">{bon.nb_colis || 0}</TableCell>
                       <TableCell className="px-4 py-4 whitespace-nowrap text-center text-sm text-gray-900 dark:text-white">{bon.montant || 0} DH</TableCell>
@@ -479,6 +492,7 @@ export function AllLivreurRetour() {
     </div>
   );
 }
+
 
 
 
