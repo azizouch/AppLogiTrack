@@ -31,7 +31,8 @@ import {
   DollarSign,
   CalendarCheck,
   QrCode,
-  ScanLine
+  ScanLine,
+  Files
 } from 'lucide-react';
 import {
   Sidebar,
@@ -293,6 +294,12 @@ export function AppSidebar() {
       title: 'Livreurs',
       url: '/livreurs',
       icon: Truck,
+      roles: ['admin', 'gestionnaire']
+    },
+    {
+      title: 'Factures',
+      url: '/factures',
+      icon: Files,
       roles: ['admin', 'gestionnaire']
     },
     {

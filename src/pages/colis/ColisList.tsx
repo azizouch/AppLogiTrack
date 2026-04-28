@@ -1009,10 +1009,10 @@ export function ColisList() {
         <div className="overflow-x-auto">
           <Table className="bg-transparent min-w-full">
             <TableHeader>
-              <TableRow className="border-b border-gray-200 dark:border-gray-600" style={{ backgroundColor: 'hsl(210, 40%, 96.1%)' }}>
+              <TableRow className="border-b border-gray-200 bg-gray-50 dark:bg-gray-800">
                 <TableHead className="w-12">
                   <Checkbox
-                    className='dark:border-gray-900'
+                    className=''
                     checked={isAllSelected}
                     ref={(el) => {
                       if (el) el.indeterminate = isIndeterminate;
@@ -1020,14 +1020,14 @@ export function ColisList() {
                     onCheckedChange={handleSelectAll}
                   />
                 </TableHead>
-                <TableHead className="text-gray-900 font-medium">ID Colis</TableHead>
-                <TableHead className="text-gray-900 font-medium">Client</TableHead>
-                <TableHead className="text-gray-900 font-medium">Téléphone</TableHead>
-                <TableHead className="text-gray-900 font-medium">Entreprise</TableHead>
-                <TableHead className="text-gray-900 font-medium">Statut</TableHead>
-                <TableHead className="text-gray-900 font-medium">Prix</TableHead>
-                <TableHead className="text-gray-900 font-medium">Frais</TableHead>
-                <TableHead className="text-gray-900 font-medium text-right">Actions</TableHead>
+                <TableHead className="font-medium">ID Colis</TableHead>
+                <TableHead className="font-medium">Client</TableHead>
+                <TableHead className="font-medium">Téléphone</TableHead>
+                <TableHead className="font-medium">Entreprise</TableHead>
+                <TableHead className="font-medium">Statut</TableHead>
+                <TableHead className="font-medium">Prix</TableHead>
+                <TableHead className="font-medium">Frais</TableHead>
+                <TableHead className="font-medium text-center">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

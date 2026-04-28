@@ -49,6 +49,7 @@ import { AddLivreur } from "@/pages/livreurs/AddLivreur";
 import { LivreurDetails } from "@/pages/livreurs/LivreurDetails";
 import { EditLivreur } from "@/pages/livreurs/EditLivreur";
 import { Notifications } from "@/pages/Notifications";
+import { Factures } from "@/pages/Factures";
 import { Gestion } from "@/pages/utilisateurs/Gestion";
 import { Suivi } from "@/pages/utilisateurs/Suivi";
 import { General } from "@/pages/parametres/General";
@@ -430,6 +431,13 @@ const App = () => (
             <ProtectedRoute roles={["Admin", "Gestionnaire"]}>
               <Layout>
                 <EditLivreur />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/factures" element={
+            <ProtectedRoute roles={["Admin", "Gestionnaire"]}>
+              <Layout>
+                <Factures />
               </Layout>
             </ProtectedRoute>
           } />
