@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import {
   Select,
   SelectContent,
@@ -665,46 +666,46 @@ export function Statuts() {
 
         {/* Table with horizontal scroll for mobile */}
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[600px]">
-            <thead>
-              <tr className="border-b border-gray-200 dark:border-gray-700 text-sm font-medium text-gray-900" style={{ backgroundColor: 'hsl(210, 40%, 96.1%)' }}>
-                <th className="text-left p-4">Nom</th>
-                <th className="text-left p-4">Couleur</th>
-                <th className="text-left p-4">Type</th>
-                <th className="text-left p-4">Ordre</th>
-                <th className="text-left p-4">Actif</th>
-                <th className="text-left p-4">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+          <Table className="w-full min-w-[600px]">
+            <TableHeader>
+              <TableRow className="bg-gray-200 dark:bg-gray-800">
+                <TableHead className="font-medium">Nom</TableHead>
+                <TableHead className="font-medium">Couleur</TableHead>
+                <TableHead className="font-medium">Type</TableHead>
+                <TableHead className="font-medium">Ordre</TableHead>
+                <TableHead className="font-medium">Actif</TableHead>
+                <TableHead className="font-medium">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody className="divide-y divide-gray-200 dark:divide-gray-700">
 
               {paginatedStatuts.length > 0 ? (
                 paginatedStatuts.map((statut) => (
-                  <tr key={statut.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors bg-white dark:bg-transparent">
+                  <TableRow key={statut.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors bg-white dark:bg-transparent">
                     {/* Name */}
-                    <td className="p-4">
+                    <TableCell className="p-4">
                       <Badge className={`${getColorClass(statut.couleur || 'gray')} border-0 text-xs`}>
                         {statut.nom}
                       </Badge>
-                    </td>
+                    </TableCell>
 
                     {/* Color */}
-                    <td className="p-4 capitalize text-sm text-gray-700 dark:text-gray-300">
+                    <TableCell className="p-4 capitalize text-sm text-gray-700 dark:text-gray-300">
                       {COLORS.find(c => c.value === statut.couleur)?.name || statut.couleur}
-                    </td>
+                    </TableCell>
 
                     {/* Type */}
-                    <td className="p-4 capitalize text-sm text-gray-700 dark:text-gray-300">
+                    <TableCell className="p-4 capitalize text-sm text-gray-700 dark:text-gray-300">
                       {STATUS_TYPES.find(t => t.value === statut.type)?.label || statut.type}
-                    </td>
+                    </TableCell>
 
                     {/* Order */}
-                    <td className="p-4 text-sm text-gray-700 dark:text-gray-300">
+                    <TableCell className="p-4 text-sm text-gray-700 dark:text-gray-300">
                       {statut.ordre || 1}
-                    </td>
+                    </TableCell>
 
                     {/* Active */}
-                    <td className="p-4">
+                    <TableCell className="p-4">
                       <Switch
                         checked={statut.actif ?? true}
                         onCheckedChange={async (checked) => {
@@ -725,10 +726,10 @@ export function Statuts() {
                         }}
                         className="data-[state=checked]:bg-blue-600 scale-75"
                       />
-                    </td>
+                    </TableCell>
 
                     {/* Actions */}
-                    <td className="p-4">
+                    <TableCell className="p-4">
                       <div className="flex items-center gap-2">
                         <Button
                           variant="ghost"
@@ -747,19 +748,19 @@ export function Statuts() {
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))
               ) : (
-                <tr>
-                  <td colSpan={6} className="p-8 text-center text-gray-500 dark:text-gray-400">
+                <TableRow>
+                  <TableCell colSpan={6} className="p-8 text-center text-gray-500 dark:text-gray-400">
                     <Search className="h-12 w-12 mx-auto mb-4 text-gray-400 dark:text-gray-600" />
                     <p>Aucun statut trouvé</p>
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               )}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
 
       </div>

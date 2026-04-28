@@ -488,24 +488,33 @@ export function AppSidebar() {
         <SidebarHeader className="h-16 px-4 border-b border-sidebar-border">
           <div className={`h-full flex items-center w-full ${!isCollapsed ? 'justify-between' : 'justify-center'}`}>
             {!isCollapsed && (
-              <button
-                className="text-xl font-bold text-sidebar-foreground flex items-center cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 focus:outline-none focus:text-sidebar-foreground transition-colors select-none bg-transparent border-none p-0 m-0"
-                onClick={() => {
-                  navigate('/');
-                  if (isMobile) {
-                    toggleSidebar();
-                  }
-                }}
-                onMouseLeave={(e) => e.currentTarget.blur()}
-              >
-                {companyName}
-              </button>
+              <div className="flex item-center">
+                <div className="text-center">
+                  <div className="inline-flex items-center justify-center w-9 h-9 bg-sidebar-primary dark:bg-sidebar-primary rounded-xl">
+                    <span className="text-white dark:text-sidebar-primary-foreground font-bold text-md">
+                      {companyName?.match(/[A-Z]/g)?.slice(0, 2).join('') || ''}
+                    </span>
+                  </div>
+                </div>
+                <button
+                  className="text-xl ml-2 font-bold text-sidebar-foreground flex items-center cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 focus:outline-none focus:text-sidebar-foreground transition-colors select-none bg-transparent border-none p-0 m-0"
+                  onClick={() => {
+                    navigate('/');
+                    if (isMobile) {
+                      toggleSidebar();
+                    }
+                  }}
+                  onMouseLeave={(e) => e.currentTarget.blur()}
+                >
+                  {companyName}
+                </button>
+              </div>
             )}
             <div
               className="flex items-center justify-center w-10 h-10 rounded-lg transition-colors cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
               onClick={toggleCollapse}
-            >
-              <PanelLeftClose className={`h-4 w-4 transition-transform duration-300 text-sidebar-foreground ${isCollapsed ? 'rotate-180' : ''}`} />
+              >
+              <PanelLeftClose className={`h-5 w-5 transition-transform duration-300 text-sidebar-foreground ${isCollapsed ? 'rotate-180' : ''}`} />
             </div>
           </div>
         </SidebarHeader>

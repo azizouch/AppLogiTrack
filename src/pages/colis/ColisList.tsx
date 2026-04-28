@@ -1009,7 +1009,7 @@ export function ColisList() {
         <div className="overflow-x-auto">
           <Table className="bg-transparent min-w-full">
             <TableHeader>
-              <TableRow className="border-b border-gray-200 bg-gray-50 dark:bg-gray-800">
+              <TableRow className="bg-gray-200 dark:bg-gray-800">
                 <TableHead className="w-12">
                   <Checkbox
                     className=''

@@ -532,11 +532,11 @@ export function Livreurs() {
         <div className="overflow-x-auto">
           <Table className="bg-transparent min-w-full">
           <TableHeader>
-            <TableRow className="border-b border-gray-200 dark:border-gray-600" style={{ backgroundColor: 'hsl(210, 40%, 96.1%)' }}>
-              <TableHead className="font-semibold text-gray-900">Nom</TableHead>
-              <TableHead className="font-semibold text-gray-900">Contact</TableHead>
-              <TableHead className="font-semibold text-center text-gray-900">Activité</TableHead>
-              <TableHead className="font-semibold text-center text-gray-900">Actions</TableHead>
+            <TableRow className="bg-gray-200 dark:bg-gray-800">
+              <TableHead className="font-medium">Nom</TableHead>
+              <TableHead className="font-medium">Contact</TableHead>
+              <TableHead className="font-medium text-center">Activité</TableHead>
+              <TableHead className="font-medium text-center">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

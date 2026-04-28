@@ -546,13 +546,13 @@ export function Suivi() {
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow className="border-gray-200 dark:border-gray-700" style={{ backgroundColor: 'hsl(210, 40%, 96.1%)' }}>
-                    <TableHead className="text-gray-900 font-medium">Nom</TableHead>
-                    <TableHead className="text-gray-900 font-medium">Email</TableHead>
-                    <TableHead className="text-gray-900 font-medium">Rôle</TableHead>
-                    <TableHead className="text-gray-900 font-medium">Dernière activité</TableHead>
-                    <TableHead className="text-gray-900 font-medium">Statut</TableHead>
-                    <TableHead className="text-gray-900 font-medium">Actions</TableHead>
+                  <TableRow className="bg-gray-200 dark:bg-gray-800">
+                    <TableHead className="font-medium">Nom</TableHead>
+                    <TableHead className="font-medium">Email</TableHead>
+                    <TableHead className="font-medium">Rôle</TableHead>
+                    <TableHead className="font-medium">Dernière activité</TableHead>
+                    <TableHead className="font-medium">Statut</TableHead>
+                    <TableHead className="font-medium">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

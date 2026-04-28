@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetTrigger } from '@/components/ui/sheet';
 import { TablePagination } from '@/components/ui/table-pagination';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Plus, Search, RotateCcw, RefreshCw, Eye, Download, FileSpreadsheet, X, Filter, PanelLeftOpen } from 'lucide-react';
 import { api } from '@/lib/supabase';
 import { Bon, Entreprise } from '@/types';
@@ -364,81 +365,81 @@ export function Retour() {
         {/* Table or Empty State */}
         {loading || bons.length > 0 ? (
           <div className="overflow-x-auto">
-            <table className="w-full bg-transparent">
-              <thead>
-                <tr className="border-b border-gray-200 dark:border-gray-600" style={{ backgroundColor: 'hsl(210, 40%, 96.1%)' }}>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">
+            <Table className="w-full bg-transparent">
+              <TableHeader>
+                <TableRow className="bg-gray-200 dark:bg-gray-800">
+                  <TableHead className="font-medium">
                     Référence
-                  </th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">
+                  </TableHead>
+                  <TableHead className="font-medium">
                     Livreur
-                  </th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">
+                  </TableHead>
+                  <TableHead className="font-medium">
                     Zone
-                  </th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">
+                  </TableHead>
+                  <TableHead className="font-medium">
                     Statut
-                  </th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">
+                  </TableHead>
+                  <TableHead className="text-center font-medium">
                     Nb Colis
-                  </th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">
+                  </TableHead>
+                  <TableHead className="text-center font-medium">
                     Date de création
-                  </th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">
+                  </TableHead>
+                  <TableHead className="text-center font-medium">
                     Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody className="divide-y divide-gray-200 dark:divide-gray-700">
                 {loading ? (
                   Array.from({ length: itemsPerPage }).map((_, index) => (
-                    <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                      <td className="px-4 py-4 whitespace-nowrap">
+                    <TableRow key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                      <TableCell className="px-4 py-4 whitespace-nowrap">
                         <div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div>
-                      </td>
-                      <td className="px-4 py-4 whitespace-nowrap">
+                      </TableCell>
+                      <TableCell className="px-4 py-4 whitespace-nowrap">
                         <div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div>
-                      </td>
-                      <td className="px-4 py-4 whitespace-nowrap">
+                      </TableCell>
+                      <TableCell className="px-4 py-4 whitespace-nowrap">
                         <div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div>
-                      </td>
-                      <td className="px-4 py-4 whitespace-nowrap">
+                      </TableCell>
+                      <TableCell className="px-4 py-4 whitespace-nowrap">
                         <div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div>
-                      </td>
-                      <td className="px-4 py-4 whitespace-nowrap">
+                      </TableCell>
+                      <TableCell className="px-4 py-4 whitespace-nowrap">
                         <div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div>
-                      </td>
-                      <td className="px-4 py-4 whitespace-nowrap">
+                      </TableCell>
+                      <TableCell className="px-4 py-4 whitespace-nowrap">
                         <div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div>
-                      </td>
-                      <td className="px-4 py-4 whitespace-nowrap">
+                      </TableCell>
+                      <TableCell className="px-4 py-4 whitespace-nowrap">
                         <div className="h-8 bg-gray-200 dark:bg-gray-600 rounded animate-pulse w-20"></div>
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))
                 ) : (
                   bons.map((bon) => (
-                    <tr key={bon.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-200 dark:border-gray-600 bg-white dark:bg-transparent">
-                      <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                    <TableRow key={bon.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-200 dark:border-gray-600 bg-white dark:bg-transparent">
+                      <TableCell className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
                         {bon.id}
-                      </td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                      </TableCell>
+                      <TableCell className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                         {bon.user ? `${bon.user.nom} ${bon.user.prenom || ''}`.trim() : 'N/A'}
-                      </td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                      </TableCell>
+                      <TableCell className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                         {bon.user?.zone || 'N/A'}
-                      </td>
-                      <td className="px-4 py-4 whitespace-nowrap">
+                      </TableCell>
+                      <TableCell className="px-4 py-4 whitespace-nowrap">
                         {getStatusBadge(bon.statut)}
-                      </td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                      </TableCell>
+                      <TableCell className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                         {bon.nb_colis || 0}
-                      </td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                      </TableCell>
+                      <TableCell className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                         {formatDate(bon.date_creation)}
-                      </td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
+                      </TableCell>
+                      <TableCell className="px-4 py-4 whitespace-nowrap text-sm font-medium">
                         <div className="flex items-center space-x-1">
                           <Button
                             variant="ghost"
@@ -471,12 +472,12 @@ export function Retour() {
                             )}
                           </Button>
                         </div>
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))
                 )}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center py-12">

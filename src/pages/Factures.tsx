@@ -501,7 +501,7 @@ export function Factures() {
         <div className="overflow-x-auto">
           <Table className="bg-transparent min-w-full">
             <TableHeader>
-              <TableRow className="bg-gray-50 dark:bg-gray-800">
+              <TableRow className="bg-gray-200 dark:bg-gray-800">
                 <TableHead>Numéro</TableHead>
                 <TableHead>Date</TableHead>
                 <TableHead>Montant</TableHead>

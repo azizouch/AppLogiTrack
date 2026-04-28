@@ -563,15 +563,15 @@ export function FilteredColisView() {
           <div className="overflow-x-auto">
             <Table className="bg-transparent min-w-full">
               <TableHeader>
-                <TableRow className="border-b border-gray-200 dark:border-gray-600" style={{ backgroundColor: 'hsl(210, 40%, 96.1%)' }}>
-                  <TableHead className="text-gray-900 font-medium">ID Colis</TableHead>
-                  <TableHead className="text-gray-900 font-medium">Client</TableHead>
-                  <TableHead className="text-gray-900 font-medium">Entreprise</TableHead>
-                  <TableHead className="text-gray-900 font-medium">Statut</TableHead>
-                  <TableHead className="text-gray-900 font-medium">Prix</TableHead>
-                  <TableHead className="text-gray-900 font-medium">Date</TableHead>
-                  <TableHead className="text-gray-900 font-medium">Livreur</TableHead>
-                  <TableHead className="text-gray-900 font-medium text-right">Actions</TableHead>
+                <TableRow className="bg-gray-200 dark:bg-gray-800">
+                  <TableHead className="font-medium">ID Colis</TableHead>
+                  <TableHead className="font-medium">Client</TableHead>
+                  <TableHead className="font-medium">Entreprise</TableHead>
+                  <TableHead className="font-medium">Statut</TableHead>
+                  <TableHead className="font-medium">Prix</TableHead>
+                  <TableHead className="font-medium">Date</TableHead>
+                  <TableHead className="font-medium">Livreur</TableHead>
+                  <TableHead className="font-medium text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TablePagination } from '@/components/ui/table-pagination';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Plus, Search, Download, Eye, Printer, Truck, RefreshCw, FileSpreadsheet, Filter, PanelLeftOpen, X, History } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetTrigger } from '@/components/ui/sheet';
 import { api } from '@/lib/supabase';
@@ -322,38 +323,38 @@ export function MesDistribution() {
 
         {loading || bons.length > 0 ? (
           <div className="overflow-x-auto">
-            <table className="w-full bg-transparent">
-              <thead>
-                <tr className="border-b border-gray-200 dark:border-gray-600" style={{ backgroundColor: 'hsl(210, 40%, 96.1%)' }}>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">Référence</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">Zone</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">Statut</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">Nb Colis</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">Date de création</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+            <Table className="w-full bg-transparent">
+              <TableHeader>
+                <TableRow className="dark:border-gray-600" style={{ backgroundColor: 'hsl(210, 40%, 96.1%)' }}>
+                  <TableHead className="px-4 py-3 text-left text-sm font-medium text-gray-900">Référence</TableHead>
+                  <TableHead className="px-4 py-3 text-left text-sm font-medium text-gray-900">Zone</TableHead>
+                  <TableHead className="px-4 py-3 text-left text-sm font-medium text-gray-900">Statut</TableHead>
+                  <TableHead className="px-4 py-3 text-left text-sm font-medium text-gray-900">Nb Colis</TableHead>
+                  <TableHead className="px-4 py-3 text-left text-sm font-medium text-gray-900">Date de création</TableHead>
+                  <TableHead className="px-4 py-3 text-left text-sm font-medium text-gray-900">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody className="divide-y divide-gray-200 dark:divide-gray-700">
                 {loading ? (
                   Array.from({ length: itemsPerPage }).map((_, index) => (
-                    <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                      <td className="px-4 py-4 whitespace-nowrap"><div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div></td>
-                      <td className="px-4 py-4 whitespace-nowrap"><div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div></td>
-                      <td className="px-4 py-4 whitespace-nowrap"><div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div></td>
-                      <td className="px-4 py-4 whitespace-nowrap"><div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div></td>
-                      <td className="px-4 py-4 whitespace-nowrap"><div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div></td>
-                      <td className="px-4 py-4 whitespace-nowrap"><div className="h-8 bg-gray-200 dark:bg-gray-600 rounded animate-pulse w-20"></div></td>
-                    </tr>
+                    <TableRow key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                      <TableCell className="px-4 py-4 whitespace-nowrap"><div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div></TableCell>
+                      <TableCell className="px-4 py-4 whitespace-nowrap"><div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div></TableCell>
+                      <TableCell className="px-4 py-4 whitespace-nowrap"><div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div></TableCell>
+                      <TableCell className="px-4 py-4 whitespace-nowrap"><div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div></TableCell>
+                      <TableCell className="px-4 py-4 whitespace-nowrap"><div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div></TableCell>
+                      <TableCell className="px-4 py-4 whitespace-nowrap"><div className="h-8 bg-gray-200 dark:bg-gray-600 rounded animate-pulse w-20"></div></TableCell>
+                    </TableRow>
                   ))
                 ) : (
                   bons.map((bon) => (
-                    <tr key={bon.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-200 dark:border-gray-600 bg-white dark:bg-transparent">
-                      <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{bon.id}</td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{bon.user?.zone || 'N/A'}</td>
-                      <td className="px-4 py-4 whitespace-nowrap">{getStatusBadge(bon.statut)}</td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{bon.nb_colis || 0}</td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{formatDate(bon.date_creation)}</td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
+                    <TableRow key={bon.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-200 dark:border-gray-600 bg-white dark:bg-transparent">
+                      <TableCell className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{bon.id}</TableCell>
+                      <TableCell className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{bon.user?.zone || 'N/A'}</TableCell>
+                      <TableCell className="px-4 py-4 whitespace-nowrap">{getStatusBadge(bon.statut)}</TableCell>
+                      <TableCell className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{bon.nb_colis || 0}</TableCell>
+                      <TableCell className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{formatDate(bon.date_creation)}</TableCell>
+                      <TableCell className="px-4 py-4 whitespace-nowrap text-sm font-medium">
                         <div className="flex items-center space-x-1">
                           <Button variant="ghost" size="sm" className="h-8 w-8 p-0 border" onClick={() => navigate(`/bons/mes-distribution/${bon.id}`)} title="Voir les détails"><Eye className="h-4 w-4" /></Button>
                           <Button variant="ghost" size="sm" className="h-8 w-8 p-0 border" onClick={() => handlePrint(bon)} disabled={printing === bon.id} title="Imprimer">{printing === bon.id ? <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600"></div> : <Printer className="h-4 w-4" />}</Button>
@@ -361,12 +362,12 @@ export function MesDistribution() {
                           <Button variant="ghost" size="sm" className="h-8 w-8 p-0 border" onClick={() => handleDownloadExcel(bon)} disabled={downloadingExcel === bon.id} title="Télécharger Excel">{downloadingExcel === bon.id ? <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600"></div> : <FileSpreadsheet className="h-4 w-4" />}</Button>
                           <Button variant="ghost" size="sm" className="h-8 w-8 p-0 border" onClick={() => handleOpenHistory(bon)} title="Voir l'historique"><History className="h-4 w-4" /></Button>
                         </div>
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))
                 )}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center py-12">

@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TablePagination } from '@/components/ui/table-pagination';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Plus, Search, Eye, Edit, Trash2, CreditCard, RefreshCw, Download, FileSpreadsheet, Filter, PanelLeftOpen, X } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetTrigger } from '@/components/ui/sheet';
 import { api } from '@/lib/supabase';
@@ -354,49 +355,49 @@ export function AllLivreurPaiement() {
 
         {loading || bons.length > 0 ? (
           <div className="overflow-x-auto">
-            <table className="w-full bg-transparent">
-              <thead>
-                <tr className="border-b border-gray-200 dark:border-gray-600" style={{ backgroundColor: 'hsl(210, 40%, 96.1%)' }}>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">Référence</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">Livreur</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">Montant</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">Statut</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">Date d\'échéance</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+            <Table className="w-full bg-transparent">
+              <TableHeader>
+                <TableRow className="bg-gray-200 dark:bg-gray-800">
+                  <TableHead className="font-medium">Référence</TableHead>
+                  <TableHead className="font-medium">Livreur</TableHead>
+                  <TableHead className="font-medium">Montant</TableHead>
+                  <TableHead className="text-center font-medium">Statut</TableHead>
+                  <TableHead className="text-center font-medium">Date d'échéance</TableHead>
+                  <TableHead className="text-center font-medium">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody className="divide-y divide-gray-200 dark:divide-gray-700">
                 {loading ? (
                   Array.from({ length: itemsPerPage }).map((_, index) => (
-                    <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                      <td className="px-4 py-4"><div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div></td>
-                      <td className="px-4 py-4"><div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div></td>
-                      <td className="px-4 py-4"><div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div></td>
-                      <td className="px-4 py-4"><div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div></td>
-                      <td className="px-4 py-4"><div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div></td>
-                      <td className="px-4 py-4"><div className="h-8 bg-gray-200 dark:bg-gray-600 rounded animate-pulse w-20"></div></td>
-                    </tr>
+                    <TableRow key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                      <TableCell className="px-4 py-4"><div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div></TableCell>
+                      <TableCell className="px-4 py-4"><div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div></TableCell>
+                      <TableCell className="px-4 py-4"><div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div></TableCell>
+                      <TableCell className="px-4 py-4"><div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div></TableCell>
+                      <TableCell className="px-4 py-4"><div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div></TableCell>
+                      <TableCell className="px-4 py-4"><div className="h-8 bg-gray-200 dark:bg-gray-600 rounded animate-pulse w-20"></div></TableCell>
+                    </TableRow>
                   ))
                 ) : (
                   bons.map((bon) => (
-                    <tr key={bon.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
-                      <td className="px-4 py-4 text-sm font-medium text-gray-900 dark:text-white">{bon.id}</td>
-                      <td className="px-4 py-4 text-sm text-gray-900 dark:text-white">{bon.user ? `${bon.user.nom} ${bon.user.prenom || ''}` : 'N/A'}</td>
-                      <td className="px-4 py-4 text-sm text-gray-900 dark:text-white">{bon.montant ? `${bon.montant.toFixed(2)} DH` : '0.00 DH'}</td>
-                      <td className="px-4 py-4">{getStatusBadge(bon.statut)}</td>
-                      <td className="px-4 py-4 text-sm text-gray-900 dark:text-white">{bon.date_echeance ? formatDate(bon.date_echeance) : 'N/A'}</td>
-                      <td className="px-4 py-4 text-sm font-medium">
+                    <TableRow key={bon.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+                      <TableCell className="px-4 py-4 text-sm font-medium text-gray-900 dark:text-white">{bon.id}</TableCell>
+                      <TableCell className="px-4 py-4 text-sm text-gray-900 dark:text-white">{bon.user ? `${bon.user.nom} ${bon.user.prenom || ''}` : 'N/A'}</TableCell>
+                      <TableCell className="px-4 py-4 text-sm text-gray-900 dark:text-white">{bon.montant ? `${bon.montant.toFixed(2)} DH` : '0.00 DH'}</TableCell>
+                      <TableCell className="px-4 py-4">{getStatusBadge(bon.statut)}</TableCell>
+                      <TableCell className="px-4 py-4 text-sm text-gray-900 dark:text-white">{bon.date_echeance ? formatDate(bon.date_echeance) : 'N/A'}</TableCell>
+                      <TableCell className="px-4 py-4 text-sm font-medium">
                         <div className="flex items-center space-x-1">
                           <Button variant="ghost" size="sm" className="h-8 w-8 p-0"><Eye className="h-4 w-4" /></Button>
                           <Button variant="ghost" size="sm" className="h-8 w-8 p-0"><Edit className="h-4 w-4" /></Button>
                           <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => handleDownloadExcel(bon)} disabled={downloadingExcel === bon.id}>{downloadingExcel === bon.id ? <div className="animate-spin h-4 w-4 border-2 border-gray-600 border-t-transparent rounded-full"></div> : <Download className="h-4 w-4" />}</Button>
                         </div>
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))
                 )}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center py-12">

@@ -582,10 +582,9 @@ export function Clients() {
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow className="border-b border-gray-200 dark:border-gray-600" style={{ backgroundColor: 'hsl(210, 40%, 96.1%)' }}>
+                <TableRow className="bg-gray-200 dark:bg-gray-800">
                   <TableHead className="w-12">
                     <Checkbox
-                      className='dark:border-gray-900'
                       checked={isAllSelected}
                       ref={(el) => {
                         if (el) el.indeterminate = isIndeterminate;
@@ -593,11 +592,11 @@ export function Clients() {
                       onCheckedChange={handleSelectAll}
                     />
                   </TableHead>
-                  <TableHead className="font-semibold text-gray-900">Nom</TableHead>
-                  <TableHead className="font-semibold text-gray-900">Contact</TableHead>
-                  <TableHead className="font-semibold text-gray-900">Adresse</TableHead>
-                  <TableHead className="font-semibold text-gray-900">Entreprise</TableHead>
-                  <TableHead className="font-semibold text-gray-900">Actions</TableHead>
+                  <TableHead className="font-medium">Nom</TableHead>
+                  <TableHead className="font-medium">Contact</TableHead>
+                  <TableHead className="font-medium">Adresse</TableHead>
+                  <TableHead className="font-medium">Entreprise</TableHead>
+                  <TableHead className="font-medium">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
